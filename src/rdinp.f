@@ -85,7 +85,7 @@
 
 * read headers and help file
          
-      OPEN(UNIT=kin,FILE='helpin', STATUS='OLD')
+      OPEN(UNIT=kin,FILE='INPUTS/helpin', STATUS='OLD')
       READ(kin,*) nhead, nhelp
       DO i = 1, nhelp-1
          READ(kin,110) ahline(i)

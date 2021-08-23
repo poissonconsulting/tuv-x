@@ -47,63 +47,63 @@ c     ..
       XR0    = 0.0
       XR1    = 0.0
 
-         CMU( N ) = 0.0
-         CWT( N ) = 0.0
-         PSI( N ) = 0.0
-         WK( N )  = 0.0
-         Z0( N )  = 0.0
-         Z1( N )  = 0.0
-         ZJ( N )  = 0.0
+         CMU( : ) = 0.0
+         CWT( : ) = 0.0
+         PSI( : ) = 0.0
+         WK( : )  = 0.0
+         Z0( : )  = 0.0
+         Z1( : )  = 0.0
+         ZJ( : )  = 0.0
 
-         HLPR( N ) = 0.0
-         YLM0( N ) = 0.0
+         HLPR( : ) = 0.0
+         YLM0( : ) = 0.0
 
-         ARRAY( N ) = 0.0
-         CC( N )    = 0.0
-         EVECC( N ) = 0.0
+         ARRAY( :, : ) = 0.0
+         CC( :, : )    = 0.0
+         EVECC( :, : ) = 0.0
 
-         GL( N ) = 0.0
+         GL( : ) = 0.0
 
-         YLMC( N ) = 0.0
+         YLMC( : ) = 0.0
 
-         YLMU( N ) = 0.0
+         YLMU( : ) = 0.0
 
-         KK( N )    = 0.0
-         LL( N )    = 0.0
-         ZZ( N )    = 0.0
-         ZPLK0( N ) = 0.0
-         ZPLK1( N ) = 0.0
+         KK( : )    = 0.0
+         LL( : )    = 0.0
+         ZZ( : )    = 0.0
+         ZPLK0( : ) = 0.0
+         ZPLK1( : ) = 0.0
 
-         GC( N ) = 0.0
+         GC( : ) = 0.0
 
-         LAYRU( N )  = 0
-         UTAUPR( N ) = 0.0
+         LAYRU( : )  = 0
+         UTAUPR( : ) = 0.0
 
-         GU( N ) = 0.0
+         GU( : ) = 0.0
 
-         Z0U( N )   = 0.0
-         Z1U( N )   = 0.0
-         ZBEAM( N ) = 0.0
+         Z0U( : )   = 0.0
+         Z1U( : )   = 0.0
+         ZBEAM( : ) = 0.0
 
-         EVAL( N ) = 0.0
+         EVAL( : ) = 0.0
 
-         AMB( N ) = 0.0
-         APB( N ) = 0.0
+         AMB( : ) = 0.0
+         APB( : ) = 0.0
 
-         IPVT( N ) = 0
-         Z( N )    = 0.0
+         IPVT( : ) = 0
+         Z( : )    = 0.0
 
-         RFLDIR( N ) = 0.
-         RFLDN( N )  = 0.
-         FLUP( N )   = 0.
-         UAVG( N )   = 0.
-         DFDT( N )   = 0.
+         RFLDIR( : ) = 0.
+         RFLDN( : )  = 0.
+         FLUP( : )   = 0.
+         UAVG( : )   = 0.
+         DFDT( : )   = 0.
 
-         ALBMED( N ) = 0.
-         TRNMED( N ) = 0.
+         ALBMED( : ) = 0.
+         TRNMED( : ) = 0.
 
-         U0U( N ) = 0.
+         U0U( : ) = 0.
 
-         UU( N ) = 0.
+         UU( : ) = 0.
 
       END SUBROUTINE ZEROAL

@@ -23,7 +23,12 @@
 
 c     spherical geometry
       REAL tausla(0:NLYR), tauslau(0:NLYR), mu2(0:NLYR)
-c     ..
+
+c     .. \todo Figure out where these came from in original code
+      INTEGER, PARAMETER :: MXPHI = 3
+      LOGICAL, PARAMETER :: PRNT(7) = .FALSE.
+      LOGICAL, PARAMETER :: ONLYFL = .TRUE.
+      LOGICAL, PARAMETER :: USRANG = .FALSE.
 
 c     local variables
       REAL ::   DFDT(NLYR+1),

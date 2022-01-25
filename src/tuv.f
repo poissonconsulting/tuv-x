@@ -52,6 +52,7 @@
       use ETFL, only : rdetfl
       use RDXS, only : rdo2xs, rdo3xs, rdno2xs, rdso2xs
       use SPHERICAL_GEOM, only : sphers, airmas
+      use MO_SWCHEM, only : swchem
       use micm_photo_kinetics, only : photo_kinetics_t
       use micm_radXfer_xsect_warehouse, only : radXfer_xsect_warehouse_t
       use micm_spectral_wght_warehouse, only : spectral_wght_warehouse_t
@@ -59,6 +60,7 @@
       use musica_constants, only : musica_dk, musica_rk
       use musica_config,    only : config_t
       use musica_string,    only : string_t
+      use debug,            only : diagout
 
       IMPLICIT NONE
 
@@ -127,6 +129,7 @@
       REAL, allocatable :: sirrad(:,:)
       REAL, allocatable :: fdir(:), fdn(:), fup(:)
       REAL, allocatable :: saflux(:,:)
+      REAL, allocatable :: radField(:,:)
 
 * Spectral weighting functions and weighted radiation
 
@@ -294,11 +297,7 @@
         command_string = trim( command_option )
         command_tokens = 
      $    command_string%split( delim,compress=.true. )
-        write(*,*) 
-     $  'TUV: command option = ',command_string
         command_tokens(1) = command_tokens(1)%to_upper()
-        write(*,*) 
-     $  'TUV: command tokens = ',command_tokens
         select case( command_tokens(1)%to_char() )
           case( 'RADXFER_CONFIG_FILESPEC' )
             write(*,*) 'Processing radXfer json config file'
@@ -498,6 +497,7 @@
      $     lzenit, tstart, tstop,
      $     t, sza, sznoon, esfact)
 
+
 * wavelength grid, user-set range and spacing. 
 * NOTE:  Wavelengths are in vacuum, and therefore independent of altitude.
 * To use wavelengths in air, see options in subroutine gridw
@@ -518,9 +518,10 @@
 ***** Temperature vertical profile, Kelvin 
 *   can overwrite temperature at altitude z(izout)
 
-      allocate( tlev(nz),tlay(nz-1) )
+      allocate( tlev(nz),tlay(nlyr) )
       CALL vptmp(z, tlev,tlay)
       IF(ztemp > nzero) tlev(izout) = ztemp
+      call diagout( 'vptmp.old', tlev )
 
 *****  Air density (molec cm-3) vertical profile 
 *   can overwrite air density at altitude z(izout)
@@ -528,6 +529,7 @@
       allocate( aircon(nz), aircol(nlyr), aircol_lasrb(nz) )
       CALL vpair(psurf, z, aircon, aircol, aircol_lasrb)
       IF(zaird > nzero) aircon(izout) = zaird
+      call diagout( 'vpair.old', aircon )
 
 *****
 *! PBL pollutants will be added if zpbl > 0.
@@ -549,7 +551,7 @@
 
       ipbl = 0
       IF(zpbl > rZERO) THEN
-         DO iz = 1, nz-1
+         DO iz = 1, nlyr
             IF(z(iz+1) > (z(1) + zpbl*1.00001)) THEN
                EXIT
             ENDIF
@@ -575,6 +577,7 @@
 
       allocate( co3(nlyr) )
       co3 = vpo3(ipbl, zpbl, o3pbl, o3_tc, z, aircol)
+      call diagout( 'vpco3.old', co3 )
 
 * ___ SECTION 4: READ SPECTRAL DATA ____________________________
 
@@ -595,46 +598,47 @@
       allocate( so2xs(nbins) )
       allocate( no2xs(nlyr,nbins) )
 *    standard TUV cross section handling
-      if( .not. Obj_radXfer_xsects ) then
+*     if( .not. Obj_radXfer_xsects ) then
         mabs = 1
         CALL rdo3xs(mabs,nlyr,tlay,nw,wl, o3xs)
         CALL rdo2xs(nw,wl, o2xs1)
         CALL rdno2xs(nz,tlay,nw,wl, no2xs)
         CALL rdso2xs(nw,wl, so2xs)
+        call diagout( 'o3xs.old',o3xs )
         OPEN(unit=44,file='OUTPUTS/o3xs_old',form='unformatted')
         WRITE(unit=44) o3xs
         CLOSE(unit=44)
 *    new cross section objects
-      else
+*     else
 *    intialize rad transfer cross section object
-        radXfer_xsect_warehouse => radXfer_xsect_warehouse_t( 
-     $                   radXfer_config,real(wl,kind=musica_dk) )
-        do iz = 1,nlyr
-          environment%temperature = real(tlay(iz),kind=musica_dk)
-          environment%number_density_air = 
-     $          real(aircon(iz),kind=musica_dk)
-          CALL 
-     $     radXfer_xsect_warehouse%update_for_new_environmental_state
-     $              ( environment, nbins )
-          if( iz == 1 ) then
-            o2xs1 = 
-     $       real( radXfer_xsect_warehouse%cross_section_values_(:,2),
-     $             kind=musica_rk )
-            so2xs = 
-     $       real( radXfer_xsect_warehouse%cross_section_values_(:,4),
-     $             kind=musica_rk )
-          endif
-          o3xs(iz,:) = 
-     $       real( radXfer_xsect_warehouse%cross_section_values_(:,1),
-     $             kind=musica_rk )
-          no2xs(iz,:) = 
-     $       real( radXfer_xsect_warehouse%cross_section_values_(:,3),
-     $             kind=musica_rk )
-        enddo
-        OPEN(unit=44,file='OUTPUTS/o3xs_new',form='unformatted')
-        WRITE(unit=44) o3xs
-        CLOSE(unit=44)
-      endif
+*       radXfer_xsect_warehouse => radXfer_xsect_warehouse_t( 
+*    $                   radXfer_config,real(wl,kind=musica_dk) )
+*       do iz = 1,nlyr
+*         environment%temperature = real(tlay(iz),kind=musica_dk)
+*         environment%number_density_air = 
+*    $          real(aircon(iz),kind=musica_dk)
+*         CALL 
+*    $     radXfer_xsect_warehouse%update_for_new_environmental_state
+*    $              ( environment )
+*         if( iz == 1 ) then
+*           o2xs1 = 
+*    $       real( radXfer_xsect_warehouse%cross_section_values_(:,2),
+*    $             kind=musica_rk )
+*           so2xs = 
+*    $       real( radXfer_xsect_warehouse%cross_section_values_(:,4),
+*    $             kind=musica_rk )
+*         endif
+*         o3xs(iz,:) = 
+*    $       real( radXfer_xsect_warehouse%cross_section_values_(:,1),
+*    $             kind=musica_rk )
+*         no2xs(iz,:) = 
+*    $       real( radXfer_xsect_warehouse%cross_section_values_(:,3),
+*    $             kind=musica_rk )
+*       enddo
+*       OPEN(unit=44,file='OUTPUTS/o3xs_new',form='unformatted')
+*       WRITE(unit=44) o3xs
+*       CLOSE(unit=44)
+*     endif
 
 ****** Spectral weighting functions 
 * (Some of these depend on temperature T and pressure P, and therefore
@@ -655,9 +659,9 @@
 
       CALL swphys(nw,wl,wc, ns,sw,slabel)
       CALL swbiol(nw,wl,wc, ns,sw,slabel)
-c     IF( .not. Obj_photo_rates ) THEN
-c       CALL swchem(nw,wl,nz,tlev,aircon, nj,sj,jlabel,tpflag)
-c     ENDIF
+      IF( .not. Obj_photo_rates ) THEN
+        CALL swchem(nw,wl,nz,tlev,aircon, nj,sj,jlabel,tpflag)
+      ENDIF
 
 * output spectral weights
       OPEN(unit=44,file='OUTPUTS/sw_org',form='unformatted')
@@ -721,6 +725,7 @@ c      CALL newlst(ns,slabel,nj,jlabel)
 
       allocate( dtrl(nlyr,nbins) )
       dtrl = odrl( wc, aircol )
+      call diagout( 'dtrl.old', dtrl )
       
 * O2 vertical profile and O2 absorption optical depths
 *   For now, O2 densitiy assumed as 20.95% of air density, can be changed
@@ -736,18 +741,19 @@ c      CALL newlst(ns,slabel,nj,jlabel)
       allocate( dto3(nlyr,nbins) )
       dto3 = odo3(z,wl,o3xs,co3)
       deallocate( co3 )
+      call diagout( 'dto3.old', dto3 )
 
 * SO2 vertical profile and optical depths
 
       allocate( dtso2(nlyr,nbins) )
       dtso2 = setso2(ipbl, zpbl, so2pbl,
-     $     so2_tc, z, wl, so2xs, tlay, aircol)
+     $     so2_tc, z, nbins, so2xs, tlay, aircol)
 
 * NO2 vertical profile and optical depths
 
       allocate( dtno2(nlyr,nbins) )
       dtno2 = setno2(ipbl, zpbl, no2pbl, 
-     $     no2_tc, z, wl, no2xs, tlay, aircol)
+     $     no2_tc, z, nbins, no2xs, tlay, aircol)
 
 * Cloud vertical profile, optical depths, single scattering albedo, asymmetry factor
       allocate( dtcld(nlyr,nbins),omcld(nlyr,nbins),gcld(nlyr,nbins) )
@@ -759,7 +765,8 @@ c      CALL newlst(ns,slabel,nj,jlabel)
       allocate( dtaer(nlyr,nbins),omaer(nlyr,nbins),gaer(nlyr,nbins) )
       CALL setaer(ipbl, zpbl, aod330,
      $     tauaer, ssaaer, alpha,
-     $     z, wl, dtaer, omaer, gaer)
+     $     z, wc, dtaer, omaer, gaer)
+      call diagout( 'dtaer.old', dtaer )
 
 * Snowpack physical and optical depths, single scattering albedo, asymmetry factor
 
@@ -861,9 +868,12 @@ C      CALL setany(nz,z,nw,wl,aircol, dt_any,om_any, g_any)
       allocate( sirrad(nz,nbins) )
       allocate( fdir(nz), fdn(nz), fup(nz) )
       allocate( saflux(nz,nbins) )
+      allocate( radField(nz,nbins) )
+
 
 * Loop over time or solar zenith angle (zen):
-      sza_loop: DO it = 1, nt
+*     sza_loop: DO it = 1, nt
+      sza_loop: DO it = 1, 1
 
          zen = sza(it)
 
@@ -895,6 +905,27 @@ C      CALL setany(nz,z,nw,wl,aircol, dt_any,om_any, g_any)
          endif
          CALL la_srb(z,tlev,wl,vcolo2,scolo2,o2xs1,dto2,o2xs)
          CALL sjo2(o2xs,sj(1,:,:))
+         call diagout( 'dto2.old',dto2 )
+
+         dtrl = rZERO
+!        dto2 = rZERO
+         dto3 = rZERO
+         dtaer = rZERO ; gaer = rZERO ; omaer = rZERO
+         omcld = rZERO ; omsnw = rZERO
+         if( all( dtrl == 0. ) ) write(*,*) 'TUV: dtrl = 0'
+         if( all( dto3 == 0. ) ) write(*,*) 'TUV: dto3 = 0'
+         if( all( dto2 == 0. ) ) write(*,*) 'TUV: dto2 = 0'
+         if( all( dtso2 == 0. ) ) write(*,*) 'TUV: dtso2 = 0'
+         if( all( dtno2 == 0. ) ) write(*,*) 'TUV: dtno2 = 0'
+         if( all( dtcld == 0. ) ) write(*,*) 'TUV: dtcld = 0'
+         if( all( omcld == 0. ) ) write(*,*) 'TUV: omcld = 0'
+         if( all( gcld == 0. ) ) write(*,*) 'TUV: gcld = 0'
+         if( all( dtaer == 0. ) ) write(*,*) 'TUV: dtaer = 0'
+         if( all( omaer == 0. ) ) write(*,*) 'TUV: omaer = 0'
+         if( all( gaer == 0. ) ) write(*,*) 'TUV: gaer = 0'
+         if( all( dtsnw == 0. ) ) write(*,*) 'TUV: dtsnw = 0'
+         if( all( omsnw == 0. ) ) write(*,*) 'TUV: omsnw = 0'
+         if( all( gsnw == 0. ) ) write(*,*) 'TUV: gsnw = 0'
 
 * ____ SECTION 8: WAVELENGTH LOOP ______________________________________
 
@@ -929,6 +960,7 @@ C      CALL setany(nz,z,nw,wl,aircol, dt_any,om_any, g_any)
      $           dt_any(:,iw),om_any(:,iw),g_any(:,iw),
      $           edir, edn, eup, fdir, fdn, fup)
 
+             radField(:,iw) = fdir(:) + fup(:) + fdn(:)
 * Spectral irradiance, W m-2 nm-1
 * for downwelling only, use difup = 0.
             sirrad(:,iw) = etf(iw) * 
@@ -993,12 +1025,6 @@ C      CALL setany(nz,z,nw,wl,aircol, dt_any,om_any, g_any)
 
             drdw = we_int * sw(js_dna,iw)
             wratei = wratei + drdw * (wu(iw)-wl(iw))
-               
-**** Save irradiances and actinic fluxes for output
-            CALL saver1(it, itfix, iw, iwfix,  izout,
-     $           sirrad, saflux,
-     $           svi_zw, svf_zw, svi_zt, svf_zt, svi_tw, svf_tw)
-
          ENDDO wave_loop
 
 * compute photo rate constants
@@ -1017,6 +1043,7 @@ C      CALL setany(nz,z,nw,wl,aircol, dt_any,om_any, g_any)
         CLOSE(unit=44)
       endif
 
+         call diagout( 'radField.old',radField )
          CYCLE sza_loop
 
 **** integrate doses over time: 

@@ -38,18 +38,21 @@
 ********
 * inputs:
 ********
-
       INTEGER, intent(in) :: ipbl
       REAL, intent(in) :: to3new
       REAL, intent(in) :: zpbl, mr_pbl
       REAL, intent(in) :: z(:)
       REAL, intent(in) :: aircol(:)
+********
+* output:
+********
 
-
+      REAL    :: col(size(z)-1)
 
 ********
 * internal
 ********
+      REAL, parameter :: km2cm = 1.e5
 
       INTEGER :: nlyr, nz
       INTEGER :: i, nd
@@ -61,12 +64,13 @@
       REAL    :: con(size(z))
       REAL, allocatable :: zd(:), xd(:)
 
-
-********
-* output:
-********
-
-      REAL    :: col(size(z)-1)
+      interface
+        FUNCTION inter1(xtarget, xsrc,ysrc) result( ytarget )
+          REAL, intent(in) :: xtarget(:)
+          REAL, intent(in) :: xsrc(:), ysrc(:)
+          REAL :: ytarget(size(xtarget))
+        END FUNCTION inter1
+      end interface
 
 *-----------------------------------------------------------------------------*
 * The objective of this subroutine is to calculate the vertical increments 
@@ -124,12 +128,18 @@
 
       nz   = size(z)
       nlyr = nz - 1
-      CALL inter1(nz,z,con, nd,zd,xd)
+      con = inter1(z, zd,xd )
 
+      write(*,*) 'vpo3: data z grid'
+      write(*,'(1p10g15.7)') zd
+      write(*,*) ' '
+      write(*,*) 'vpo3: o3 on data z grid'
+      write(*,'(1p10g15.7)') xd
+     
 * compute column increments
 
       DO i = 1, nlyr
-         col(i) = 0.5 * (con(i) + con(i+1)) * (z(i+1) - z(i)) * 1.E5
+         col(i) = 0.5 * (con(i) + con(i+1)) * (z(i+1) - z(i)) * km2cm
       ENDDO
 
 *-----------------------------------------------------------------------------*
@@ -138,7 +148,7 @@
 *   The layer nz is not used. The radiative transfer 
 *   calculation is based on nz-1 layers (not nz).
 *-----------------------------------------------------------------------------*
-      col(nlyr) = col(nlyr) + 1.E5 * hscale * con(nz)
+      col(nlyr) = col(nlyr) + km2cm * hscale * con(nz)
 
 *-----------------------------------------------------------------------------*
 ***** Scaling to new total ozone
@@ -160,6 +170,11 @@
          ENDDO
          con(nz) = con(nz) * scale
       ENDIF
+
+      write(*,*) ' '
+      write(*,*) 'vpo3: o3 on mdl z grid edges'
+      write(*,'(1p10g15.7)') con
+      write(*,*) ' '
 
 *-----------------------------------------------------------------------------*
 *! overwrite column increments for specified pbl height

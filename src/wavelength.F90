@@ -1,7 +1,6 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 !
-!> \todo rewrite micm_environment module to follow musica style conventions
 module micm_photolysis_wavelength_grid
 
   use musica_constants, only : musica_dk, musica_ik

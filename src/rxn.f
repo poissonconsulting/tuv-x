@@ -4,6 +4,10 @@
 *     r101 through r110
 *=============================================================================*
 
+      MODULE MO_RXN
+
+      CONTAINS
+
       SUBROUTINE r01(nw,wl,wc,nz,tlev,airden,j,sq,jlabel,tpflag)
 
 *-----------------------------------------------------------------------------*
@@ -48,23 +52,22 @@
 
 * input
 
-      INTEGER nw
-      REAL wl(:), wc(:)
+      INTEGER, intent(in) :: nw
+      INTEGER, intent(in) :: nz
+      REAL, intent(in)    :: wl(:), wc(:)
 
-      INTEGER nz
-
-      REAL tlev(:)
-      REAL airden(:)
+      REAL, intent(in) :: tlev(:)
+      REAL, intent(in) :: airden(:)
 
 * weighting functions
 
-      CHARACTER*50 jlabel(kj)
-      INTEGER TPFLAG(kj)
-      REAL sq(kj,kz,kw)
+      CHARACTER(len=50), intent(inout) :: jlabel(kj)
+      INTEGER, intent(inout) :: tpflag(kj)
+      REAL, intent(inout)    :: sq(kj,kz,kw)
 
 * input/output:
 
-      INTEGER j
+      INTEGER, intent(inout) :: j
 
 * data arrays
 
@@ -13368,6 +13371,7 @@ c             sq(j,iz,iw) = qy * EXP(sum)
 *-----------------------------------------------------------------------------*
 
       IMPLICIT NONE
+
       INCLUDE 'params'
 
       INTEGER kdata
@@ -13414,13 +13418,6 @@ c             sq(j,iz,iw) = qy * EXP(sum)
          wc(iw) = (wl(iw) + wl(iw+1))/2.
  5    CONTINUE
 
-      write(*,*) 'pxCH2O: on entry'
-      write(*,*) 'pxCH2O: size tlev = ',size(tlev)
-      write(*,*) 'pxCH2O: tlev'
-      write(*,*) tlev
-      write(*,*) 'pxCH2O: airden'
-      write(*,*) 'pxCH2O: size airden = ',size(airden)
-      write(*,*) airden
 ****************************************************************
 **************** CH2O photodissociatation
 
@@ -13512,7 +13509,6 @@ c             sq(j,iz,iw) = qy * EXP(sum)
 * yg4 = quantum yields for molecular channel, H2 + CO.
 
       DO iz = 1, nz
-         write(*,*) 'pxh2co: doing iz = ',iz
          DO iw = 1, nw - 1
 
 * correct cross section for temperature dependence:
@@ -14872,3 +14868,4 @@ c             sq(j,iz,iw) = qy * EXP(sum)
 
       END
 
+      END MODULE MO_RXN

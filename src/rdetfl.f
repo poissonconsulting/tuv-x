@@ -642,7 +642,7 @@
       REAL, intent(in) :: wl(:)
 
 * output: (extra terrestrial solar flux)
-      REAL, intent(out) :: f(:)
+      REAL, intent(inout) :: f(:)
 
 * local:
 

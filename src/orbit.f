@@ -1,76 +1,75 @@
+      module orbit
+
+      implicit none
+
+      contains
 * This file contains the following subroutines, related to the orbit and
 * rotation of the Earth:
 *     calend
 *     sunae
 *=============================================================================*
 
-      SUBROUTINE calend(iyear, imonth, iday,
-     $     jday, nday, oky, okm, okd)
+      SUBROUTINE calend(year, month, day,
+     $                  julianday, daysinyear, oky, okm, okd)
 
 *-----------------------------------------------------------------------------*
 *= calculates julian day corresponding to specified year, month, day         =*
 *= also checks validity of date                                              =*
 *-----------------------------------------------------------------------------*
-
-      IMPLICIT NONE
-
 * input:
 
-      INTEGER iyear, imonth, iday
+      INTEGER, intent(in) :: year, month, day
 
 * output:
 
-      INTEGER jday, nday
-      LOGICAL oky, okm, okd
+      INTEGER, intent(out) :: julianday, daysinyear
+      LOGICAL, intent(out) :: oky, okm, okd
 
 * internal
 
-      INTEGER mday, month, imn(12)
-      DATA imn/31,28,31,30,31,30,31,31,30,31,30,31/             
+      INTEGER :: m
+      INTEGER :: dayofyear
+      INTEGER :: daysinmonth(12)
+      LOGICAL :: leapyr
+
+      DATA daysinmonth /31,28,31,30,31,30,31,31,30,31,30,31/             
 
       oky = .TRUE.
       okm = .TRUE.
       okd = .TRUE.
 
-      IF(iyear .LT. 1950 .OR. iyear .GT. 2050) THEN
+      IF(year < 1950 .OR. year > 2050) THEN
          WRITE(*,*) 'Year must be between 1950 and 2050)'
          oky = .FALSE.
       ENDIF
 
-      IF(imonth .LT. 1 .OR. imonth .GT. 12) THEN
+      IF(month < 1 .OR. month > 12) THEN
          WRITE(*,*) 'Month must be between 1 and 12'
          okm = .FALSE.
       ENDIF
 
-      IF ( MOD(iyear,4) .EQ. 0) THEN
-         imn(2) = 29
+* leap year
+      leapyr = MOD(year,4) == 0
+      IF ( leapyr ) THEN
+         daysinmonth(2) = 29
       ELSE
-         imn(2) = 28
+         daysinmonth(2) = 28
       ENDIF
 
-      IF (iday. GT. imn(imonth)) THEN
+      IF (day > daysinmonth(month)) THEN
          WRITE(*,*) 'Day in date exceeds days in month'
-         WRITE(*,*) 'month = ', imonth
-         WRITE(*,*) 'day = ', iday
+         WRITE(*,*) 'month = ', month
+         WRITE(*,*) 'day = ', day
          okd = .FALSE.
       ENDIF
 
-      mday = 0
-      DO 12, month = 1, imonth-1
-         mday = mday + imn(month)	  	   
-   12 CONTINUE
-      jday = mday + iday
+      dayofyear = sum( daysinmonth(1:month-1) )
+      julianday = dayofyear + day
 
-      nday = 365
-      IF(imn(2) .EQ. 29) nday = 366
+      daysinyear = 365
+      IF(daysinmonth(2) .EQ. 29) daysinyear = 366
 
-      RETURN
-      END
-
-c ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-c RCS version control information:
-c $Header: sunae.f,v 1.3 96/05/30 09:30:15 wiscombe Exp $
-c ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      END SUBROUTINE calend
 
       SUBROUTINE SUNAE( YEAR, DAY, HOUR, LAT, LONG, lrefr,
      &                  ELNOON, AZ, EL, SOLDIA, SOLDST )
@@ -258,204 +257,169 @@ c --------------------------------------------------------------------
 
 c     .. Scalar Arguments ..
 
-      LOGICAL lrefr
 
 
-      INTEGER   YEAR, DAY
-      REAL      AZ, EL, HOUR, LAT, LONG, SOLDIA, SOLDST
-      REAL  ELNOON
+      INTEGER, intent(in) ::  YEAR, DAY
+      REAL, intent(in)    ::  HOUR, LAT, LONG
+      LOGICAL, intent(in) ::  lrefr
+
+      REAL, intent(out)   ::  AZ, EL, ELNOON, SOLDIA, SOLDST
 c     ..
 c     .. Local Scalars ..
 
-      LOGICAL   PASS1
-      INTEGER   DELTA, LEAP
-      DOUBLE PRECISION  DEC, DEN, ECLONG, GMST, HA, JD, LMST,
-     &                  MNANOM, MNLONG, NUM, OBLQEC, PI, RA,
-     &                  RPD, REFRAC, TIME, TWOPI
-c     ..
-c     .. Intrinsic Functions ..
+      REAL(8), parameter :: PI    = 2._8*ASIN( 1._8 )
+      REAL(8), parameter :: TWOPI = 2._8*PI
+      REAL(8), parameter :: RPD   = PI/180._8
 
-      INTRINSIC AINT, ASIN, ATAN, COS, MOD, SIN, TAN
-c     ..
-c     .. Data statements ..
+      INTEGER ::  DELTA, LEAP
+      REAL(8) ::  DEC, DEN, ECLONG, GMST, HA, JD, LMST,
+     &            MNANOM, MNLONG, NUM, OBLQEC, RA,
+     &            REFRAC, TIME, LATR8, ELR8
 
-      SAVE     PASS1, PI, TWOPI, RPD
-      DATA     PASS1 /.True./
-c     ..
-
-      IF( YEAR.LT.1950 .OR. YEAR.GT.2050 ) 
+      IF( YEAR < 1950 .OR. YEAR > 2050 ) 
      &    STOP 'SUNAE--bad input variable YEAR'
-      IF( DAY.LT.1 .OR. DAY.GT.366 ) 
+      IF( DAY < 1 .OR. DAY > 366 ) 
      &    STOP 'SUNAE--bad input variable DAY'
-      IF( HOUR.LT.-13.0 .OR. HOUR.GT.36.0 ) 
+      IF( HOUR < -13.0 .OR. HOUR > 36.0 ) 
      &    STOP 'SUNAE--bad input variable HOUR'
-      IF( LAT.LT.-90.0 .OR. LAT.GT.90.0 ) 
+      IF( LAT < -90.0 .OR. LAT > 90.0 ) 
      &    STOP 'SUNAE--bad input variable LAT'
-      IF( LONG.LT.-180.0 .OR. LONG.GT.180.0 ) 
+      IF( LONG < -180.0 .OR. LONG > 180.0 ) 
      &    STOP 'SUNAE--bad input variable LONG'
-
-      IF(PASS1) THEN
-         PI     = 2.*ASIN( 1.0 )
-         TWOPI  = 2.*PI
-         RPD    = PI / 180.
-         PASS1 = .False.
-      ENDIF
 
 c                    ** current Julian date (actually add 2,400,000 
 c                    ** for true JD);  LEAP = leap days since 1949;
 c                    ** 32916.5 is midnite 0 jan 1949 minus 2.4e6
-
+      LATR8  = real(LAT,8)
       DELTA  = YEAR - 1949
       LEAP   = DELTA / 4
-      JD     = 32916.5 + (DELTA*365 + LEAP + DAY) + HOUR / 24.
+      JD     = 32916.5_8 + real(DELTA*365 + LEAP + DAY,8) 
+     &         + real(HOUR,8) / 24._8
 
 c                    ** last yr of century not leap yr unless divisible
 c                    ** by 400 (not executed for the allowed YEAR range,
 c                    ** but left in so our successors can adapt this for 
 c                    ** the following 100 years)
-
-      IF( MOD( YEAR, 100 ).EQ.0 .AND.
-     &    MOD( YEAR, 400 ).NE.0 ) JD = JD - 1.
+      IF( MOD( YEAR, 100 ) == 0 .AND.
+     &    MOD( YEAR, 400 ) /= 0 ) JD = JD - 1._8
 
 c                     ** ecliptic coordinates
 c                     ** 51545.0 + 2.4e6 = noon 1 jan 2000
-
-      TIME  = JD - 51545.0
+      TIME  = JD - 51545.0_8
 
 c                    ** force mean longitude between 0 and 360 degs
-
-      MNLONG = 280.460 + 0.9856474*TIME
-      MNLONG = MOD( MNLONG, 360.D0 )
-      IF( MNLONG.LT.0. ) MNLONG = MNLONG + 360.
+      MNLONG = 280.460_8 + 0.9856474_8*TIME
+      MNLONG = MOD( MNLONG, 360._8 )
+      IF( MNLONG < 0._8 ) MNLONG = MNLONG + 360._8
 
 c                    ** mean anomaly in radians between 0 and 2*pi
-
-      MNANOM = 357.528 + 0.9856003*TIME
-      MNANOM = MOD( MNANOM, 360.D0 )
-      IF( MNANOM.LT.0.) MNANOM = MNANOM + 360.
+      MNANOM = 357.528_8 + 0.9856003_8*TIME
+      MNANOM = MOD( MNANOM, 360._8 )
+      IF( MNANOM < 0._8 ) MNANOM = MNANOM + 360._8
 
       MNANOM = MNANOM*RPD
-
 c                    ** ecliptic longitude and obliquity 
 c                    ** of ecliptic in radians
 
-      ECLONG = MNLONG + 1.915*SIN( MNANOM ) + 0.020*SIN( 2.*MNANOM )
-      ECLONG = MOD( ECLONG, 360.D0 )
-      IF( ECLONG.LT.0. ) ECLONG = ECLONG + 360.
+      ECLONG = MNLONG + 1.915_8*SIN( MNANOM )
+     &                + 0.020_8*SIN( 2._8*MNANOM )
+      ECLONG = MOD( ECLONG, 360._8 )
+      IF( ECLONG < 0._8 ) ECLONG = ECLONG + 360._8
 
-      OBLQEC = 23.439 - 0.0000004*TIME
+      OBLQEC = 23.439_8 - 0.0000004_8*TIME
       ECLONG = ECLONG*RPD
       OBLQEC = OBLQEC*RPD
 
 c                    ** right ascension
-
       NUM  = COS( OBLQEC )*SIN( ECLONG )
       DEN  = COS( ECLONG )
       RA   = ATAN( NUM / DEN )
 
 c                    ** Force right ascension between 0 and 2*pi
-
-      IF( DEN.LT.0.0 ) THEN
+      IF( DEN < 0.0_8 ) THEN
          RA  = RA + PI
-      ELSE IF( NUM.LT.0.0 ) THEN
+      ELSE IF( NUM < 0.0_8 ) THEN
          RA  = RA + TWOPI
       END IF
 
 c                    ** declination
-
       DEC  = ASIN( SIN( OBLQEC )*SIN( ECLONG ) )
-
 c                    ** Greenwich mean sidereal time in hours
 
-      GMST = 6.697375 + 0.0657098242*TIME + HOUR
-
+      GMST = 6.697375_8 + 0.0657098242_8*TIME + real(HOUR,8)
 c                    ** Hour not changed to sidereal time since 
 c                    ** 'time' includes the fractional day
 
-      GMST  = MOD( GMST, 24.D0)
-      IF( GMST.LT.0. ) GMST   = GMST + 24.
+      GMST  = MOD( GMST, 24._8)
+      IF( GMST < 0._8 ) GMST   = GMST + 24._8
 
 c                    ** local mean sidereal time in radians
+      LMST  = GMST + LONG / 15._8
+      LMST  = MOD( LMST, 24._8 )
+      IF( LMST < 0._8 ) LMST   = LMST + 24._8
 
-      LMST  = GMST + LONG / 15.
-      LMST  = MOD( LMST, 24.D0 )
-      IF( LMST.LT.0. ) LMST   = LMST + 24.
-
-      LMST   = LMST*15.*RPD
+      LMST   = LMST*15._8*RPD
 
 c                    ** hour angle in radians between -pi and pi
-
       HA  = LMST - RA
 
-      IF( HA.LT.- PI ) HA  = HA + TWOPI
-      IF( HA.GT.PI )   HA  = HA - TWOPI
+      IF( HA < -PI ) THEN
+        HA  = HA + TWOPI
+      ELSEIF( HA > PI )  THEN
+        HA  = HA - TWOPI
+      ENDIF
 
 c                    ** solar azimuth and elevation
 !     noon when HA = 0
-      
-      EL  = ASIN( SIN( DEC )*SIN( LAT*RPD ) +
-     &            COS( DEC )*COS( LAT*RPD )*COS( HA ) )
+      ELR8  = ASIN( SIN( DEC )*SIN( LATR8*RPD ) +
+     &              COS( DEC )*COS( LATR8*RPD )*COS( HA ) )
 
-      ELNOON  = ASIN( SIN( DEC )*SIN( LAT*RPD ) +
-     &            COS( DEC )*COS( LAT*RPD ) )
+      ELNOON = real( ASIN( SIN( DEC )*SIN( LATR8*RPD ) +
+     &                     COS( DEC )*COS( LATR8*RPD ) ) )
 
 
-      AZ  = ASIN( - COS( DEC )*SIN( HA ) / COS( EL ) )
+      AZ  = real(ASIN( - COS( DEC )*SIN( HA ) / COS( ELR8 ) ),4)
 
 c                    ** Put azimuth between 0 and 2*pi radians
-
-      IF( SIN( DEC ) - SIN( EL )*SIN( LAT*RPD ).GE.0. ) THEN
-
-         IF( SIN(AZ).LT.0.) AZ  = AZ + TWOPI
-
+      IF( SIN( DEC ) - SIN( ELR8 )*SIN( LATR8*RPD ) >= 0._8 ) THEN
+         IF( SIN(AZ) < 0. ) AZ  = AZ + real(TWOPI)
       ELSE
-
-         AZ  = PI - AZ
-
+         AZ  = real(PI) - AZ
       END IF
 
 c                     ** Convert elevation and azimuth to degrees
-      EL  = EL / RPD
-      AZ  = AZ / RPD
-      ELNOON = ELNOON / RPD
+      AZ  = AZ / real(RPD)
+      ELNOON = ELNOON / real(RPD)
+      ELR8 = ELR8 / RPD
 
 c  ======== Refraction correction for U.S. Standard Atmos. ==========
 c      (assumes elevation in degs) (3.51823=1013.25 mb/288 K)
-
-      IF( EL.GE.19.225 ) THEN
-
-         REFRAC = 0.00452*3.51823 / TAN( EL*RPD )
-
-      ELSE IF( EL.GT.-0.766 .AND. EL.LT.19.225 ) THEN
-
-         REFRAC = 3.51823 * ( 0.1594 + EL*(0.0196 + 0.00002*EL) ) /
-     &            ( 1. + EL*(0.505 + 0.0845*EL) )
-
-      ELSE IF( EL.LE.-0.766 ) THEN
-
-         REFRAC = 0.0
-
+      EL   = real(ELR8)
+      IF( EL >= 19.225 ) THEN
+         REFRAC = 0.00452_8*3.51823_8 / TAN(ELR8*RPD)
+      ELSE IF( EL > -0.766 .AND. EL < 19.225 ) THEN
+         REFRAC = 
+     &   3.51823_8 * (0.1594_8 + ELR8*(0.0196_8 + 0.00002_8*ELR8))
+     &             / (1._8 + ELR8*(0.505_8 + 0.0845_8*ELR8))
+      ELSE IF( EL <= -0.766 ) THEN
+         REFRAC = 0.0_8
       END IF
 
 * sm: switch off refraction:
-
       IF(lrefr) THEN
-         EL  = EL + REFRAC
+         EL = EL + real(REFRAC)
       ENDIF
 
-c ===================================================================
-
-c                   ** distance to sun in A.U. & diameter in degs
-
-      SOLDST = 1.00014 - 0.01671*COS(MNANOM) - 0.00014*COS( 2.*MNANOM )
+c   ** distance to sun in A.U. & diameter in degs
+      SOLDST = 1.00014 - 0.01671*COS(real(MNANOM)) 
+     &                 - 0.00014*COS( real(2.*MNANOM) )
       SOLDIA = 0.5332 / SOLDST
 
-      IF( EL.LT.-90.0 .OR. EL.GT.90.0 )
+      IF( EL < -90.0 .OR. EL > 90.0 )
      &    STOP 'SUNAE--output argument EL out of range'
-      IF( AZ.LT.0.0 .OR. AZ.GT.360.0 )
+      IF( AZ < 0.0 .OR. AZ > 360.0 )
      &    STOP 'SUNAE--output argument AZ out of range'
 
-      RETURN
+      END SUBROUTINE SUNAE
 
-      END
-
+      end module orbit

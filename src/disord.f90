@@ -5,6 +5,7 @@
 
    implicit none
 
+   private
    public :: disord_t
 
    type, extends(abstract_radXfer_t) :: disord_t
@@ -56,8 +57,6 @@
    real :: om(nlyr)
    real :: pmcld(nlyr), pmaer(nlyr), pmsnw(nlyr), pmany(nlyr), pmray(nlyr)
 
-   allocate( this%nid(0:nlyr) )
-   allocate( this%dsdh(0:nlyr,nlyr) )
    allocate( this%dtauc(nlyr), this%ssalb(nlyr) )
    allocate( this%pmom(0:nstr,nlyr) )
 

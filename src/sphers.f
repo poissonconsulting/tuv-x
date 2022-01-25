@@ -11,6 +11,8 @@
 
       SUBROUTINE sphers(z, zen, dsdh, nid)
 
+      use debug, only : diagout
+
 *-----------------------------------------------------------------------------*
 *=  PURPOSE:                                                                 =*
 *=  Calculate slant path over vertical depth ds/dh in spherical geometry.    =*
@@ -63,9 +65,13 @@
       REAL :: re
       REAL :: ze(size(z))
 
-      REAL, parameter ::  dr = pi/180.
+      REAL, parameter ::  dr = pi/180._8
 
 * local 
+
+      real(8), parameter :: rZERO = 1._8
+      real(8), parameter :: rONE  = 1._8
+      real(8), parameter :: rNINETY  = 90._8
 
       INTEGER :: nz
       INTEGER :: i, j, k
@@ -95,18 +101,18 @@
 
 * initialize dsdh(i,j), nid(i)
       nid  = 0
-      dsdh = 0.0
+      dsdh = rZERO
 
 * calculate ds/dh of every layer
       layer_loop: DO i = 0, nlayer
         rpsinz = (re + zd(i)) * SIN(zenrad)
-        IF ( (zen > 90.0) .AND. (rpsinz < re) ) THEN
+        IF ( (zen > rNINETY) .AND. (rpsinz < re) ) THEN
            nid(i) = -1
         ELSE
 *
 * Find index of layer in which the screening height lies
 *
-           IF( zen <= 90.0 ) THEN
+           IF( zen <= rNINETY ) THEN
               id = i
            ELSE
               DO j = 1, nlayer
@@ -116,16 +122,16 @@
            END IF
  
            DO j = 1, id
-             sm = 1.0
-             IF(j == id .AND. id == i .AND. zen > 90.0)
-     $          sm = -1.0
+             sm = rONE
+             IF(j == id .AND. id == i .AND. zen > rNINETY)
+     $          sm = -rONE
              rj = re + zd(j-1)
              rjp1 = re + zd(j)
              dhj = zd(j-1) - zd(j)
              ga = rj*rj - rpsinz*rpsinz
              gb = rjp1*rjp1 - rpsinz*rpsinz
-             ga = MAX( 0.0_8,ga )
-             gb = MAX( 0.0_8,gb )
+             ga = MAX( rZERO,ga )
+             gb = MAX( rZERO,gb )
  
              IF(id > i .AND. j == id) THEN
                 dsj = SQRT( ga )

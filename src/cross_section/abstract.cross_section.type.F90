@@ -8,7 +8,6 @@
 module micm_abs_cross_section_type
 
   use musica_constants,                only : musica_dk, musica_ik
-  use micm_environment,                only : environment_t
 
   implicit none
   private

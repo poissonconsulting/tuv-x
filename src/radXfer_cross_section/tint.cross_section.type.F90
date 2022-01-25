@@ -5,26 +5,26 @@
 !> This tint_cross_section module
 
 !> The temperature interpolation cross_section type and related functions
-module micm_tint_cross_section_type
+module micm_radXfer_tint_cross_section_type
 
-  use micm_abs_cross_section_type,     only : abs_cross_section_t
-  use musica_constants,                only : musica_dk, musica_ik
+  use micm_radXfer_abs_cross_section_type,     only : abs_cross_section_t
+  use musica_constants,                        only : musica_dk, musica_ik
 
   implicit none
 
   private
   public :: tint_cross_section_t
 
-  type cross_section_t
+  type cross_section_parms_t
     real(musica_dk), allocatable :: temperature(:)
     real(musica_dk), allocatable :: deltaT(:)
     real(musica_dk), allocatable :: array(:,:)
-  end type cross_section_t
+  end type cross_section_parms_t
 
   !> Calculator for tint_cross_section
   type, extends(abs_cross_section_t) :: tint_cross_section_t
     !> The cross section array
-    type(cross_section_t), allocatable :: cross_section(:)
+    type(cross_section_parms_t), allocatable :: cross_section_parms(:)
   contains
     !> Initialize the cross section
     procedure :: initialize
@@ -39,19 +39,24 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Initialize tint_cross_section_t object
-  subroutine initialize( this, config, mdlLambdaEdge )
+  subroutine initialize( this, config, gridWareHouse, ProfileWareHouse )
 
     use musica_config,                   only : config_t
     use musica_string,                   only : string_t
     use netcdf_util,                     only : netcdf_t
     use photo_utils,                     only : inter2
     use musica_assert,                   only : die_msg
+    use micm_grid_warehouse,             only : grid_warehouse_t
+    use micm_1d_grid,                    only : abs_1d_grid_t
+    use micm_Profile_warehouse,     only : Profile_warehouse_t
 
     !> base cross section type
     class(tint_cross_section_t), intent(inout) :: this
-    real(musica_dk), intent(in)   :: mdlLambdaEdge(:)
     !> cross section configuration object
     type(config_t), intent(inout) :: config
+    !> The warehouses
+    type(grid_warehouse_t), intent(inout)         :: gridWareHouse
+    type(Profile_warehouse_t), intent(inout) :: ProfileWareHouse
 
 !   local variables
     integer(musica_ik), parameter :: iONE = 1_musica_ik
@@ -60,7 +65,7 @@ contains
     character(len=*), parameter :: Iam = 'tint cross section initialize: '
     character(len=*), parameter :: Hdr = 'cross_section_'
 
-    integer(musica_ik) :: retcode, nmdlLambda
+    integer(musica_ik) :: retcode
     integer(musica_ik) :: parmNdx, fileNdx, Ndxl, Ndxu
     integer(musica_ik) :: nParms, nTemps
     real(musica_dk)              :: tmp
@@ -70,20 +75,22 @@ contains
     character(len=:), allocatable :: msg
     type(netcdf_t), allocatable :: netcdf_obj
     type(string_t), allocatable :: netcdfFiles(:)
+    class(abs_1d_grid_t), pointer :: lambdaGrid
+    type(string_t)     :: Handle
 
     write(*,*) Iam,'entering'
-    !> set model wavelength array
-    this%mdl_lambda_edge = mdlLambdaEdge
-    nmdlLambda = size( this%mdl_lambda_edge )
-    this%mdl_lambda_center = .5_musica_dk*(this%mdl_lambda_edge(2:) + this%mdl_lambda_edge(1:nmdlLambda-1))
-    !> get cross section netcdf filespec
+    !> Get model wavelength grids
+    Handle = 'Photolysis, wavelength'
+    lambdaGrid => gridWareHouse%get_grid( Handle )
+
+    !> Get cross section netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found=found )
 
 has_netcdf_file: &
     if( found ) then
-      allocate( this%cross_section(size(netcdfFiles)) )
+      allocate( this%cross_section_parms(size(netcdfFiles)) )
 file_loop: &
-      do fileNdx = 1,size(this%cross_section)
+      do fileNdx = 1,size(this%cross_section_parms)
         allocate( netcdf_obj )
     !> read netcdf cross section parameters
         call netcdf_obj%read_netcdf_file( filespec=netcdfFiles(fileNdx)%to_char(), Hdr=Hdr )
@@ -93,7 +100,7 @@ file_loop: &
           write(msg,*) Iam//'File: ',trim(netcdfFiles(fileNdx)%to_char()),'  array must have 2 or more parameters'
           call die_msg( 400000002, msg )
         endif
-        associate( Xsection => this%cross_section(fileNdx) )
+        associate( Xsection => this%cross_section_parms(fileNdx) )
     !> interpolation temperatures must be in netcdf file
         if( allocated(netcdf_obj%temperature) ) then
           Xsection%temperature = netcdf_obj%temperature
@@ -132,13 +139,13 @@ file_loop: &
     !> interpolate from data to model wavelength grid
         if( allocated(netcdf_obj%wavelength) ) then
           if( .not. allocated(Xsection%array) ) then
-            allocate(Xsection%array(nmdlLambda-1,nParms))
+            allocate(Xsection%array(lambdaGrid%ncells_,nParms))
           endif
           do parmNdx = 1,nParms
             data_lambda    = netcdf_obj%wavelength
             data_parameter = netcdf_obj%parameters(:,parmNdx)
             call this%addpnts( config, data_lambda, data_parameter )
-            call inter2(xto=this%mdl_lambda_edge, &
+            call inter2(xto=lambdaGrid%edge_, &
                         yto=Xsection%array(:,parmNdx), &
                         xfrom=data_lambda, &
                         yfrom=data_parameter,ierr=retcode)
@@ -161,40 +168,65 @@ file_loop: &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Calculate the photorate cross section for a given set of environmental conditions
-  function run( this, environment ) result( cross_section )
+  function run( this, gridWareHouse, ProfileWareHouse ) result( cross_section )
 
-    use micm_environment,                only : environment_t
+    use micm_grid_warehouse,             only : grid_warehouse_t
+    use micm_1d_grid,                    only : abs_1d_grid_t
+    use micm_Profile_warehouse,     only : Profile_warehouse_t
+    use micm_Profile,               only : abs_Profile_t
+    use musica_string,                   only : string_t
 
+    !> Arguments
     !> base cross section
-    class(tint_cross_section_t), intent(in) :: this
-    !> Environmental conditions
-    class(environment_t), intent(in)        :: environment
+    class(tint_cross_section_t), intent(in)       :: this
+    !> The warehouses
+    type(grid_warehouse_t), intent(inout)         :: gridWareHouse
+    type(Profile_warehouse_t), intent(inout) :: ProfileWareHouse
     !> Calculated cross section
-    real(kind=musica_dk)                    :: cross_section(size(this%mdl_lambda_center))
+    real(kind=musica_dk), allocatable             :: cross_section(:,:)
 
-    character(len=*), parameter :: Iam = 'tint cross section calculate: '
+    !> Local variables
+    character(len=*), parameter :: Iam = 'radXfer tint cross section calculate: '
     integer(musica_ik) :: nTemp
-    integer(musica_ik) :: fileNdx, tNdx
+    integer(musica_ik) :: fileNdx, tNdx, layer
     real(musica_dk)    :: Tadj, Tstar
+    real(musica_dk), allocatable  :: wrkCrossSection(:,:)
+    class(abs_1d_grid_t), pointer :: zGrid
+    class(abs_1d_grid_t), pointer :: lambdaGrid
+    class(abs_Profile_t), pointer :: mdlTemperature
+    type(string_t)     :: Handle
 
     write(*,*) Iam,'entering'
 
-    cross_section = 0.0_musica_dk
-    do fileNdx = 1,size(this%cross_section)
-      associate( Temp => this%cross_section(fileNdx)%temperature, wrkXsect => this%cross_section(fileNdx) )
+    Handle = 'Vertical Z'
+    zGrid => gridWareHouse%get_grid( Handle )
+    Handle = 'Photolysis, wavelength'
+    lambdaGrid => gridWareHouse%get_grid( Handle )
+    Handle = 'Temperature'
+    mdlTemperature => ProfileWareHouse%get_Profile( Handle )
+
+    allocate( wrkCrossSection(lambdaGrid%ncells_,zGrid%ncells_) )
+    wrkCrossSection = 0.0_musica_dk
+
+    do fileNdx = 1,size(this%cross_section_parms)
+      associate( Temp => this%cross_section_parms(fileNdx)%temperature, wrkXsect => this%cross_section_parms(fileNdx) )
       nTemp = size( Temp )
-      Tadj   = min( max( environment%temperature,Temp(1) ),Temp(nTemp) )
-      do tNdx = 2,nTemp 
-        if( Tadj <= Temp(tNdx) ) then
-          exit
-        endif
+      do layer = 1,zGrid%ncells_
+        Tadj   = min( max( mdlTemperature%mid_val_(layer),Temp(1) ),Temp(nTemp) )
+        do tNdx = 2,nTemp 
+          if( Tadj <= Temp(tNdx) ) then
+            exit
+          endif
+        enddo
+        tNdx = tNdx - 1
+        Tstar = (Tadj - Temp(tNdx))/wrkXsect%deltaT(tNdx)
+        wrkCrossSection(:,layer) = wrkCrossSection(:,layer) + wrkXsect%array(:,tNdx) &
+                                 + Tstar * (wrkXsect%array(:,tNdx+1) - wrkXsect%array(:,tNdx))
       enddo
-      tNdx = tNdx - 1
-      Tstar = (Tadj - Temp(tNdx))/wrkXsect%deltaT(tNdx)
-      cross_section = cross_section + wrkXsect%array(:,tNdx) &
-                    + Tstar * (wrkXsect%array(:,tNdx+1) - wrkXsect%array(:,tNdx))
       end associate
     enddo
+
+    cross_section = transpose( wrkCrossSection )
 
     write(*,*) Iam,'exiting'
 
@@ -212,9 +244,9 @@ file_loop: &
 
    write(*,*) Iam,'entering'
 
-   if( allocated(this%cross_section) ) then
-     do ndx = 1,size(this%cross_section)
-       associate( Xsection => this%cross_section(ndx) )
+   if( allocated(this%cross_section_parms) ) then
+     do ndx = 1,size(this%cross_section_parms)
+       associate( Xsection => this%cross_section_parms(ndx) )
        if( allocated(Xsection%array) ) then
          deallocate(Xsection%array)
        endif
@@ -226,17 +258,11 @@ file_loop: &
        endif
        end associate
      enddo
-     deallocate(this%cross_section)
-   endif
-   if( allocated(this%mdl_lambda_edge) ) then
-     deallocate(this%mdl_lambda_edge)
-   endif
-   if( allocated(this%mdl_lambda_center) ) then
-     deallocate(this%mdl_lambda_center)
+     deallocate(this%cross_section_parms)
    endif
 
    write(*,*) Iam,'exiting'
    
    end subroutine finalize
 
-end module micm_tint_cross_section_type
+end module micm_radXfer_tint_cross_section_type

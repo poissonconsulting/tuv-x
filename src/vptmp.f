@@ -34,6 +34,14 @@
       INTEGER :: i, nd, istat
       REAL    :: altitude, temperature
       REAL, allocatable :: zd(:), td(:)
+
+      interface
+        FUNCTION inter1(xtarget, xsrc,ysrc) result( ytarget )
+          REAL, intent(in) :: xtarget(:)
+          REAL, intent(in) :: xsrc(:), ysrc(:)
+          REAL :: ytarget(size(xtarget))
+        END FUNCTION inter1
+      end interface
 *_______________________________________________________________________
 
 
@@ -68,7 +76,17 @@
 
 * interpolate onto z-grid
       nz = size(z)
-      CALL inter1(nz,z,tlev, nd,zd,td)
+      tlev = inter1(z, zd,td)
+
+      write(*,*) 'vptmp: data z grid'
+      write(*,'(1p10g15.7)') zd
+      write(*,*) ' '
+      write(*,*) 'vptmp: Temp on data z grid'
+      write(*,'(1p10g15.7)') td
+      write(*,*) ' '
+      write(*,*) 'vptmp: Temp on mdl z grid edges'
+      write(*,'(1p10g15.7)') tlev
+      write(*,*) ' '
 
 * compute layer-averages
       tlay(1:nz-1) = .5*(tlev(2:nz) + tlev(1:nz-1))

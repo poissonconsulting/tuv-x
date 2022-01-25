@@ -8,8 +8,8 @@
       contains
 
       FUNCTION setno2(ipbl, zpbl, xpbl, 
-     $     no2new, z, wl, no2xs, 
-     $     tlay, dcol) result(dtno2)
+     $                no2new, z, nbins, no2xs, 
+     $                tlay, dcol) result(dtno2)
 *-----------------------------------------------------------------------------*
 *=  PURPOSE:                                                                 =*
 *=  Set up an altitude profile of NO2 molecules, and corresponding absorption=*
@@ -37,11 +37,11 @@
 ********
 
       INTEGER, intent(in) :: ipbl
+      INTEGER, intent(in) :: nbins
       REAL, intent(in)    :: zpbl, xpbl
 
 * grids:
 
-      REAL, intent(in) :: wl(:)
       REAL, intent(in) :: z(:)
       REAL, intent(in) :: no2new
 
@@ -55,19 +55,22 @@
 * output:
 ********
 
-      REAL :: dtno2(size(z)-1,size(wl)-1)
+      REAL :: dtno2(size(z)-1,nbins)
 
 ********
 * local:
 ********
 
-
 * nitrogen dioxide profile data:
 
       INTEGER, parameter :: nd = 3
+      REAL, parameter    :: km2cm = 1.e5
+      REAL, parameter    :: hscale = 4.5*km2cm
+      REAL, parameter    :: ppb = 1.e-9
+      REAL, parameter    :: ppt = 1.e-12
+
       REAL :: cz(size(z)-1)
       REAL :: zd(nd), no2(nd), cd(nd-1)
-      REAL :: hscale
       REAL :: colold, scale
       REAL :: sno2
 
@@ -88,14 +91,13 @@
 * compute column increments (alternatively, can specify these directly)
 
       DO i = 1, nd - 1
-         cd(i) = (no2(i+1)+no2(i)) * 1.E5 * .5 * (zd(i+1)-zd(i))
+         cd(i) = (no2(i+1)+no2(i)) * km2cm * .5 * (zd(i+1)-zd(i))
       ENDDO
 
 * Include exponential tail integral from top level to infinity.
 * fold tail integral into top layer
 * specify scale height near top of data (use ozone value)
 
-      hscale = 4.50e5
       cd(nd-1) = cd(nd-1) + hscale * no2(nd)
 
 ***********
@@ -113,7 +115,7 @@
 
       IF(sum(cz(:)) < 1.) THEN
          DO i = 1, nz-1
-            cz(i) = 1.E-12 * dcol(i)
+            cz(i) = ppt * dcol(i)
          ENDDO
       ENDIF
       colold = sum(cz(:))
@@ -127,7 +129,7 @@
          write(*,*) 'pbl NO2 = ', xpbl, ' ppb'
          DO i = 1, nz-1
             IF (i .LE. ipbl) THEN
-               cz(i) = xpbl*1.E-9 * dcol(i)
+               cz(i) = xpbl * ppb * dcol(i)
             ELSE
                cz(i) = 0.
             ENDIF
@@ -137,7 +139,7 @@
 ************************************
 * calculate optical depth for each layer.  Output: dtno2(kz,kw)
 
-      DO l = 1, size(wl)-1
+      DO l = 1, nbins
          dtno2(:,l) = cz(:)*no2xs(:,l)
       ENDDO
 

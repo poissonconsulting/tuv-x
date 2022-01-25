@@ -10,7 +10,7 @@
       SUBROUTINE setaer(
      $     ipbl, zpbl, aod330,
      $     tau550, ssaaer, alpha,
-     $     z, wl, dtaer, omaer, gaer)
+     $     z, wc, dtaer, omaer, gaer)
 *-----------------------------------------------------------------------------*
 *=  PURPOSE:                                                                 =*
 *=  Set up an altitude profile of aerosols, and corresponding absorption     =*
@@ -31,6 +31,7 @@
 *=            wavelength                                                     =*
 *-----------------------------------------------------------------------------*
 
+      use debug,      only : diagout
       use tuv_params, only : kout, nzero, pzero
 
       INTEGER, parameter :: kdata = 51
@@ -42,7 +43,7 @@
       REAL, intent(in) :: aod330
       REAL, intent(in) :: tau550
       REAL, intent(in) :: ssaaer, alpha
-      REAL, intent(in) :: wl(:)
+      REAL, intent(in) :: wc(:)
       REAL, intent(in) :: z(:)
 
 * output: (on converted grid)
@@ -52,18 +53,19 @@
 * local:
 
       INTEGER :: nz
-      INTEGER :: nw
+      INTEGER :: nbins
       INTEGER :: i, iw, nd
       REAL    :: colold
-      REAL    :: wc, wscale
-      REAL    :: zd(kdata), aer(kdata)
+      REAL    :: wscale
+*     REAL    :: zd(kdata), aer(kdata)
+      REAL, allocatable :: zd(:), aer(:)
       REAL    :: cd(kdata-1), omd(kdata-1), gd(kdata-1)
       REAL    :: womd(kdata-1), wgd(kdata-1)
 
       REAL    :: cz(size(z)-1)
       REAL    :: omz(size(z)-1)
       REAL    :: gz(size(z)-1)
-      REAL    :: aodw(size(wl)-1), ssaw(size(wl)-1)
+      REAL    :: aodw(size(wc)), ssaw(size(wc))
       REAL    :: fract(ipbl)
 
 * Aerosol data from Elterman (1968)
@@ -83,14 +85,14 @@
      9     1.56E-06,1.19E-06,9.14E-07 /)
 *_______________________________________________________________________
 
-      nz = size(z)
-      nw = size(wl)
+      nz    = size(z)
+      nbins = size(wc)
 
 * Altitudes corresponding to Elterman profile, from bottom to top:
 
       WRITE(kout,*)'aerosols:  Elterman (1968) continental profile'
       nd = 51
-      zd(:) = (/ (REAL(i-1),i=1,kdata) /)
+      zd = (/ (REAL(i-1),i=1,kdata) /)
 
 * assume these are point values (at each level), so find column
 * increments
@@ -100,6 +102,12 @@
       DO i = 1, nd - 1
          cd(i) = .5 * (aer(i+1) + aer(i))
       ENDDO
+
+      call diagout( 'rawOD.old',aer )
+      call diagout( 'inpaerOD.old',cd )
+      write(*,*) 'setaer: hardwired OD'
+      write(*,'(1p10g15.7)') aer
+      write(*,'(1p10g15.7)') cd
 
 *********** end data input.
 
@@ -114,6 +122,10 @@
       CALL inter3(nz,z,cz, nd,zd,cd, 1)
       CALL inter3(nz,z,omz, nd, zd,womd, 1)
       CALL inter3(nz,z,gz , nd, zd,wgd, 1)
+
+      call diagout( 'cz.aer.old',cz )
+      call diagout( 'omz.aer.old',omz )
+      call diagout( 'gz.aer.old',gz )
 
       WHERE( cz(:) > 0. )
          omz(:) = omz(:)/cz(:)
@@ -139,11 +151,10 @@
 * assign at all wavelengths
 * (can move wavelength loop outside if want to vary with wavelength)
 
-      DO iw = 1, nw - 1
-         wc = .5*(wl(iw)+wl(iw+1))
+      DO iw = 1, nbins
 * Elterman's data are for 340 nm, so assume optical depth scales 
 * inversely with first power of wavelength.
-         wscale = (340./wc)**alpha
+         wscale = (340./wc(iw))**alpha
 * optical depths:
          dtaer(:,iw) = cz(:)  * wscale
          omaer(:,iw) = omz(:)
@@ -155,14 +166,13 @@
       IF(ipbl > 0) THEN	
          write (*,*) 'pbl aerosols, aod330 = ', aod330
 * create wavelength-dependent optical depth and single scattering albedo:
-         DO iw = 1, nw-1
-            wc = .5*(wl(iw)+wl(iw+1))
-            aodw(iw) = aod330*(wc/330.)**(-1.0)
-            IF(wc < 400.) THEN
+         DO iw = 1, nbins
+            aodw(iw) = aod330*(wc(iw)/330.)**(-1.0)
+            IF(wc(iw) < 400.) THEN
                ssaw(iw) = 0.6
             ELSE
                ssaw(iw) = 0.9
-            ENDIF	
+            ENDIF
          ENDDO
 
 * divide aod among pbl layers, overwrite Elterman profile in pbl
@@ -170,8 +180,8 @@
          DO i = 1, ipbl
             fract(i) = (z(i+1) - z(i))/zpbl
          ENDDO
-	
-         DO iw = 1, nw-1
+
+         DO iw = 1, nbins
             dtaer(1:ipbl,iw) = aodw(iw) * fract(1:ipbl)
             omaer(1:ipbl,iw) = ssaw(iw)
          ENDDO

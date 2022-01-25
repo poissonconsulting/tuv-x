@@ -1,3 +1,7 @@
+      MODULE MO_SWCHEM
+
+      CONTAINS
+
       SUBROUTINE swchem(nw,wl,nz,tlev,airden,
      $                  j,sq,jlabel,tpflag)
 
@@ -28,7 +32,10 @@
 *=           defined                                                         =*
 *-----------------------------------------------------------------------------*
 
+      use MO_RXN
+
       IMPLICIT NONE
+
       INCLUDE 'params'
 
 * input
@@ -378,5 +385,7 @@ c      CALL r10(nw,wl,wc,nz,tlev,airden,j,sq,jlabel,tpflag)
 ****************************************************************
 
       IF (j .GT. kj) STOP '1002'
-      RETURN
-      END
+
+      END SUBROUTINE swchem
+
+      END MODULE MO_SWCHEM

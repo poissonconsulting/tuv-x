@@ -21,6 +21,8 @@ set(SW_SRC spectral_wght/UV_Index.spectral_wght.type.F90
            spectral_wght/uv-b_280_315_nm.spectral_wght.type.F90
            spectral_wght/uv-b_280_320_nm.spectral_wght.type.F90
            spectral_wght/visplus.spectral_wght.type.F90
+           spectral_wght/spectral_wght_warehouse.F90
+           spectral_wght/spectral_wght_factory.F90
            PARENT_SCOPE)
 
 ################################################################################

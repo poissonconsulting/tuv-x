@@ -1,11 +1,11 @@
       SUBROUTINE wrflut(nw, wl, nz, tlev, aircon)
-
-
 * Generates look-up tables for WRF-Chem, of pre-interpolated 
 * molecular action spectra, xs*qy, as fnct of j, w, T, n.
 * Uses swchem and its routines, bottom layer iz = 1, to overwrite 
 * at desired T(TEMP) and n(aircon).  
 * STOPS at completion.
+
+      use MO_SWCHEM, only : swchem
 
       IMPLICIT NONE
       INCLUDE 'params'

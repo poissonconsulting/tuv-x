@@ -9,6 +9,7 @@
 
       SUBROUTINE gridw(wstart, wstop, nwint, wl,wc,wu)
 
+      use tuv_params, only : kw, kin
 *-----------------------------------------------------------------------------*
 *=  PURPOSE:                                                                 =*
 *=  Create the wavelength grid for all interpolations and radiative transfer =*
@@ -25,10 +26,6 @@
 *=  MOPT- INTEGER OPTION for wave-length IF 3 good for JO2                (O)=*
 *-----------------------------------------------------------------------------*
 
-      IMPLICIT NONE
-
-      INCLUDE 'params'
-
 * input:
 
       INTEGER, intent(inout) :: nwint
@@ -38,23 +35,20 @@
 
       REAL, allocatable, intent(out) :: wl(:), wc(:), wu(:)
 
-      integer, allocatable :: wn(:)
-
 * local:
 
+      integer, allocatable :: wn(:)
       INTEGER :: mopt, nw
       INTEGER :: iw, i
       REAL    :: wincr
 
-      CHARACTER*40 fi
-      CHARACTER*20 wlabel
+      CHARACTER(len=40) :: fi
+      CHARACTER(len=20) :: wlabel
 
-      REAL airout
-      INTEGER mrefr
-
-      REAL dum
-
-      LOGICAL ok
+      INTEGER :: mrefr
+      REAL    :: airout
+      REAL    :: dum
+      LOGICAL :: ok
 *_______________________________________________________________________
 
 **** chose wavelength grid
@@ -72,16 +66,22 @@
 *     mopt = 12  fastJ2, Bian and Prather, 2002
 *     mopt = 13  UV-b, UV-a, Visible
 
-      mopt = 1
-
-      IF(nwint .EQ. -156) mopt = 2
-      IF(nwint .EQ. -7) mopt = 4
-
-      IF(nwint .eq. -10) mopt = 10
-      IF(nwint .eq. -11) mopt = 11
-      IF(nwint .eq. -12) mopt = 12
-      IF(nwint .eq. -13) mopt = 13
-
+      select case( nwint )
+        case( -7 )
+          mopt = 4
+        case( -10 )
+          mopt = 10
+        case( -11 )
+          mopt = 11
+        case( -12 )
+          mopt = 12
+        case( -13 )
+          mopt = 13
+        case( -156 )
+          mopt = 2
+        case default
+          mopt = 1
+      end select
 
       SELECT CASE( mopt )
 
@@ -95,7 +95,7 @@
 
       wincr = (wstop - wstart) / REAL (nwint)
       DO iw = 1, nw-1
-         wl(iw) = wstart + wincr*FLOAT(iw-1)
+         wl(iw) = wstart + wincr*real(iw-1)
          wu(iw) = wl(iw) + wincr
          wc(iw) = .5*(wl(iw) + wu(iw))
       ENDDO
@@ -198,7 +198,7 @@ c      wlabel = 'isaksen.grid'
       DO i = 1, 3859
          iw = 3859 - i + 39
          wn(iw) = 10000 + 10*(i-1)
-         wl(iw) = 1.E7/float(wn(iw))
+         wl(iw) = 1.E7/real(wn(iw))
       ENDDO
 
       nwint = nw - 1
@@ -231,9 +231,9 @@ c      wlabel = 'isaksen.grid'
       wlabel = 'grid in air wavelengths'
       nw = nwint + 1
       allocate( wl(nw), wc(nw-1), wu(nw-1) )
-      wincr = (wstop - wstart) / FLOAT (nwint)
+      wincr = (wstop - wstart) / real (nwint)
       DO iw = 1, nw-1
-         wl(iw) = wstart + wincr*FLOAT(iw-1)
+         wl(iw) = wstart + wincr*real(iw-1)
          wu(iw) = wl(iw) + wincr
          wc(iw) = ( wl(iw) + wu(iw) )/2.
       ENDDO
@@ -290,57 +290,45 @@ c 333  format(3(0pf11.4))
 *_______________________________________________________________________
 * Bian and Prather 2002
         CASE( 12 )
-      nw = 8
-      allocate( wl(nw), wc(nw-1), wu(nw-1) )
-      wl(1) = 291.0
-      wl(2) = 298.3
-      wl(3) = 307.5
-      wl(4) = 312.5
-      wl(5) = 320.3
-      wl(6) = 345.0
-      wl(7) = 412.5
-      wl(8) = 850.0
+          nw = 8
+          allocate( wl(nw), wc(nw-1), wu(nw-1) )
+          wl = (/ 291., 298.3, 307.5, 312.5, 320.3, 345., 412.5, 850. /)
 
-      DO iw = 1, nw-1
-         wu(iw) = wl(iw+1)
-         wc(iw) = 0.5*(wl(iw) + wu(iw))
-      ENDDO
+          DO iw = 1, nw-1
+            wu(iw) = wl(iw+1)
+            wc(iw) = 0.5*(wl(iw) + wu(iw))
+          ENDDO
 
 *_______________________________________________________________________
 * UV-b, UV-A, Vis
 
         CASE( 13 )
-      nw = 4
-      allocate( wl(nw), wc(nw-1), wu(nw-1) )
-      wl(1) = 280.0
-      wl(2) = 315.0
-      wl(3) = 400.0
-      wl(4) = 700.0
+          nw = 4
+          allocate( wl(nw), wc(nw-1), wu(nw-1) )
+          wl = (/ 280., 315., 400., 700. /)
 
-      DO iw = 1, nw-1
-         wu(iw) = wl(iw+1)
-         wc(iw) = 0.5*(wl(iw) + wu(iw))
-      ENDDO
+          DO iw = 1, nw-1
+            wu(iw) = wl(iw+1)
+            wc(iw) = 0.5*(wl(iw) + wu(iw))
+          ENDDO
 
-        CASE DEFAULT
-          write(*,*) ' '
-          write(*,*) 'gridw: option ',mopt,' is invalid'
-          stop 'Bad Option'
+      CASE DEFAULT
+        write(*,*) ' '
+        write(*,*) 'gridw: option ',mopt,' is invalid'
+        stop 'Bad Option'
       END SELECT
 *_______________________________________________________________________
 
 * check grid for assorted improprieties:
 
-      CALL gridck(kw,nw,wl,ok)
+      CALL gridck(kw,wl,ok)
 
       IF (.NOT. ok) THEN
          WRITE(*,*)'STOP in GRIDW:  The w-grid does not make sense'
          STOP
       ENDIF
 
-*_______________________________________________________________________
-
-      END
+      END SUBROUTINE gridw
 
 *=============================================================================*
 
@@ -356,9 +344,7 @@ c 333  format(3(0pf11.4))
 *=  z   - REAL, vector of altitude levels (in km)                         (O)=*
 *-----------------------------------------------------------------------------*
 
-      IMPLICIT NONE
-
-      INCLUDE 'params'
+      use tuv_params, only : kz
 
 * input surface elevation, altitude for output
 
@@ -420,7 +406,7 @@ c 333  format(3(0pf11.4))
 * entire grid (nz levels) in increments zincr 
 
       WRITE(*,*) 'equally spaced z-grid'
-      zincr = (zstop - zstart) / FLOAT(nz - 1)
+      zincr = (zstop - zstart) / real(nz - 1)
       nlev = nz-1
       n = 1
       CALL buildz(zincr, nlev, n, z)
@@ -503,19 +489,19 @@ c 333  format(3(0pf11.4))
       nz = 99
       z(1) = zstart
       DO i = 2, 41
-         z(i) = z(1) + 0.1*FLOAT(i-1)
+         z(i) = z(1) + 0.1*real(i-1)
       ENDDO
       DO i = 42, 61
-         z(i) = z(41) + 0.2*FLOAT(i-41)
+         z(i) = z(41) + 0.2*real(i-41)
       ENDDO
       DO i = 62, 83
-         z(i) = z(61) + 1.*FLOAT(i-61)
+         z(i) = z(61) + 1.*real(i-61)
       ENDDO
       DO i = 84, 93
-         z(i) = z(83) + 2.*FLOAT(i-83)
+         z(i) = z(83) + 2.*real(i-83)
       ENDDO
       DO i = 94, 99
-         z(i) = z(93) + 5.*FLOAT(i-93)
+         z(i) = z(93) + 5.*real(i-93)
       ENDDO
 		
         CASE( 5 )
@@ -523,7 +509,7 @@ c 333  format(3(0pf11.4))
 
 * insert your grid values here:
 * specify:
-*  nz = total number of altutudes
+*  nz = total number of altitudes
 * Table:  z(iz), where iz goes from 1 to nz
 * trivial example of 2-layer (3-altitudes) shown below, user should modify
       WRITE(*,*) 'user-defined grid, named...'
@@ -538,7 +524,7 @@ c 333  format(3(0pf11.4))
 
 * insert your grid values here:
 * specify:
-*  nz = total number of altutudes
+*  nz = total number of altitudes
 * Table:  z(iz), where iz goes from 1 to nz
 
       WRITE(*,*) 'user-defined grid, named...'
@@ -573,8 +559,7 @@ c 333  format(3(0pf11.4))
 
 * check grid for assorted improprieties:
 
- 99	CONTINUE
-      CALL gridck(kz,nz,z,ok)
+      CALL gridck(kz,z,ok)
 
       IF (.NOT. ok) THEN
          WRITE(*,*)'STOP in GRIDZ:  The z-grid does not make sense'
@@ -584,29 +569,27 @@ c 333  format(3(0pf11.4))
       END SUBROUTINE gridz
 
 *=============================================================================*
-      SUBROUTINE  buildz(zincr,nlev,n,z)
+      SUBROUTINE buildz(zincr,nlev,n,z)
 *-----------------------------------------------------------------------------*
 *= Purpose: to construct the altitude grid from parameters in gridz          =*
 *-----------------------------------------------------------------------------*
 
-      IMPLICIT NONE
-      INCLUDE 'params'
 
-      REAL zincr                   ! i
-      INTEGER nlev                 ! i
-      INTEGER n                    ! i/o
-      REAL z(kz)                   ! i/o
-      INTEGER i, j                    ! internal
+      INTEGER, intent(in)    :: nlev
+      INTEGER, intent(inout) :: n
+      REAL, intent(in)       :: zincr
+      REAL, intent(inout)    :: z(:)
+
+      INTEGER :: i, j
 
       j = 0
       DO i = n + 1, n + nlev
         j = j + 1
-        z(i) = z(n) + FLOAT(j)*zincr
+        z(i) = z(n) + real(j)*zincr
       ENDDO
       n = n + nlev
 
-      RETURN
-      END
+      END SUBROUTINE buildz
 
 *=============================================================================*
 
@@ -615,78 +598,64 @@ c 333  format(3(0pf11.4))
      $     lzenit, tstart, tstop,
      $     t, sza, sznoon, esrm2)
 
+      use orbit, only        : calend, sunae
+
 *-----------------------------------------------------------------------------*
 *=  Subroutine to create time (or solar zenith angle) grid                   =*
 *=  Also computes earth-sun distance (1/R**2) correction.                    =*
 *-----------------------------------------------------------------------------*
 
-      IMPLICIT NONE
-
-      INCLUDE 'params'
-
 * INPUTS
-
-      REAL lat, lon, tmzone
-      INTEGER iyear, imonth, iday
-      LOGICAL lzenit
-      REAL tstart, tstop
-
+      INTEGER, intent(in) :: iyear, imonth, iday
+      REAL, intent(in)    :: lat, lon, tmzone
+      REAL, intent(in)    :: tstart, tstop
+      LOGICAL, intent(in) :: lzenit
 
 * OUTPUTS
-
       REAL, intent(out) :: sznoon
       REAL, intent(out) :: sza(:)
       REAL, intent(out) :: t(:), esrm2(:)
 
 * INTERNAL
-
-      INTEGER it
-      REAL ut, dt
-
-      INTEGER nt
-      INTEGER jday, nday
-      LOGICAL oky, okm, okd
-
-      REAL az, el, elnoon, soldia, soldst
+      INTEGER :: it
+      INTEGER :: nt
+      INTEGER :: jday, nday
+      REAL    :: ut, dt
+      REAL    :: az, el, elnoon, soldia, soldst
+      LOGICAL :: oky, okm, okd
 
 *  switch for refraction correction to solar zenith angle. Because
 * this is only for the observed sza at the surface, do not use.
 
-      LOGICAL lrefr
-      DATA lrefr /.FALSE./
+      LOGICAL, parameter :: lrefr = .FALSE.
 
 ***************
       nt = size(sza)
-      IF(nt .EQ. 1) THEN
+      IF(nt == 1) THEN
          dt = 0.
       ELSE
-         dt = (tstop - tstart) / FLOAT(nt - 1)
+         dt = (tstop - tstart) / real(nt - 1)
       ENDIF
 
-      DO 10 it = 1, nt
-         t(it) = tstart + dt * FLOAT(it - 1)
-
+      DO it = 1, nt
+         t(it) = tstart + dt * real(it - 1)
 * solar zenith angle calculation:
 *  If lzenit = .TRUE., use selected solar zenith angles, also
 *  set Earth-Sun distance to 1 AU.
-
          IF (lzenit) THEN
             sza(it) = t(it)
             esrm2(it) = 1.
-
 *  If lzenit = .FALSE., compute solar zenith angle for specified
 * location, date, time of day.  Assume no refraction (lrefr = .FALSE.)
 *  Also calculate corresponding
 * Earth-Sun correcton factor. 
-
          ELSE
             CALL calend(iyear, imonth, iday,
      $           jday, nday, oky, okm, okd)
             IF( oky .AND. okm .AND. okd) THEN
-
                ut = t(it) - tmzone
                CALL sunae(iyear, jday, ut, lat, lon, lrefr,
-     &              elnoon, az, el, soldia, soldst )
+     $              elnoon, az, el, soldia, soldst )
                sza(it) = 90. - el
                sznoon = 90. - elnoon
                esrm2(it) = 1./(soldst*soldst)
@@ -695,15 +664,13 @@ c 333  format(3(0pf11.4))
                STOP ' in gridt '
             ENDIF
          ENDIF
-            
- 10   CONTINUE
+      ENDDO
 
       END SUBROUTINE gridt
 
 *=============================================================================*
 
-      SUBROUTINE gridck(k,n,x,ok)
-
+      SUBROUTINE gridck(k,x,ok)
 *-----------------------------------------------------------------------------*
 *=  PURPOSE:                                                                 =*
 *=  Check a grid X for various improperties.  The values in X have to comply =*
@@ -722,60 +689,44 @@ c 333  format(3(0pf11.4))
 *=                .FALSE.-> X violates at least one of 1)-5)                 =*
 *-----------------------------------------------------------------------------*
 
-      IMPLICIT NONE
-
-      INCLUDE 'params'
+      use tuv_params, only : kout
 
 * input:
-      INTEGER k, n
-      REAL x(k)
+      INTEGER, intent(in) :: k
+      REAL, intent(in)    :: x(:)
 
 * output:
-      LOGICAL ok
+      LOGICAL, intent(out) :: ok
 
-* local:
-      INTEGER i
-*_______________________________________________________________________
+      INTEGER :: n
 
-      ok = .TRUE.
+      ok = .false.
+      n  = size(x)
 
 * check if dimension meaningful and within bounds
 
-      IF (n .GT. k) THEN
-         ok = .false.
+      IF (n > k) THEN
          WRITE(kout,100)
-         RETURN
-      ENDIF         
-  100 FORMAT('Number of data exceeds dimension')
-
-      IF (n .LT. 2) THEN
-         ok = .FALSE.
+      ELSEIF (n < 2) THEN
          WRITE(kout,101)
-         RETURN
-      ENDIF
-  101 FORMAT('Too few data, number of data points must be >= 2')
 
 * disallow negative grid values
-
-      IF(x(1) .LT. 0.) THEN
-         ok = .FALSE.
+      ELSEIF(x(1) < 0.) THEN
          WRITE(kout,105)
-         RETURN
-      ENDIF
-  105 FORMAT('Grid cannot start below zero')
 
 * check sorting
+      ELSEIF( any( x(1:n-1) >= x(2:n) ) ) THEN
+         WRITE(kout,110)
+      ELSE
+         ok = .TRUE.
+      ENDIF
 
-      DO 10, i = 2, n
-         IF( x(i) .LE. x(i-1)) THEN
-            ok = .FALSE.
-            WRITE(kout,110)
-            RETURN
-         ENDIF
-   10 CONTINUE
+  100 FORMAT('Number of data exceeds dimension')
+  101 FORMAT('Too few data, number of data points must be >= 2')
+  105 FORMAT('Grid cannot start below zero')
   110 FORMAT('Grid is not sorted or contains multiple values')
 *_______________________________________________________________________
 
-      END
+      END SUBROUTINE gridck
 
       END MODULE GRIDS

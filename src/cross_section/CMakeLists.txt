@@ -24,6 +24,10 @@ set(CROSS_SRC cross_section/acetone-ch3co_ch3.cross_section.type.F90
               cross_section/oclo.cross_section.type.F90
               cross_section/rono2.cross_section.type.F90
               cross_section/t_butyl_nitrate.cross_section.type.F90
+              cross_section/tint.cross_section.type.F90
+              cross_section/o3.tint.cross_section.type.F90
+              cross_section/abstract.cross_section.type.F90
+              cross_section/cross_section_factory.F90
               PARENT_SCOPE)
 
 ################################################################################

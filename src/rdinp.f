@@ -624,7 +624,10 @@ c      finame = tmpfil(1:nlen)
      $     ljvals, ijfix,  nmj,    iwfix,  itfix,  izfix,
      $     ns, ls, ims, slabel, nj, lj, imj, jlabel)
 
+      use orbit, only : calend
+
       IMPLICIT NONE
+
       INCLUDE 'params'
 
 * Input/output variables

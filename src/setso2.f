@@ -8,8 +8,7 @@
       contains
 
       FUNCTION setso2(ipbl, zpbl, xpbl,
-     $     so2new, z, wl, so2xs, tlay, dcol) result(dtso2)
-
+     $     so2new, z, nbins, so2xs, tlay, dcol) result(dtso2)
 *-----------------------------------------------------------------------------*
 *=  PURPOSE:                                                                 =*
 *=  Set up an altitude profile of SO2 molecules, and corresponding absorption=*
@@ -40,10 +39,10 @@
 * input:
 ********
       INTEGER, intent(in) :: ipbl
+      INTEGER, intent(in) :: nbins
       REAL, intent(in)    :: zpbl, xpbl
 
 * grids:
-      REAL, intent(in) :: wl(:)
       REAL, intent(in) :: z(:)
 
       REAL, intent(in) :: so2new
@@ -57,13 +56,17 @@
 * output:
 ********
 
-      REAL :: dtso2(size(z)-1,size(wl)-1)
+      REAL :: dtso2(size(z)-1,nbins)
 
 ********
 * local:
 ********
 
-      INTEGER :: nw
+      REAL, parameter :: km2cm = 1.e5
+      REAL, parameter :: hscale = 4.5*km2cm
+      REAL, parameter :: ppb = 1.e-9
+      REAL, parameter :: ppt = 1.e-12
+
       INTEGER :: nz
       REAL    :: cz(size(z)-1)
 
@@ -71,7 +74,6 @@
       INTEGER, parameter :: nd = 3
 
       REAL :: zd(nd), so2(nd), cd(nd-1)
-      REAL :: hscale
       REAL :: colold, scale
 
 * other:
@@ -79,7 +81,6 @@
       INTEGER :: i, l
 
       nz = size(z)
-      nw = size(wl)
 *_______________________________________________________________________
 * Data input:
 
@@ -91,14 +92,13 @@
 
 * compute column increments (alternatively, can specify these directly)
       DO i = 1, nd - 1
-         cd(i) = (so2(i+1)+so2(i)) * 1.E5 * .5 * (zd(i+1)-zd(i))
+         cd(i) = (so2(i+1)+so2(i)) * km2cm * .5 * (zd(i+1)-zd(i))
       ENDDO
 
 * Include exponential tail integral from top level to infinity.
 * fold tail integral into top layer
 * specify scale height near top of data (use ozone value)
 
-      hscale = 4.50e5
       cd(nd-1) = cd(nd-1) + hscale * so2(nd)
 
 ***********
@@ -114,7 +114,7 @@
 * to avoid numerical problems when scaling.
 
       IF(sum(cz(:)) < 1.) THEN
-         cz(:) = 1.E-12 * dcol(:)
+         cz(:) = ppt * dcol(:)
       ENDIF
       colold = sum(cz(1:nz-1))
       scale =  2.687e16 * so2new / colold
@@ -126,7 +126,7 @@
          write(*,*) 'pbl SO2 = ', xpbl, ' ppb'
          DO i = 1, nz-1
             IF (i <= ipbl) THEN
-               cz(i) = xpbl*1.E-9 * dcol(i)
+               cz(i) = xpbl * ppb * dcol(i)
             ELSE
                cz(i) = 0.
             ENDIF
@@ -137,7 +137,7 @@
 * calculate sulfur optical depth for each layer, with optional temperature 
 * correction.  Output, dtso2(kz,kw)
 
-      DO l = 1, nw-1
+      DO l = 1, nbins
          dtso2(:,l) = cz(:)*so2xs(l)
       ENDDO
 

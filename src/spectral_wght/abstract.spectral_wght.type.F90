@@ -26,7 +26,7 @@ module micm_abs_spectral_wght_type
     procedure                      :: addpnts
   end type abs_spectral_wght_t
 
-  !> Pointer type for building sets of photo rate constants
+  !> Pointer type for building sets of spectral wght objects
   type :: abs_spectral_wght_ptr
     class(abs_spectral_wght_t), pointer :: val_ => null( )
   end type abs_spectral_wght_ptr

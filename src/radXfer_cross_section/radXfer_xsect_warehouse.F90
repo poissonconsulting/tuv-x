@@ -8,7 +8,7 @@
 !!
 module micm_radXfer_xsect_warehouse
 
-  use micm_abs_cross_section_type,     only : abs_cross_section_ptr
+  use micm_radXfer_abs_cross_section_type,     only : abs_cross_section_ptr
   use musica_constants,                only : musica_dk, musica_ik
   use musica_string,                   only : string_t
 
@@ -19,14 +19,14 @@ module micm_radXfer_xsect_warehouse
 
   !> Radiative xfer cross section type
   type :: radXfer_xsect_warehouse_t
+    private
     !> cross section calculators
     type(abs_cross_section_ptr), allocatable :: cross_section_objs_(:)
-    !> Current cross section values
-    real(kind=musica_dk), allocatable :: cross_section_values_(:,:)
-    type(string_t), allocatable       :: reaction_key(:)
+    !> cross section "handle"
+    type(string_t), allocatable              :: handles_(:)
   contains
-    !> Update the object for new environmental conditions
-    procedure :: update_for_new_environmental_state
+    !> Get a copy of a specific radXfer cross section
+    procedure :: get_radXfer_cross_section
     !> Finalize the object
     final :: finalize
   end type radXfer_xsect_warehouse_t
@@ -41,17 +41,23 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Constructor of radXfer_xsect_warehouse_t objects
-  function constructor( config,mdlLambdaEdge ) result( radXfer_xsect_obj )
+  function constructor( config, gridWareHouse, ProfileWareHouse ) result( radXfer_xsect_obj )
 
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
-    use musica_constants,              only : musica_rk
+    use musica_constants,              only : musica_rk, musica_lk
     use musica_assert,                 only : die_msg
-    use micm_cross_section_factory,    only : cross_section_builder
+    use micm_radXfer_cross_section_factory, only : cross_section_builder
+    use micm_grid_warehouse,           only : grid_warehouse_t
+    use micm_Profile_warehouse,        only : Profile_warehouse_t
 
-    real(musica_dk), intent(in)      :: mdlLambdaEdge(:)
-    !> Kinetics configuration data
+    !> Arguments
+    !> radXfer configuration data
     type(config_t), intent(inout) :: config
+    !> The warehouses
+    type(grid_warehouse_t), intent(inout)         :: gridWareHouse
+    type(Profile_warehouse_t), intent(inout) :: ProfileWareHouse
+
     !> New radiative xfer cross section obj
     class(radXfer_xsect_warehouse_t), pointer :: radXfer_xsect_obj
 
@@ -66,90 +72,97 @@ contains
     character(len=32)           :: keychar
     type(string_t)              :: areaction_key
     type(string_t), allocatable :: netcdfFiles(:)
+    logical(musica_lk)          :: found
+
+    write(*,*) ' '
+    write(*,*) Iam // 'entering'
 
     allocate( radXfer_xsect_obj )
 
     associate(new_obj=>radXfer_xsect_obj)
 
-    allocate( string_t :: new_obj%reaction_key(0) )
+    allocate( string_t :: new_obj%handles_(0) )
 
     allocate( new_obj%cross_section_objs_(0) )
 
-    jsonkey = 'radiative xfer cross sections'
-    call config%get( jsonkey, reaction_set, Iam )
-    iter => reaction_set%get_iterator( )
+    jsonkey = 'Radiative xfer cross sections'
+    call config%get( jsonkey, reaction_set, Iam, found=found )
+    !> radXfer cross section objects not required
+has_radXfer_xsects: &
+    if( found ) then
+      iter => reaction_set%get_iterator( )
 !-----------------------------------------------------------------------------
 !> iterate over cross sections
 !-----------------------------------------------------------------------------
-    do while( iter%next( ) )
-      keychar = reaction_set%key(iter)
-      areaction_key = keychar 
-      write(*,*) ' '
-      write(*,*) Iam,'key = ',trim(keychar)
-      new_obj%reaction_key = [new_obj%reaction_key,areaction_key]
-      call reaction_set%get( iter, reaction_config, Iam )
+      do while( iter%next( ) )
+        keychar = reaction_set%key(iter)
+        areaction_key = keychar 
+        write(*,*) ' '
+        write(*,*) Iam,'key = ',trim(keychar)
+        new_obj%handles_ = [new_obj%handles_,areaction_key]
+        call reaction_set%get( iter, reaction_config, Iam )
 !-----------------------------------------------------------------------------
-!> cross section first
+!> build and store cross section object
 !-----------------------------------------------------------------------------
-      call reaction_config%get( "cross section", cross_section_config, Iam )
-      cross_section_ptr%val_ => cross_section_builder( cross_section_config,mdlLambdaEdge )
-      new_obj%cross_section_objs_ = [new_obj%cross_section_objs_,cross_section_ptr]
-    end do
-
-    deallocate( iter )
+        call reaction_config%get( "cross section", cross_section_config, Iam )
+        cross_section_ptr%val_ => cross_section_builder( cross_section_config, gridWareHouse, ProfileWareHouse )
+        new_obj%cross_section_objs_ = [new_obj%cross_section_objs_,cross_section_ptr]
+      end do
+      deallocate( iter )
+    endif has_radXfer_xsects
 
     nSize = size(new_obj%cross_section_objs_)
     write(*,*) ' '
     write(*,'(a,''There are '',i3,'' cross sections'')') Iam,nSize
 
-!-----------------------------------------------------------------------------
-!> setup cross section arrays
-!-----------------------------------------------------------------------------
-    allocate( new_obj%cross_section_values_(0,0) )
-
     end associate
+
+    write(*,*) ' '
+    write(*,*) Iam // 'exiting'
 
   end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Update the object for new environmental conditions
-  subroutine update_for_new_environmental_state( this, environment, nwave )
+  !> Get copy of a specific radXfer cross section object
+  function get_radXfer_cross_section( this, radXfer_cross_section_handle ) result( radXfer_cross_section_ptr )
 
-    use micm_environment, only : environment_t
-    use musica_assert,    only : die_msg
+    use micm_radXfer_abs_cross_section_type, only : abs_cross_section_t
+    use musica_string,     only : string_t
+    use musica_constants,  only : lk => musica_lk, ik => musica_ik
+    use musica_assert,     only : die_msg
 
-    !> Kinetics
+    !> Arguments
     class(radXfer_xsect_warehouse_t), intent(inout) :: this
-    integer(musica_ik), intent(in)         :: nwave
-    !> Environmental conditions
-    class(environment_t), intent(in) :: environment
+    type(string_t), intent(in)             :: radXfer_cross_section_handle
 
-    character(len=*), parameter :: Iam = 'update_for_new_environmental_state: '
-    integer(kind=musica_ik) :: ndx
-    real(musica_dk), allocatable :: a_cross_section(:)
-    real(musica_dk), allocatable :: cross_section_tray(:)
+    class(abs_cross_section_t), pointer    :: radXfer_cross_section_ptr
+
+    !> Local variables
+    character(len=*), parameter :: Iam = 'radXfer cross section warehouse get_radXfer_cross_section: '
+    integer(ik) :: ndx
+    logical(lk) :: found
 
     write(*,*) ' '
     write(*,*) Iam,'entering'
 
-    allocate(cross_section_tray(0))
-    do ndx = 1, size(this%cross_section_objs_)
-      associate( calc_ftn => this%cross_section_objs_(ndx)%val_ )
-        a_cross_section = calc_ftn%calculate( environment )
-      end associate
-      cross_section_tray = [cross_section_tray,a_cross_section]
+    found = .false._lk
+    do ndx = 1,size(this%handles_)
+      if( radXfer_cross_section_handle .eq. this%handles_(ndx) ) then
+        found = .true._lk
+        exit
+      endif
     end do
 
-    this%cross_section_values_ = reshape( cross_section_tray, &
-                                          (/nwave,size(this%cross_section_objs_) /) )
-
-    write(*,*) Iam,'size of cross section values = ',&
-        size(this%cross_section_values_,dim=1), size(this%cross_section_values_,dim=2)
+    if( found ) then
+      allocate( radXfer_cross_section_ptr, source = this%cross_section_objs_(ndx)%val_ )
+    else
+      call die_msg( 460768224, "Invalid radXfer_cross_section_handle: '"// radXfer_cross_section_handle%to_char()//"'" )
+    endif
 
     write(*,*) Iam,'exiting'
 
-  end subroutine update_for_new_environmental_state
+  end function get_radXfer_cross_section
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -164,9 +177,6 @@ contains
 
     write(*,*) Iam,'entering'
 
-    if( allocated( this%cross_section_values_ ) ) then
-      deallocate( this%cross_section_values_ )
-    endif
     if( allocated( this%cross_section_objs_ ) ) then
       do ndx = 1,size(this%cross_section_objs_)
         if( associated( this%cross_section_objs_(ndx)%val_ ) ) then
@@ -176,8 +186,8 @@ contains
       deallocate( this%cross_section_objs_ )
     end if
 
-    if( allocated( this%reaction_key ) ) then
-      deallocate( this%reaction_key )
+    if( allocated( this%handles_ ) ) then
+      deallocate( this%handles_ )
     end if
 
     write(*,*) Iam,'exiting'

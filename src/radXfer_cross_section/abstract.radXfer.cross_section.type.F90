@@ -5,10 +5,9 @@
 !> The photolysis cross section module
 
 !> The abstract cross section type and related functions
-module micm_abs_cross_section_type
+module micm_radXfer_abs_cross_section_type
 
   use musica_constants,                only : musica_dk, musica_ik
-  use micm_environment,                only : environment_t
 
   implicit none
   private
@@ -17,8 +16,6 @@ module micm_abs_cross_section_type
 
   !> Photo rate cross section abstract type
   type, abstract :: abs_cross_section_t
-    real(musica_dk), allocatable :: mdl_lambda_edge(:)
-    real(musica_dk), allocatable :: mdl_lambda_center(:)
   contains
     !> Calculate the photo rate cross section
     procedure(initial),   deferred :: initialize
@@ -35,34 +32,39 @@ interface
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Calculate the rate constant for a given set of conditions
-  function calculate( this, environment ) result( cross_section )
-    use micm_environment,              only : environment_t
-    use musica_constants,              only : musica_dk
+  !> Initialize the cross section
+  subroutine initial( this, config, gridWareHouse, ProfileWareHouse )
 
-    import abs_cross_section_t
-
-    !> Cross section calculator
-    class(abs_cross_section_t), intent(in) :: this
-    !> cross section on model photo grid
-    real(musica_dk)                   :: cross_section(size(this%mdl_lambda_center))
-    !> Environmental conditions
-    class(environment_t), intent(in)  :: environment
-  end function calculate
-
-  !> Initialize the base cross section type
-  subroutine initial( this, config, mdlLambdaEdge )
     use musica_config,    only : config_t
     use musica_constants, only : musica_dk
+    use micm_grid_warehouse,    only : grid_warehouse_t
+    use micm_Profile_warehouse, only : Profile_warehouse_t
 
     import abs_cross_section_t
 
     !> Cross section calculator
-    class(abs_cross_section_t), intent(inout) :: this
-    !> Environmental conditions
-    real(musica_dk), intent(in)   :: mdlLambdaEdge(:)
-    type(config_t), intent(inout) :: config
+    class(abs_cross_section_t), intent(inout)  :: this
+    type(config_t), intent(inout)              :: config
+    type(grid_warehouse_t), intent(inout)      :: gridWareHouse
+    type(Profile_warehouse_t), intent(inout)   :: ProfileWareHouse
  end subroutine initial
+
+  !> Calculate the cross section
+  function calculate( this, gridWareHouse, ProfileWareHouse ) result( cross_section )
+
+    use musica_constants,       only : musica_dk
+    use micm_grid_warehouse,    only : grid_warehouse_t
+    use micm_Profile_warehouse, only : Profile_warehouse_t
+
+    import abs_cross_section_t
+
+    !> Cross section calculator
+    class(abs_cross_section_t), intent(in)   :: this
+    !> cross section on model photo grid
+    type(grid_warehouse_t), intent(inout)    :: gridWareHouse
+    type(Profile_warehouse_t), intent(inout) :: ProfileWareHouse
+    real(musica_dk), allocatable             :: cross_section(:,:)
+  end function calculate
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -127,4 +129,4 @@ contains
 
   end subroutine addpnts
 
-end module micm_abs_cross_section_type
+end module micm_radXfer_abs_cross_section_type

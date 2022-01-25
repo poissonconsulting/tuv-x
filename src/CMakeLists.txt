@@ -2,7 +2,7 @@
 # Photo-decomp tool source
 
 set(PHOTO_SRC abs_linalgebra.f90
-              abstract.cross_section.type.F90
+              # abstract.cross_section.type.F90
               abstract_radXfer.f90
               delta_eddington.f90
               disord.f90
@@ -24,8 +24,8 @@ set(PHOTO_SRC abs_linalgebra.f90
               psndo.f
               quantum_yield_factory.F90
               qys.f
-              radXfer_xsect_factory.F90
-              radXfer_xsect_warehouse.F90
+              # radXfer_xsect_factory.F90
+              # radXfer_xsect_warehouse.F90
               rdetfl.f
               rdinp.f
               rdxs.f
@@ -44,8 +44,8 @@ set(PHOTO_SRC abs_linalgebra.f90
               setso2.f
               sphers.f
               solvec.f
-              spectral_wght_factory.F90
-              spectral_wght_warehouse.F90
+              # spectral_wght_factory.F90
+              # spectral_wght_warehouse.F90
               swbiol.f
               swchem.f
               swdom.f
@@ -56,18 +56,31 @@ set(PHOTO_SRC abs_linalgebra.f90
               vpo3.f
               vptmp.f
               waters.f
-              wavelength.F90
+              #   wavelength.F90 - not used
               wrflut.f
               wshift.f
               zeroal.f
+              diagout.f90
               )
 
+file(GLOB LITTLE_F_SRC *.f)
+set_property(SOURCE ${LITTLE_F_SRC} APPEND PROPERTY COMPILE_OPTIONS "-fdefault-real-8")
+set_property(SOURCE ${LITTLE_F_SRC} APPEND PROPERTY COMPILE_OPTIONS "-fdefault-double-8")
+
+file(GLOB LITTLE_F90_SRC *.f90)
+set_property(SOURCE ${LITTLE_F90_SRC} APPEND PROPERTY COMPILE_OPTIONS "-fdefault-real-8")
+set_property(SOURCE ${LITTLE_F90_SRC} APPEND PROPERTY COMPILE_OPTIONS "-fdefault-double-8")
+
 add_subdirectory(cross_section)
+add_subdirectory(grid)
 add_subdirectory(quantum_yield)
+add_subdirectory(radiator)
 add_subdirectory(radXfer_cross_section)
 add_subdirectory(spectral_wght)
+add_subdirectory(util)
+add_subdirectory(Profile)
 
-add_library(photolib ${PHOTO_SRC} ${CROSS_SRC} ${QY_SRC} ${RAD_SRC} ${SW_SRC})
+add_library(photolib ${PHOTO_SRC} ${GRID_SRC} ${PROFILE_SRC} ${CROSS_SRC} ${QY_SRC} ${RADIATOR_SRC} ${RAD_SRC} ${SW_SRC} ${UTIL_SRC})
 target_link_libraries(photolib musicalib ${NETCDF_LIBS} ${NC4F_LIB})
 set_target_properties(photolib PROPERTIES OUTPUT_NAME photo)
 

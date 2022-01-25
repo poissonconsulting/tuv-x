@@ -5,21 +5,29 @@
 
    implicit none
 
+   private
    public :: delta_eddington_t
+
+   logical :: initialized = .true.
 
    type, extends(abstract_radXfer_t) :: delta_eddington_t
      real                 :: umu0
      integer, allocatable :: nid(:)
      real, allocatable    :: dsdh(:,:)
      real, allocatable    :: dt(:), om(:), g(:)
-     contains
+   contains
      procedure :: initialize
      procedure :: calculate
      final     :: finalize
    end type delta_eddington_t
 
-   REAL, PARAMETER :: rZERO = 0.0
-   REAL, PARAMETER :: rONE  = 1.0
+   REAL(8), PARAMETER :: largest = 1.e36_8
+   REAL(8), PARAMETER :: rZERO  = 0.0_8
+   REAL(8), PARAMETER :: rONE   = 1.0_8
+   REAL(8), PARAMETER :: rTWO   = 2.0_8
+   REAL(8), PARAMETER :: rTHREE = 3.0_8
+   REAL(8), PARAMETER :: rFOUR  = 4.0_8
+   REAL(8), PARAMETER :: rSEVEN = 7.0_8
 
    contains
 
@@ -30,7 +38,7 @@
                           dtsnw, omsnw, gsnw, &
                           dtany, omany, gany )
 
-   use tuv_params, only : pi, largest
+   use tuv_params, only : pi
 
    class(delta_eddington_t), intent(inout) :: this
    integer, intent(in)  :: nlyr, nstr
@@ -43,8 +51,8 @@
    real, intent(in)     :: dtsnw(:), omsnw(:), gsnw(:)
    real, intent(in)     :: dtany(:), omany(:), gany(:)
 
-   real, parameter :: dr = pi/180.
-   real, parameter :: floor = rONE/largest
+   real(8), parameter :: dr = pi/180._8
+   real(8), parameter :: floor = rONE/largest
 
    real :: dscld(nlyr), dacld(nlyr)
    real :: dsaer(nlyr), daaer(nlyr)
@@ -75,6 +83,7 @@
    dtsct = max( dtrl + dscld + dsaer + dssnw + dsany,floor )
    dtabs = max( dto2 + dto3 + dtso2 + dtno2 + dacld + daaer + dasnw + daany,floor )
 
+   !> reorder from bottum-up to top-down
    this%dt(nlyr:1:-1) = dtsct + dtabs
    this%om(nlyr:1:-1) = dtsct/(dtsct + dtabs)
    where( dtsct == floor )
@@ -88,8 +97,9 @@
    subroutine calculate( this, nlyr, nstr, albedo, &
                          fdr, fup, fdn, edr, eup, edn )
 
-   use tuv_params, only : largest, precis
+   use tuv_params, only : precis
    use linalgebra, only : linalgebra_t
+   use debug,      only : diagout
 
    class(delta_eddington_t), intent(inout) :: this
 
@@ -133,7 +143,7 @@
 
 ! Some additional program constants:
 
-      REAL, parameter :: eps = 1.E-3
+      REAL(8), parameter :: eps = 1.E-3_8
 !_______________________________________________________________________
 
 ! MU = cosine of solar zenith angle
@@ -178,6 +188,12 @@
          omi(i) = (rONE - f)*omu(i)/(rONE - omu(i)*f)       
          taun(i) = (rONE - omu(i)*f)*tauu(i)
        ENDDO
+       if( initialized ) then
+         call diagout( 'tauu.old',tauu )
+         call diagout( 'gu.old',gu )
+         call diagout( 'omu.old',omu )
+         call diagout( 'taun.old',taun )
+       endif
 
 ! calculate slant optical depth at the top of the atmosphere when zen>90.
 ! in this case, higher altitude of the top layer is recommended which can 
@@ -189,7 +205,7 @@
            ELSE
              sum = rZERO
              DO j = 1, nid(0)
-              sum = sum + 2.*taun(j)*dsdh(0,j)
+              sum = sum + rTWO*taun(j)*dsdh(0,j)
              END DO
              tausla(0) = sum 
            END IF
@@ -197,15 +213,15 @@
 
         layer_loop: DO i = 1, nlyr
 
-         g  = gi(i)
-         om = omi(i)
-         tauc(i) = tauc(i-1) + taun(i)
+          g  = gi(i)
+          om = omi(i)
+          tauc(i) = tauc(i-1) + taun(i)
 
 ! stay away from 1 by precision.  For g, also stay away from -1
 
-         tempg = MIN(abs(g),rONE - precis)
-         g = SIGN(tempg,g)
-         om = MIN(om,rONE-precis)
+          tempg = MIN(abs(g),rONE - precis)
+          g = SIGN(tempg,g)
+          om = MIN(om,rONE-precis)
 
 
 ! calculate slant optical depth
@@ -218,15 +234,20 @@
                sum = sum + taun(j)*dsdh(i,j)
             ENDDO
             DO j = MIN(nid(i),i)+1,nid(i)
-               sum = sum + 2.*taun(j)*dsdh(i,j)
+               sum = sum + rTWO*taun(j)*dsdh(i,j)
             ENDDO
             tausla(i) = sum 
             IF(tausla(i) == tausla(i-1)) THEN
               mu2(i) = SQRT(largest)
             ELSE
               mu2(i) = (tauc(i)-tauc(i-1))/(tausla(i)-tausla(i-1))
-              mu2(i) = SIGN( MAX(ABS(mu2(i)),1./SQRT(largest)),mu2(i) )
+              mu2(i) = SIGN( MAX(ABS(mu2(i)),rONE/SQRT(largest)),mu2(i) )
             END IF
+    
+            if( initialized .and. i == 2 ) then
+              write(*,*)'TUV: dsdh diagnostic'
+              write(*,*) dsdh(i,1:i)
+            endif
           END IF
 
 !** the following gamma equations are from pg 16,289, Table 1
@@ -234,11 +255,11 @@
 
 ! Eddington approximation(Joseph et al., 1976, JAS, 33, 2452):
 
-        gam1 =  (7. - om*(4. + 3.*g))/4.
-        gam2 = -(1. - om*(4. - 3.*g))/4.
-        gam3 = (2. - 3.*g*mu)/4.
+        gam1 =  (rSEVEN - om*(rFOUR + rTHREE*g))/rFOUR
+        gam2 = -(rONE - om*(rFOUR - rTHREE*g))/rFOUR
+        gam3 = (rTWO - rTHREE*g*mu)/rFOUR
         gam4 = rONE - gam3
-        mu1(i) = 0.5
+        mu1(i) = 0.5_8
 
          lam(i) = sqrt(gam1*gam1 - gam2*gam2)
 
@@ -279,8 +300,29 @@
          cdn(i) = dn*expon0
          cuptn(i) = up*expon1
          cdntn(i) = dn*expon1
+
+         if( initialized .and. i == 3 ) then
+           write(*,*) 'TUV: cup diagnostic'
+           write(*,*) expon, expon0, expon1, divisr, temp, up, dn
+           write(*,*) lam(i), mu2(i), gam1, gam2, gam3, gam4
+           write(*,*) tauc(i-1:i), tausla(i-1:i)
+         endif
  
       ENDDO layer_loop
+
+       if( initialized ) then
+         call diagout( 'e1.old',e1 )
+         call diagout( 'e2.old',e2 )
+         call diagout( 'e3.old',e3 )
+         call diagout( 'e4.old',e4 )
+         call diagout( 'cup.old',cup )
+         call diagout( 'cdn.old',cdn )
+         call diagout( 'cuptn.old',cuptn )
+         call diagout( 'cdntn.old',cdntn )
+         call diagout( 'lam.old',lam )
+         call diagout( 'tausla.old',tausla )
+         call diagout( 'mu2.old',mu2 )
+       endif
 
 !**************** set up matrix ******
 ! ssfc = pg 16,292 equation 37  where pi Fs is one (unity).
@@ -330,6 +372,15 @@
       d(mrows) = rZERO
       e(mrows) = ssfc - cuptn(nlyr) + rsfc*cdntn(nlyr)
 
+      if( initialized ) then
+        call diagout( 'a.old',a )
+        call diagout( 'b.old',b )
+        call diagout( 'd.old',d )
+        call diagout( 'e.old',e )
+        write(*,*) 'e diagnostic'
+        write(*,*) e(5), e1(2), e3(2), cup(3), cdn(3), cuptn(2), cdntn(2)
+        initialized = .false.
+      endif
 ! solve tri-diagonal system:
 
       y = linpack%tridiag(a, b, d, e)

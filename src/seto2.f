@@ -35,6 +35,8 @@
 
       REAL :: dto2(size(z)-1,size(wl)-1)
 
+      REAL, parameter :: o2vmr = .2095
+
       INTEGER :: iw
 
 *_______________________________________________________________________
@@ -42,10 +44,8 @@
 *    profile (e.g. for upper atmosphere) then can load it here.
 
       DO iw = 1, size(wl)-1
-         dto2(:,iw) = 0.2095 * cz(:) * o2xs1(iw)
+         dto2(:,iw) = o2vmr * cz(:) * o2xs1(iw)
       ENDDO  
-
-*_______________________________________________________________________
 
       END FUNCTION seto2
 

@@ -9,8 +9,7 @@
 *     zero2
 *=============================================================================*
 
-      SUBROUTINE inter1(ng,xg,yg, n,x,y)
-
+      FUNCTION inter1(xtarget, xsrc,ysrc) result( ytarget )
 *-----------------------------------------------------------------------------*
 *=  PURPOSE:                                                                 =*
 *=  Map input data given on single, discrete points, onto a discrete target  =*
@@ -38,41 +37,43 @@
       IMPLICIT NONE
 
 * input:
-      INTEGER n, ng
-      REAL xg(ng)
-      REAL x(n), y(n)
+      REAL, intent(in) :: xtarget(:)
+      REAL, intent(in) :: xsrc(:), ysrc(:)
 
 * output:
-      REAL yg(ng)
+      REAL :: ytarget(size(xtarget))
 
 * local:
-      REAL slope
-      INTEGER jsave, i, j
+      INTEGER :: n
+      INTEGER :: jsave, i, j
+      REAL    :: slope
 *_______________________________________________________________________
 
+      n = size(xsrc)
       jsave = 1
-      DO 20, i = 1, ng
-         yg(i) = 0.
-         j = jsave
-   10    CONTINUE
-            IF ((x(j) .GT. xg(i)) .OR. (xg(i) .GE. x(j+1))) THEN
-               j = j+1
-               IF (j .LE. n-1) GOTO 10
-*        ---- end of loop 10 ----
-            ELSE
-               slope = (y(j+1)-y(j)) / (x(j+1)-x(j))
-               yg(i) = y(j) + slope * (xg(i) - x(j))
-               jsave = j
-             ENDIF
-   20 CONTINUE
-*_______________________________________________________________________
+      ytarget = 0.
+      DO i = 1,size(xtarget)
+        j = jsave
+        DO
+          IF( xtarget(i) < xsrc(j) .or. xtarget(i) >= xsrc(j+1) ) THEN
+            j = j+1
+            IF (j >= n) THEN
+              EXIT
+            ENDIF
+          ELSE
+            slope = (ysrc(j+1)-ysrc(j)) / (xsrc(j+1)-xsrc(j))
+            ytarget(i) = ysrc(j) + slope * (xtarget(i) - xsrc(j))
+            jsave = j
+            EXIT
+          ENDIF
+        ENDDO
+      ENDDO
 
-      RETURN
-      END
+      END FUNCTION inter1
 
 *=============================================================================*
 
-      SUBROUTINE inter2(ng,xg,yg,n,x,y,ierr)
+      SUBROUTINE inter2(ng,xg,yg, n,x,y, ierr)
 
 *-----------------------------------------------------------------------------*
 *=  PURPOSE:                                                                 =*
@@ -107,35 +108,34 @@
       IMPLICIT NONE
 
 * input:
-      INTEGER ng, n
-      REAL x(n), y(n), xg(ng)
+      INTEGER, intent(in) :: ng, n
+      REAL, intent(in)    :: x(n), y(n), xg(ng)
 
 * output:
-      REAL yg(ng)
+      INTEGER, intent(out) :: ierr
+      REAL,    intent(out) :: yg(ng)
 
 * local:
-      REAL area, xgl, xgu
-      REAL darea, slope
-      REAL a1, a2, b1, b2
-      INTEGER ngintv
-      INTEGER i, k, jstart
-      INTEGER ierr
-*_______________________________________________________________________
+      INTEGER :: ngintv
+      INTEGER :: i, k, jstart
+      REAL :: area, xgl, xgu
+      REAL :: darea, slope
+      REAL :: a1, a2, b1, b2
 
       ierr = 0
 
 *  test for correct ordering of data, by increasing value of x
 
-      DO 10, i = 2, n
-         IF (x(i) .LE. x(i-1)) THEN
+      DO i = 2, n
+         IF (x(i) <= x(i-1)) THEN
             ierr = 1
             WRITE(*,*)'data not sorted'
             RETURN
          ENDIF
-   10 CONTINUE     
+      ENDDO
 
       DO i = 2, ng
-        IF (xg(i) .LE. xg(i-1)) THEN
+        IF (xg(i) <= xg(i-1)) THEN
            ierr = 2
           WRITE(0,*) '>>> ERROR (inter2) <<<  xg-grid not sorted!'
           RETURN
@@ -144,11 +144,11 @@
 
 * check for xg-values outside the x-range
 
-      IF ( (x(1) .GT. xg(1)) .OR. (x(n) .LT. xg(ng)) ) THEN
+      IF ( (x(1) > xg(1)) .OR. (x(n) < xg(ng)) ) THEN
           WRITE(0,*) '>>> ERROR (inter2) <<<  Data do not span '//
-     >               'grid.  '
+     $               'grid.  '
           WRITE(0,*) '                        Use ADDPNT to '//
-     >               'expand data and re-run.'
+     $               'expand data and re-run.'
           STOP
       ENDIF
 
@@ -158,10 +158,8 @@
 
       jstart = 1
       ngintv = ng - 1
-      DO 50, i = 1,ngintv
-
+      DO i = 1,ngintv
 * initalize:
-
             area = 0.0
             xgl = xg(i)
             xgu = xg(i+1)
@@ -173,66 +171,51 @@
 *  first point inside the current interval
 
             k = jstart
-            IF (k .LE. n-1) THEN
-
+            IF (k < n) THEN
 *  if both points are before the first grid, go to the next point
-   30         CONTINUE
-                IF (x(k+1) .LE. xgl) THEN
-                   jstart = k - 1
-                   k = k+1
-                   IF (k .LE. n-1) GO TO 30
+              DO
+                IF( x(k+1) <= xgl ) THEN
+                  jstart = k - 1
+                  k = k+1
+                  IF( k >= n) THEN
+                    EXIT
+                  ENDIF
+                ELSE
+                  EXIT
                 ENDIF
-
-
+              ENDDO
 *  if the last point is beyond the end of the grid, complete and go to the next
 *  grid
-   40         CONTINUE
-                 IF ((k .LE. n-1) .AND. (x(k) .LT. xgu)) THEN          
-
-                    jstart = k-1
-
+              DO WHILE( k < n .AND. x(k) < xgu )
+                jstart = k-1
 * compute x-coordinates of increment
-
-                    a1 = MAX(x(k),xgl)
-                    a2 = MIN(x(k+1),xgu)
-
+                a1 = MAX(x(k),xgl)
+                a2 = MIN(x(k+1),xgu)
 *  if points coincide, contribution is zero
-
-                    IF (x(k+1).EQ.x(k)) THEN
-                       darea = 0.e0
-                    ELSE
-                       slope = (y(k+1) - y(k))/(x(k+1) - x(k))
-                       b1 = y(k) + slope*(a1 - x(k))
-                       b2 = y(k) + slope*(a2 - x(k))
-                       darea = (a2 - a1)*(b2 + b1)/2.
-                    ENDIF
-
-
-*  find the area under the trapezoid from a1 to a2
-
-                    area = area + darea
-
-* go to next point
-              
-                    k = k+1
-                    GO TO 40
-
+                IF (x(k+1).EQ.x(k)) THEN
+                   darea = 0.0
+                ELSE
+                   slope = (y(k+1) - y(k))/(x(k+1) - x(k))
+                   b1 = y(k) + slope*(a1 - x(k))
+                   b2 = y(k) + slope*(a2 - x(k))
+                   darea = (a2 - a1)*(b2 + b1)/2.
                 ENDIF
-
+*  find the area under the trapezoid from a1 to a2
+                area = area + darea
+* go to next point
+                k = k+1
+              ENDDO
             ENDIF
 
 *  calculate the average y after summing the areas in the interval
             yg(i) = area/(xgu - xgl)
+      ENDDO
 
-   50 CONTINUE
-*_______________________________________________________________________
-
-      RETURN
-      END
+      END SUBROUTINE inter2
 
 *=============================================================================*
 
-      SUBROUTINE inter3(ng,xg,yg, n,x,y, FoldIn)
+      SUBROUTINE inter3(nto,xto,yto, nfrom,xfrom,yfrom, FoldIn)
 
 *-----------------------------------------------------------------------------*
 *=  PURPOSE:                                                                 =*
@@ -275,23 +258,22 @@
       IMPLICIT NONE
       
 * input:
-      INTEGER n, ng
-      REAL xg(ng)
-      REAL x(n), y(n)
+      INTEGER, intent(in) :: nfrom, nto
+      INTEGER, intent(in) :: FoldIn
+      REAL, intent(in)    :: xto(nto)
+      REAL, intent(in)    :: xfrom(nfrom), yfrom(nfrom)
 
-      INTEGER FoldIn
 
 * output:
-      REAL yg(ng)
+      REAL, intent(out) :: yto(nto-1)
 
 * local:
-      REAL a1, a2, sum
-      REAL tail
-      INTEGER jstart, i, j, k
-*_______________________________________________________________________
+      REAL :: a1, a2, sum
+      REAL :: tail
+      INTEGER :: jstart, i, j, k, ntobins
 
 * check whether flag given is legal
-      IF ((FoldIn .NE. 0) .AND. (FoldIn .NE. 1)) THEN
+      IF( FoldIn /= 0 .and. FoldIn /= 1 ) THEN
          WRITE(0,*) '>>> ERROR (inter3) <<<  Value for FOLDIN invalid. '
          WRITE(0,*) '                        Must be 0 or 1'
          STOP
@@ -301,64 +283,55 @@
 
       jstart = 1
 
-      DO 30, i = 1, ng - 1
+      yto = 0.
+      ntobins = nto - 1
+      DO  i = 1, ntobins
+        sum = 0.
+        j = jstart
 
-         yg(i) = 0.
-         sum = 0.
-         j = jstart
-
-         IF (j .LE. n-1) THEN
-
-   20      CONTINUE
-
-             IF (x(j+1) .LT. xg(i)) THEN
-                jstart = j
-                j = j+1
-                IF (j .LE. n-1) GO TO 20
-             ENDIF               
-
-   25      CONTINUE
-
-           IF ((x(j) .LE. xg(i+1)) .AND. (j .LE. n-1)) THEN
-
-              a1 = AMAX1(x(j),xg(i))
-              a2 = AMIN1(x(j+1),xg(i+1))
-
-              sum = sum + y(j) * (a2-a1)/(x(j+1)-x(j))
+        IF (j < nfrom) THEN
+          DO
+            IF( xfrom(j+1) < xto(i) ) THEN
+              jstart = j
               j = j+1
-              GO TO 25
+              IF( j >= nfrom ) THEN
+                EXIT
+              ENDIF
+            ELSE
+              EXIT
+            ENDIF
+          ENDDO
 
-           ENDIF
+          DO WHILE( (xfrom(j) <= xto(i+1)) .and. (j < nfrom) )
+            a1 = MAX(xfrom(j),xto(i))
+            a2 = MIN(xfrom(j+1),xto(i+1))
 
-           yg(i) = sum 
-
+            sum = sum + yfrom(j) * (a2-a1)/(xfrom(j+1)-xfrom(j))
+            j = j+1
+          ENDDO
+          yto(i) = sum 
         ENDIF
-
-   30 CONTINUE
+      ENDDO
       
 
 * if wanted, integrate data "overhang" and fold back into last bin
 
-      IF (FoldIn .EQ. 1) THEN
-
+      IF (FoldIn == 1) THEN
          j = j-1
-         a1 = xg(ng)            ! upper limit of last interpolated bin
-         a2 = x(j+1)            ! upper limit of last input bin considered
+         a1 = xto(nto)           ! upper limit of last interpolated bin
+         a2 = xfrom(j+1)         ! upper limit of last input bin considered
          
 *        do folding only if grids don't match up and there is more input 
-         IF ((a2 .GT. a1) .OR. (j+1 .LT. n)) THEN
-            tail = y(j) * (a2-a1)/(x(j+1)-x(j))
-            DO k = j+1, n-1
-               tail = tail + y(k) * (x(k+1)-x(k))
+         IF( a2 > a1 .OR. j+1 < nfrom ) THEN
+            tail = yfrom(j) * (a2-a1)/(xfrom(j+1)-xfrom(j))
+            DO k = j+1, nfrom-1
+               tail = tail + yfrom(k) * (xfrom(k+1)-xfrom(k))
             ENDDO
-            yg(ng-1) = yg(ng-1) + tail
+            yto(ntobins) = yto(ntobins) + tail
          ENDIF
-
       ENDIF
-*_______________________________________________________________________
 
-      RETURN
-      END
+      END SUBROUTINE inter3
 
 *=============================================================================*
 
@@ -405,14 +378,13 @@
       IMPLICIT NONE
       
 * input:
-      INTEGER n, ng
-      REAL xg(ng)
-      REAL x(n), y(n)
-
-      INTEGER FoldIn
+      INTEGER, intent(in) :: n, ng
+      INTEGER, intent(in) :: FoldIn
+      REAL, intent(in) :: xg(ng)
+      REAL, intent(in) :: x(n), y(n)
 
 * output:
-      REAL yg(ng)
+      REAL, intent(out) :: yg(ng)
 
 * local:
       REAL a1, a2, sum
@@ -421,7 +393,7 @@
 *_______________________________________________________________________
 
 * check whether flag given is legal
-      IF ((FoldIn .NE. 0) .AND. (FoldIn .NE. 1)) THEN
+      IF( FoldIn /= 0 .and. FoldIn /= 1 ) THEN
          WRITE(0,*) '>>> ERROR (inter3) <<<  Value for FOLDIN invalid. '
          WRITE(0,*) '                        Must be 0 or 1'
          STOP
@@ -430,47 +402,38 @@
 * do interpolation
 
       jstart = 1
+      yg = 0.
 
-      DO 30, i = 1, ng - 1
-
-         yg(i) = 0.
+      DO i = 1, ng - 1
          sum = 0.
          j = jstart
-
-         IF (j .LE. n-1) THEN
-
-   20      CONTINUE
-
+         IF (j < n) THEN
+           DO
              IF (x(j+1) .LT. xg(i)) THEN
-                jstart = j
-                j = j+1
-                IF (j .LE. n-1) GO TO 20
+               jstart = j
+               j = j+1
+               IF (j >= n) THEN
+                 EXIT
+               ENDIF
+             ELSE
+               EXIT
              ENDIF               
+           ENDDO
 
-   25      CONTINUE
-
-           IF ((x(j) .LE. xg(i+1)) .AND. (j .LE. n-1)) THEN
-
-              a1 = AMAX1(x(j),xg(i))
-              a2 = AMIN1(x(j+1),xg(i+1))
-
+           DO WHILE( x(j) <= xg(i+1) .and. j < n )
+              a1 = MAX(x(j),xg(i))
+              a2 = MIN(x(j+1),xg(i+1))
               sum = sum + y(j) * (a2-a1)
-
               j = j+1
-              GO TO 25
-
-           ENDIF
-
+           ENDDO
            yg(i) = sum /(xg(i+1)-xg(i))
-
         ENDIF
-
- 30   CONTINUE
+      ENDDO
 
 
 * if wanted, integrate data "overhang" and fold back into last bin
 
-      IF (FoldIn .EQ. 1) THEN
+      IF (FoldIn == 1) THEN
 
          j = j-1
          a1 = xg(ng)     ! upper limit of last interpolated bin
@@ -486,10 +449,8 @@
          ENDIF
 
       ENDIF
-*_______________________________________________________________________
 
-      RETURN
-      END
+      END SUBROUTINE inter4
 
 *=============================================================================*
 

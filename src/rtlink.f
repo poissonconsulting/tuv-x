@@ -78,6 +78,7 @@
         allocate( disord_t :: radiative_xfer_obj )
       endif
 * call rt routines
+* initialize
       call radiative_xfer_obj%initialize( 
      $       nlyr, nstr, zen, nid, dsdh,
      $       dtrl, dto3, dto2, dtso2, dtno2,
@@ -85,11 +86,12 @@
      $       dtaer, omaer, gaer,
      $       dtsnw, omsnw, gsnw,
      $       dt_any, om_any, g_any )
+* calculate radiative field
       call radiative_xfer_obj%calculate( 
      $        nlyr, nstr, albedo,
      $        fdir, fup, fdn, edir, eup, edn)
 
-* output (top-down -> buttom-up)
+* output (top-down -> bottom-up)
       fdir(1:nz) = fdir(nz:1:-1)
       fup(1:nz)  = fup(nz:1:-1)
       fdn(1:nz)  = fdn(nz:1:-1)

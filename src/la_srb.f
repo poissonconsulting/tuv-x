@@ -18,9 +18,8 @@
      $     188.7, 190.5, 192.3, 194.2, 196.1, 198.0, 200.0, 202.0, 
      $     204.1, 206.2/)
 
-      REAL(8) :: AC(20,17)
-      REAL(8) :: BC(20,17) ! Chebyshev polynomial coeffs
-      REAL    :: WAVE_NUM(17)
+      REAL(8) :: AC(20,nsrb)
+      REAL(8) :: BC(20,nsrb) ! Chebyshev polynomial coeffs
 
       contains
 
@@ -152,7 +151,6 @@ c------------------------------------------
 *----------------------------------------------------------------------
 * initalize O2 cross sections 
 *----------------------------------------------------------------------
-
       DO iw = 1, nw - 1   
          o2xs(:,iw) = o2xs1(iw)
       ENDDO
@@ -163,7 +161,6 @@ c------------------------------------------
 * Slant O2 column and x-sections.
 *----------------------------------------------------------------------
         o2col(:) = 0.2095 * scol(:)
-
 *----------------------------------------------------------------------
 * Effective secant of solar zenith angle.  
 * Use 2.0 if no direct sun (value for isotropic radiation)
@@ -175,7 +172,6 @@ c------------------------------------------
           secchi(1:nz-1) = 2.
         ENDWHERE
         secchi(nz) = secchi(nz-1)
-
 *---------------------------------------------------------------------
 * Lyman-Alpha parameterization, output values of O2 optical depth
 * and O2 effective (equivalent) cross section
@@ -185,7 +181,6 @@ c------------------------------------------
           dto2(:,iw) = dto2la(:,iw - ila + 1)
           o2xs(:,iw) = o2xsla(:,iw - ila + 1)
         ENDDO
-
 *------------------------------------------------------------------------------
 * Koppers' parameterization of the SR bands, output values of O2
 * optical depth and O2 equivalent cross section 
@@ -202,7 +197,6 @@ c------------------------------------------
 *=============================================================================*
 
       SUBROUTINE lymana(o2col,secchi,dto2la,o2xsla)
-
 *-----------------------------------------------------------------------------*
 *=  PURPOSE:                                                                 =*
 *=  Calculate the effective absorption cross section of O2 in the Lyman-Alpha=*
@@ -355,7 +349,7 @@ c------------------------------------------
 c------------------------------------------
       DO i = 1, nsrb
          o2xsk(:,i) = xslod(i)
-      ENDDO	
+      ENDDO
 
 c------------------------------------------
 c     Calculate cross sections
@@ -378,9 +372,7 @@ c------------------------------------------
             kbot = k
          ELSE
             CALL EFFXS( x, tlev(k), xs )
-            DO i=1,nsrb
-               o2xsk(k,i) = xs(i)
-            END DO
+            o2xsk(k,1:nsrb) = xs(1:nsrb)
          ENDIF
       END DO
 
@@ -441,21 +433,17 @@ C-------------------------------------------------------------
 
       READ( IN_LUN, 901 )
       DO I = 1,20
-	READ( IN_LUN, 903 ) ( AC(I,J), J=1,17 )
+        READ( IN_LUN, 903 ) ( AC(I,J), J=1,nsrb )
       ENDDO
       READ( IN_LUN, 901 )
       DO I = 1,20
-	READ( IN_LUN, 903 ) ( BC(I,J), J=1,17 )
+        READ( IN_LUN, 903 ) ( BC(I,J), J=1,nsrb )
       ENDDO
 
  901  FORMAT( / )
  903  FORMAT( 17(E23.14,1x))
 
       CLOSE (IN_LUN)
-	
-      DO I=1,17
-	WAVE_NUM(18-I) = 48250. + (500.*I)
-      ENDDO
 
       END SUBROUTINE INIT_XS
 

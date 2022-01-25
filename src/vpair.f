@@ -60,6 +60,14 @@
       INTEGER :: i, istat
       REAL, allocatable :: airlog(:), conlog(:)
 
+      interface
+        FUNCTION inter1(xtarget, xsrc,ysrc) result( ytarget )
+          REAL, intent(in) :: xtarget(:)
+          REAL, intent(in) :: xsrc(:), ysrc(:)
+          REAL :: ytarget(size(xtarget))
+        END FUNCTION inter1
+      end interface
+
 *_______________________________________________________________________
 
 * The objective of this subroutine is to take the input air profile and interpolate
@@ -109,8 +117,7 @@
 *   interpolate log of air(nd) onto z grid 
 *   re-exponentiate to get gridded concentrations
 
-      airlog = air
-      airlog = LOG(airlog)
+      airlog = LOG(air)
 
       nz = size(z)
       nlyr = nz - 1
@@ -119,9 +126,9 @@
       ENDIF
 
       allocate( conlog(nz) )
-      CALL inter1(nz,z,conlog, nd,zd,airlog)
+      conlog = inter1(z, zd,airlog)
 
-      con = EXP(conlog(1:nz))
+      con = EXP(conlog)
 
 * Find gridded column increments in z-grid:
 *   use log intergration

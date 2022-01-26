@@ -92,18 +92,14 @@ add_subdirectory(libs/musica-core/src)
 include_directories(${CMAKE_BINARY_DIR}/libs/musica-core/src)
 
 ################################################################################
+# copy data
+
+add_custom_target(copy-data ALL COMMAND ${CMAKE_COMMAND}
+  -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/data ${CMAKE_BINARY_DIR}/data)
+
+################################################################################
 # Photo-decomp source
 
-add_custom_target(copy-DATAE1 ALL COMMAND ${CMAKE_COMMAND}
-  -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/data/DATAE1 ${CMAKE_BINARY_DIR}/DATAE1)
-add_custom_target(copy-DATAJ1 ALL COMMAND ${CMAKE_COMMAND}
-  -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/data/DATAJ1 ${CMAKE_BINARY_DIR}/DATAJ1)
-add_custom_target(copy-DATAS1 ALL COMMAND ${CMAKE_COMMAND}
-  -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/data/DATAS1 ${CMAKE_BINARY_DIR}/DATAS1)
-add_custom_target(copy-INPUTS ALL COMMAND ${CMAKE_COMMAND}
-  -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/test/data/INPUTS ${CMAKE_BINARY_DIR}/INPUTS)
-add_custom_target(copy-OUTPUTS ALL COMMAND ${CMAKE_COMMAND}
-  -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/test/data/OUTPUTS ${CMAKE_BINARY_DIR}/OUTPUTS)
 add_subdirectory(src)
 include_directories(${CMAKE_BINARY_DIR}/src)
 

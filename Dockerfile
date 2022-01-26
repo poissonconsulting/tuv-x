@@ -8,6 +8,7 @@ RUN dnf -y update \
         netcdf-fortran-devel \
         cmake \
         make \
+        lcov \
     && dnf clean all
 
 COPY . /photo-decomp/
@@ -35,5 +36,6 @@ RUN curl -LO https://github.com/geospace-code/nc4fortran/archive/refs/tags/v1.4.
 RUN mkdir /build \
       && cd /build \
       && export JSON_FORTRAN_HOME="/usr/local/jsonfortran-gnu-8.2.0" \
-      && cmake /photo-decomp \
+      && cmake -D CMAKE_BUILD_TYPE=COVERAGE \
+               /photo-decomp \
       && make

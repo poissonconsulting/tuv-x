@@ -21,7 +21,7 @@ set(PHOTO_SRC abs_linalgebra.F90
               )
 
 add_subdirectory(grid)
-add_subdirectory(profile)
+add_subdirectory(profiles)
 add_subdirectory(radiator)
 add_subdirectory(radXfer_cross_section)
 

@@ -49,7 +49,7 @@
          "Radiative xfer cross sections": {
             "O2": {
                "cross section": {
-                  "netcdf files": ["Data/XSQY/O2_cross_section_1.nc"],
+                  "netcdf files": ["data/XSQY/O2_cross_section_1.nc"],
                   "cross section type": "base cross section",
                   "lower extrapolation": "boundary"
                }
@@ -59,7 +59,8 @@
             "O2": {
                "radiator type": "Base radiator"
             }
-         }
+         },
+         "Diagnostics" : [ "O2" ]
       }
    }
 }

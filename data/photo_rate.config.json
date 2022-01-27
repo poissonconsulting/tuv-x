@@ -2,7 +2,7 @@
    "photo dissociation rate constants": {
       "O3+hv->O2+O(1D)": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/O3_cross_section_1.nc","Data/XSQY/O3_cross_section_2.nc","Data/XSQY/O3_cross_section_3.nc","Data/XSQY/O3_cross_section_4.nc"],
+            "netcdf files": ["data/XSQY/O3_cross_section_1.nc","data/XSQY/O3_cross_section_2.nc","data/XSQY/O3_cross_section_3.nc","data/XSQY/O3_cross_section_4.nc"],
             "cross section type": "O3 cross section"
          },
          "quantum yield": {
@@ -11,7 +11,7 @@
       },
       "O3+hv->O2+O(3P)": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/O3_cross_section_1.nc","Data/XSQY/O3_cross_section_2.nc","Data/XSQY/O3_cross_section_3.nc","Data/XSQY/O3_cross_section_4.nc"],
+            "netcdf files": ["data/XSQY/O3_cross_section_1.nc","data/XSQY/O3_cross_section_2.nc","data/XSQY/O3_cross_section_3.nc","data/XSQY/O3_cross_section_4.nc"],
             "cross section type": "O3 cross section"
          },
          "quantum yield": {
@@ -20,7 +20,7 @@
       },
       "HO2+hv->OH+O": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/HO2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/HO2_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -29,7 +29,7 @@
       },
       "H2O2+hv->OH+OH": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/H2O2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/H2O2_cross_section_1.nc"],
             "cross section type": "H2O2+hv->OH+OH cross section"
          },
          "quantum yield": {
@@ -39,32 +39,32 @@
       },
       "NO2+hv->NO+O(3P)": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/NO2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/NO2_cross_section_1.nc"],
             "cross section type": "no2 tint cross section"
          },
          "quantum yield": {
-            "netcdf files": ["Data/XSQY/NO2_quantum_yield_1.nc"],
+            "netcdf files": ["data/XSQY/NO2_quantum_yield_1.nc"],
             "quantum yield type": "no2 tint quantum yield",
             "lower extrapolation": "boundary"
          }
       },
       "NO3+hv->NO+O2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/NO3_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/NO3_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
-            "netcdf files": ["Data/XSQY/NO3-NO+O2_quantum_yield_1.nc"],
+            "netcdf files": ["data/XSQY/NO3-NO+O2_quantum_yield_1.nc"],
             "quantum yield type": "tint quantum yield"
          }
       },
       "NO3+hv->NO2+O(3P)": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/NO3_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/NO3_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
-            "netcdf files": ["Data/XSQY/NO3-NO2+O(3P)_quantum_yield_1.nc"],
+            "netcdf files": ["data/XSQY/NO3-NO2+O(3P)_quantum_yield_1.nc"],
             "quantum yield type": "tint quantum yield",
             "lower extrapolation": "1.0"
          }
@@ -80,7 +80,7 @@
       },
       "N2O5+hv->NO3+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/N2O5_cross_section_1.nc","Data/XSQY/N2O5_cross_section_2.nc"],
+            "netcdf files": ["data/XSQY/N2O5_cross_section_1.nc","data/XSQY/N2O5_cross_section_2.nc"],
             "cross section type": "N2O5+hv->NO2+NO3 cross section"
          },
          "quantum yield": {
@@ -90,7 +90,7 @@
       },
       "HNO2+hv->OH+NO": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/HNO2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/HNO2_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -100,7 +100,7 @@
       },
       "HNO3+hv->OH+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/HNO3_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/HNO3_cross_section_1.nc"],
             "cross section type": "HNO3+hv->OH+NO2 cross section"
          },
          "quantum yield": {
@@ -110,7 +110,7 @@
       },
       "HNO4+hv->HO2+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/HNO4_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/HNO4_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -120,7 +120,7 @@
       },
       "NO3-(aq)+hv->NO2(aq)+O-": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/NO3-(aq)_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/NO3-(aq)_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -129,7 +129,7 @@
       },
       "NO3-(aq)+hv->NO2-(aq)+O(3P)": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/NO3-(aq)_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/NO3-(aq)_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -139,59 +139,59 @@
       },
       "CH2O+hv->H+HCO": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH2O_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH2O_cross_section_1.nc"],
             "cross section type": "CH2O cross section"
          },
          "quantum yield": {
-            "netcdf files": ["Data/XSQY/CH2O_quantum_yield_1.nc"],
+            "netcdf files": ["data/XSQY/CH2O_quantum_yield_1.nc"],
             "quantum yield type": "base quantum yield",
             "lower extrapolation": "boundary"
          }
       },
       "CH2O+hv->H2+CO": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH2O_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH2O_cross_section_1.nc"],
             "cross section type": "CH2O cross section"
          },
          "quantum yield": {
-            "netcdf files": ["Data/XSQY/CH2O_quantum_yield_1.nc"],
+            "netcdf files": ["data/XSQY/CH2O_quantum_yield_1.nc"],
             "quantum yield type": "CH2O quantum yield",
             "lower extrapolation": "boundary"
          }
       },
       "CH3CHO+hv->CH3+HCO": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3CHO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3CHO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
-            "netcdf files": ["Data/XSQY/CH3CHO_quantum_yield_1.nc"],
+            "netcdf files": ["data/XSQY/CH3CHO_quantum_yield_1.nc"],
             "quantum yield type": "CH3CHO+hv->CH3+HCO quantum yield"
          }
       },
       "CH3CHO+hv->CH4+CO": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3CHO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3CHO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
-            "netcdf files": ["Data/XSQY/CH3CHO_quantum_yield_1.nc"],
+            "netcdf files": ["data/XSQY/CH3CHO_quantum_yield_1.nc"],
             "quantum yield type": "base quantum yield"
          }
       },
       "C2H5CHO+hv->C2H5+HCO": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/C2H5CHO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/C2H5CHO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
-            "netcdf files": ["Data/XSQY/C2H5CHO_quantum_yield_1.nc"],
+            "netcdf files": ["data/XSQY/C2H5CHO_quantum_yield_1.nc"],
             "quantum yield type": "C2H5CHO quantum yield"
          }
       },
       "CH3OOH+hv->CH3O+OH": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3OOH_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3OOH_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -201,7 +201,7 @@
       },
       "HOCH2OOH+hv->CH2(OH)O+OH": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/HOCH2OOH_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/HOCH2OOH_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -211,7 +211,7 @@
       },
       "CH3ONO2+hv->CH3O+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3ONO2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3ONO2_cross_section_1.nc"],
             "cross section type": "CH3ONO2+hv->CH3O+NO2 cross section"
          },
          "quantum yield": {
@@ -221,7 +221,7 @@
       },
       "CH3OONO2+hv->CH3OO+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3OONO2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3OONO2_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -231,7 +231,7 @@
       },
       "CH3CH2ONO2+hv->CH3CH2O+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3CH2ONO2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3CH2ONO2_cross_section_1.nc"],
             "cross section type": "RONO2 cross section"
          },
          "quantum yield": {
@@ -241,7 +241,7 @@
       },
       "C2H5ONO2+hv->C2H5O+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/C2H5ONO2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/C2H5ONO2_cross_section_1.nc"],
             "cross section type": "CH3ONO2+hv->CH3O+NO2 cross section"
          },
          "quantum yield": {
@@ -251,7 +251,7 @@
       },
       "nC3H7ONO2+hv->C3H7O+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/nC3H7ONO2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/nC3H7ONO2_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -261,7 +261,7 @@
       },
       "1-C4H9ONO2+hv->1-C4H9O+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/1-C4H9ONO2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/1-C4H9ONO2_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -271,7 +271,7 @@
       },
       "2-C4H9ONO2+hv->2-C4H9O+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/2-C4H9ONO2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/2-C4H9ONO2_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -281,7 +281,7 @@
       },
       "CH3CHONO2CH3+hv->CH3CHOCH3+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3CHONO2CH3_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3CHONO2CH3_cross_section_1.nc"],
             "cross section type": "RONO2 cross section"
          },
          "quantum yield": {
@@ -318,7 +318,7 @@
       },
       "t-butyl-nitrite+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/t-butyl-nitrite_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/t-butyl-nitrite_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -328,7 +328,7 @@
       },
       "PAN+hv->CH3CO(OO)+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/PAN_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/PAN_cross_section_1.nc"],
             "cross section type": "CH3ONO2+hv->CH3O+NO2 cross section"
          },
          "quantum yield": {
@@ -338,7 +338,7 @@
       },
       "PAN+hv->CH3CO(O)+NO3": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/PAN_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/PAN_cross_section_1.nc"],
             "cross section type": "CH3ONO2+hv->CH3O+NO2 cross section"
          },
          "quantum yield": {
@@ -348,7 +348,7 @@
       },
       "PPN+hv->CH3CH2COOO+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/PPN_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/PPN_cross_section_1.nc"],
             "cross section type": "CH3ONO2+hv->CH3O+NO2 cross section"
          },
          "quantum yield": {
@@ -358,7 +358,7 @@
       },
       "PPN+hv->CH3CH2COO+NO3": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/PPN_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/PPN_cross_section_1.nc"],
             "cross section type": "CH3ONO2+hv->CH3O+NO2 cross section"
          },
          "quantum yield": {
@@ -368,7 +368,7 @@
       },
       "CH2CHCHO+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH2CHCHO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH2CHCHO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -377,7 +377,7 @@
       },
       "Methacrolein+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/Methacrolein_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/Methacrolein_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -387,7 +387,7 @@
       },
       "MVK+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/MVK_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/MVK_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -396,7 +396,7 @@
       },
       "HOCH2CHO+hv->CH2OH+HCO": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/HOCH2CHO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/HOCH2CHO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -406,7 +406,7 @@
       },
       "HOCH2CHO+hv->CH3OH+CO": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/HOCH2CHO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/HOCH2CHO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -416,7 +416,7 @@
       },
       "HOCH2CHO+hv->CH2CHO+OH": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/HOCH2CHO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/HOCH2CHO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -426,7 +426,7 @@
       },
       "CH3COCH3+hv->CH3CO+CH3": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3COCH3_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3COCH3_cross_section_1.nc"],
             "cross section type": "CH3COCH3+hv->CH3CO+CH3 cross section"
          },
          "quantum yield": {
@@ -435,7 +435,7 @@
       },
       "CH3COCH2CH3+hv->CH3CO+CH2CH3": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3COCH2CH3_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3COCH2CH3_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -444,7 +444,7 @@
       },
       "CH2(OH)COCH3+hv->CH3CO+CH2(OH)": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/Hydroxyacetone_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/Hydroxyacetone_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -454,7 +454,7 @@
       },
       "CH2(OH)COCH3+hv->CH2(OH)CO+CH3": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/Hydroxyacetone_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/Hydroxyacetone_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -464,40 +464,40 @@
       },
       "CHOCHO+hv->HCO+HCO": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CHOCHO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CHOCHO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
-            "netcdf files": ["Data/XSQY/CHOCHO-HCO_HCO_quantum_yield_1.nc"],
+            "netcdf files": ["data/XSQY/CHOCHO-HCO_HCO_quantum_yield_1.nc"],
             "quantum yield type": "base quantum yield",
             "lower extrapolation": "boundary"
          }
       },
       "CHOCHO+hv->H2+CO+CO": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CHOCHO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CHOCHO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
-            "netcdf files": ["Data/XSQY/CHOCHO-H2_CO_CO_quantum_yield_1.nc"],
+            "netcdf files": ["data/XSQY/CHOCHO-H2_CO_CO_quantum_yield_1.nc"],
             "quantum yield type": "base quantum yield",
             "lower extrapolation": "boundary"
          }
       },
       "CHOCHO+hv->CH2O+CO": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CHOCHO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CHOCHO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
-            "netcdf files": ["Data/XSQY/CHOCHO-CH2O_CO_quantum_yield_1.nc"],
+            "netcdf files": ["data/XSQY/CHOCHO-CH2O_CO_quantum_yield_1.nc"],
             "quantum yield type": "base quantum yield",
             "lower extrapolation": "boundary"
          }
       },
       "CH3COCHO+hv->CH3CO+HCO": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3COCHO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3COCHO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -506,7 +506,7 @@
       },
       "CH3COCOCH3+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3COCOCH3_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3COCOCH3_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -516,7 +516,7 @@
       },
       "CH3COOH+hv->CH3+COOH": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3COOH_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3COOH_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -526,7 +526,7 @@
       },
       "CH3COOOH+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3COOOH_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3COOOH_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -536,7 +536,7 @@
       },
       "CH3COCOOH+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3COCOOH_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3COCOOH_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -546,7 +546,7 @@
       },
       "CH3CH3NNO+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3CH3NNO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3CH3NNO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -556,7 +556,7 @@
       },
       "CF2O+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CF2O_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CF2O_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -575,7 +575,7 @@
       },
       "ClO+hv->Cl+O(1D)": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/ClO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/ClO_cross_section_1.nc"],
             "cross section type": "tint cross section"
          },
          "quantum yield": {
@@ -584,7 +584,7 @@
       },
       "ClO+hv->Cl+O(3P)": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/ClO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/ClO_cross_section_1.nc"],
             "cross section type": "tint cross section"
          },
          "quantum yield": {
@@ -593,7 +593,7 @@
       },
       "ClOO+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/ClOO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/ClOO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -603,7 +603,7 @@
       },
       "OClO+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/OClO_cross_section_1.nc","Data/XSQY/OClO_cross_section_2.nc","Data/XSQY/OClO_cross_section_3.nc"],
+            "netcdf files": ["data/XSQY/OClO_cross_section_1.nc","data/XSQY/OClO_cross_section_2.nc","data/XSQY/OClO_cross_section_3.nc"],
             "cross section type": "OClO+hv->Products cross section"
          },
          "quantum yield": {
@@ -613,7 +613,7 @@
       },
       "ClOOCl+hv->Cl+ClOO": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/ClOOCl_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/ClOOCl_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -623,7 +623,7 @@
       },
       "HCl+hv->H+Cl": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/HCl_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/HCl_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -633,7 +633,7 @@
       },
       "HOCl+hv->HO+Cl": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/HOCl_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/HOCl_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -643,7 +643,7 @@
       },
       "NOCl+hv->NO+Cl": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/NOCl_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/NOCl_cross_section_1.nc"],
             "cross section type": "tint cross section"
          },
          "quantum yield": {
@@ -653,7 +653,7 @@
       },
       "ClNO2+hv->Cl+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/ClNO2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/ClNO2_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -663,7 +663,7 @@
       },
       "ClONO+hv->Cl+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/ClONO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/ClONO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -673,7 +673,7 @@
       },
       "ClONO2+hv->Cl+NO3": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/ClONO2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/ClONO2_cross_section_1.nc"],
             "cross section type": "ClONO2 cross section"
          },
          "quantum yield": {
@@ -682,7 +682,7 @@
       },
       "ClONO2+hv->ClO+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/ClONO2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/ClONO2_cross_section_1.nc"],
             "cross section type": "ClONO2 cross section"
          },
          "quantum yield": {
@@ -691,7 +691,7 @@
       },
       "CCl4+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CCl4_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CCl4_cross_section_1.nc"],
             "cross section type": "CCl4+hv->Products cross section"
          },
          "quantum yield": {
@@ -701,7 +701,7 @@
       },
       "CH3OCl+hv->CH3O+Cl": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3OCl_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3OCl_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -711,7 +711,7 @@
       },
       "CHCl3+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CHCl3_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CHCl3_cross_section_1.nc"],
             "cross section type": "CHCl3+hv->Products cross section"
          },
          "quantum yield": {
@@ -721,7 +721,7 @@
       },
       "CH3Cl+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3Cl_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3Cl_cross_section_1.nc"],
             "cross section type": "tint cross section"
          },
          "quantum yield": {
@@ -731,7 +731,7 @@
       },
       "CH3CCl3+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3CCl3_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3CCl3_cross_section_1.nc"],
             "cross section type": "tint cross section"
          },
          "quantum yield": {
@@ -741,7 +741,7 @@
       },
       "CCl2O+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CCl2O_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CCl2O_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -751,7 +751,7 @@
       },
       "CClFO+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CClFO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CClFO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -761,7 +761,7 @@
       },
       "CFC-11+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CFC-11_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CFC-11_cross_section_1.nc"],
             "cross section type": "CFC-11+hv->Products cross section"
          },
          "quantum yield": {
@@ -771,7 +771,7 @@
       },
       "CFC-12+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CFC-12_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CFC-12_cross_section_1.nc"],
             "cross section type": "CFC-11+hv->Products cross section"
          },
          "quantum yield": {
@@ -781,7 +781,7 @@
       },
       "CFC-113+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CFC-113_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CFC-113_cross_section_1.nc"],
             "cross section type": "tint cross section"
          },
          "quantum yield": {
@@ -791,7 +791,7 @@
       },
       "CFC-114+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CFC-114_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CFC-114_cross_section_1.nc"],
             "cross section type": "tint cross section"
          },
          "quantum yield": {
@@ -801,7 +801,7 @@
       },
       "CFC-115+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CFC-115_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CFC-115_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -811,7 +811,7 @@
       },
       "CHClF2+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CHClF2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CHClF2_cross_section_1.nc"],
             "cross section type": "tint cross section"
          },
          "quantum yield": {
@@ -821,7 +821,7 @@
       },
       "CF3CHCl2+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CF3CHCl2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CF3CHCl2_cross_section_1.nc"],
             "cross section type": "HCFC-123+hv->Products cross section"
          },
          "quantum yield": {
@@ -831,7 +831,7 @@
       },
       "CF3CHFCl+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CF3CHFCl_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CF3CHFCl_cross_section_1.nc"],
             "cross section type": "HCFC-123+hv->Products cross section"
          },
          "quantum yield": {
@@ -841,7 +841,7 @@
       },
       "CH3CFCl2+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3CFCl2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3CFCl2_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -851,7 +851,7 @@
       },
       "CH3CF2Cl+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3CF2Cl_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3CF2Cl_cross_section_1.nc"],
             "cross section type": "HCFC-123+hv->Products cross section"
          },
          "quantum yield": {
@@ -861,7 +861,7 @@
       },
       "CF3CF2CHCl2+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CF3CF2CHCl2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CF3CF2CHCl2_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -871,7 +871,7 @@
       },
       "CF2ClCF2CHFCl+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CF2ClCF2CHFCl_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CF2ClCF2CHFCl_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -881,7 +881,7 @@
       },
       "Br2+hv->Br+Br": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/Br2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/Br2_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -891,7 +891,7 @@
       },
       "BrO+hv->Br+O": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/BrO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/BrO_cross_section_1.nc"],
             "cross section type": "BrO+hv->Br+O cross section"
          },
          "quantum yield": {
@@ -910,7 +910,7 @@
       },
       "BrNO+hv->Br+NO": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/BrNO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/BrNO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -920,7 +920,7 @@
       },
       "BrONO+hv->Br+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/BrONO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/BrONO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -930,7 +930,7 @@
       },
       "BrONO+hv->BrO+NO": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/BrONO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/BrONO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -940,7 +940,7 @@
       },
       "BrNO2+hv->Br+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/BrNO2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/BrNO2_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -950,7 +950,7 @@
       },
       "BrONO2+hv->BrO+NO2": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/BrONO2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/BrONO2_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -960,7 +960,7 @@
       },
       "BrONO2+hv->Br+NO3": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/BrONO2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/BrONO2_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -970,7 +970,7 @@
       },
       "BrCl+hv->Br+Cl": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/BrCl_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/BrCl_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -980,7 +980,7 @@
       },
       "CH3Br+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CH3Br_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CH3Br_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -990,7 +990,7 @@
       },
       "CHBr3+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CHBr3_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CHBr3_cross_section_1.nc"],
             "cross section type": "CHBr3+hv->Products cross section",
             "lower extrapolation": "boundary"
          },
@@ -1001,7 +1001,7 @@
       },
       "CF2Br2+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CF2Br2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CF2Br2_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -1011,7 +1011,7 @@
       },
       "CF2BrCl+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CF2BrCl_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CF2BrCl_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -1021,7 +1021,7 @@
       },
       "CF3Br+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CF3Br_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CF3Br_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -1031,7 +1031,7 @@
       },
       "CF2BrCF2Br+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/CF2BrCF2Br_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/CF2BrCF2Br_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -1041,18 +1041,18 @@
       },
       "I2+hv->I+I": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/I2_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/I2_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
-            "netcdf files": ["Data/XSQY/I2_quantum_yield_1.nc"],
+            "netcdf files": ["data/XSQY/I2_quantum_yield_1.nc"],
             "quantum yield type": "base quantum yield",
             "lower extrapolation": "1.0"
          }
       },
       "IO+hv->I+O": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/IO_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/IO_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -1062,7 +1062,7 @@
       },
       "IOH+hv->I+OH": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/IOH_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/IOH_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {
@@ -1072,7 +1072,7 @@
       },
       "perfluoro-1-iodopropane+hv->Products": {
          "cross section": {
-            "netcdf files": ["Data/XSQY/perfluoro 1-iodopropane_cross_section_1.nc"],
+            "netcdf files": ["data/XSQY/perfluoro 1-iodopropane_cross_section_1.nc"],
             "cross section type": "base cross section"
          },
          "quantum yield": {

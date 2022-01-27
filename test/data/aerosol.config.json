@@ -68,7 +68,8 @@
                },
                "550 optical depth": 0.235
             }
-         }
+         },
+         "Diagnostics" : [ "Aerosols" ]
       }
    }
 }

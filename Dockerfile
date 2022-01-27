@@ -9,6 +9,7 @@ RUN dnf -y update \
         cmake \
         make \
         lcov \
+        valgrind \
     && dnf clean all
 
 COPY . /photo-decomp/

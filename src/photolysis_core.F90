@@ -28,6 +28,7 @@ module photolysis_core
     type(component_set_t), pointer      :: components_ => null()
     type(spherical_geom_t), pointer     :: sphericalGeom_ => null()
     type(la_srb_t), pointer             :: la_srb_ => null()
+    type(string_t), allocatable         :: diagnostics_(:)
   contains
     procedure :: run
     final     :: finalize
@@ -83,8 +84,13 @@ contains
     !> Radiators keys must be in config
     call radXfer_config%get( "Radiators", Radiators_config, Iam )
 
+
     !> Instantiate photolysis core
     allocate( photolysis_core_obj )
+
+    ! get optical depth diagnostics to output
+    call radXfer_config%get( "Diagnostics", photolysis_core_obj%diagnostics_, Iam, found = found )
+    if( .not. found ) allocate( photolysis_core_obj%diagnostics_( 0 ) )
 
     !> Instantiate and initialize grid warehouse
     photolysis_core_obj%GridWarehouse_ => grid_warehouse_t( master_config )
@@ -148,11 +154,11 @@ contains
   !> Local variables
   character(len=*), parameter :: Iam = 'Photolysis core run: '
 
-  integer(ik)                 :: ndx
+  integer(ik)                 :: ndx, i_diag
   class(component_t), pointer :: RadiativeXfer
   class(abs_Profile_t), pointer  :: SZAngles
   class(abs_radiator_t), pointer :: aRadiator => null()
-  type(string_t)              :: Handle
+  type(string_t)                 :: Handle
 
   write(*,*) ' '
   write(*,*) Iam // 'entering'
@@ -176,18 +182,21 @@ contains
   ! diagnostic output
   select type( RadiativeXfer )
     class is( radXfer_component_core_t)
-      Handle = 'O2'
-      aRadiator => RadiativeXfer%RadiatorWareHouse_%get_radiator( Handle )
-  ! Diagnostics for testing
-      if( Handle == 'Air' ) then
-        call diagout( 'dtrl.new', aRadiator%state_%layer_OD_ )
-      elseif( Handle == 'Aerosols' ) then
-        call diagout( 'dtaer.new', aRadiator%state_%layer_OD_ )
-      elseif( Handle == 'O3' ) then
-        call diagout( 'dto3.new', aRadiator%state_%layer_OD_ )
-      elseif( Handle == 'O2' ) then
-        call diagout( 'dto2.new', aRadiator%state_%layer_OD_ )
-      endif
+      do i_diag = 1, size( this%diagnostics_ )
+      associate( diagnostic => this%diagnostics_( i_diag ) )
+        aRadiator => RadiativeXfer%RadiatorWareHouse_%get_radiator( diagnostic )
+        ! Diagnostics for testing
+        if( diagnostic == 'Air' ) then
+          call diagout( 'dtrl.new', aRadiator%state_%layer_OD_ )
+        elseif( diagnostic == 'Aerosols' ) then
+          call diagout( 'dtaer.new', aRadiator%state_%layer_OD_ )
+        elseif( diagnostic == 'O3' ) then
+          call diagout( 'dto3.new', aRadiator%state_%layer_OD_ )
+        elseif( diagnostic == 'O2' ) then
+          call diagout( 'dto2.new', aRadiator%state_%layer_OD_ )
+        endif
+      end associate
+      end do
   end select
 
   write(*,*) ' '

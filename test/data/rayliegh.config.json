@@ -57,7 +57,8 @@
             "Air": {
                "radiator type": "Base radiator"
             }
-         }
+         },
+         "Diagnostics" : [ "Air" ]
       }
    }
 }

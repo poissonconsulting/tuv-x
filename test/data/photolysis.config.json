@@ -54,13 +54,13 @@
             },
             "O3": {
                "cross section": {
-                  "netcdf files": ["Data/XSQY/O3_cross_section_1.nc","Data/XSQY/O3_cross_section_2.nc","Data/XSQY/O3_cross_section_3.nc","Data/XSQY/O3_cross_section_4.nc"],
+                  "netcdf files": ["data/XSQY/O3_cross_section_1.nc","data/XSQY/O3_cross_section_2.nc","data/XSQY/O3_cross_section_3.nc","data/XSQY/O3_cross_section_4.nc"],
                   "cross section type": "O3 cross section"
                }
             },
             "O2": {
                "cross section": {
-                  "netcdf files": ["Data/XSQY/O2_cross_section_1.nc"],
+                  "netcdf files": ["data/XSQY/O2_cross_section_1.nc"],
                   "cross section type": "base cross section",
                   "lower extrapolation": "boundary"
                }
@@ -99,7 +99,8 @@
                },
                "550 optical depth": 0.235
             }
-         }
+         },
+         "Diagnostics" : [ "Air", "Aerosols", "O2", "O3" ]
       }
    }
 }

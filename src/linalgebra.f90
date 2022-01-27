@@ -1,7 +1,8 @@
 
-   module linalgebra
+   module linalgebra_type
 
-   use abs_linalgebra, only : abs_linalgebra_t
+   use musica_constants,    only : ik => musica_ik, dk => musica_dk
+   use abs_linalgebra_type, only : abs_linalgebra_t
 
    implicit none
 
@@ -18,8 +19,10 @@
      procedure :: tridiag
    end type linalgebra_t
 
-   REAL, PARAMETER :: rZERO = 0.0
-   REAL, PARAMETER :: rONE  = 1.0
+   integer(ik), PARAMETER :: iZERO  = 0_ik
+   integer(ik), PARAMETER :: iONE  = 1_ik
+   REAL(dk), PARAMETER ::    rZERO = 0.0_dk
+   REAL(dk), PARAMETER ::    rONE  = 1.0_dk
 
    contains
 
@@ -35,30 +38,30 @@
 !     TO SOLVE  A*X = B , FOLLOW SBGCO BY SGBSL.
 !------------------------------------------------------------
 
-   use abs_linalgebra, only : SASUM, SDOT, SASUM, SAXPY, SSCAL
+   use abs_linalgebra_type, only : SASUM, SDOT, SASUM, SAXPY, SSCAL
 
    class(linalgebra_t), intent(inout) :: this
 
-   INTEGER, intent(in)  :: N, ML, MU
-   INTEGER, intent(out) :: IPVT(:)
-   REAL, intent(out)    :: RCOND
-   REAL, intent(inout)  :: ABD(:,:)
-   REAL, intent(out)    :: Z(:)
+   INTEGER(ik), intent(in)  :: N, ML, MU
+   INTEGER(ik), intent(out) :: IPVT(:)
+   REAL(dk), intent(out)    :: RCOND
+   REAL(dk), intent(inout)  :: ABD(:,:)
+   REAL(dk), intent(out)    :: Z(:)
 
-   REAL    :: EK, T, WK, WKM
-   REAL    :: ANORM, S, SM, YNORM
-   INTEGER :: IS, INFO, J, JU, K, KB, KP1, L, LA, LM, LZ, M, MM
+   REAL(dk)    :: EK, T, WK, WKM
+   REAL(dk)    :: ANORM, S, SM, YNORM
+   INTEGER(ik) :: IS, INFO, J, JU, K, KB, KP1, L, LA, LM, LZ, M, MM
 
 
 !                       ** COMPUTE 1-NORM OF A
    ANORM = rZERO
-   L = ML + 1
+   L = ML + iONE
    IS = L + MU
-   DO J = 1, N
+   DO J = iONE, N
      ANORM = MAX(ANORM, SASUM(L,ABD(IS:,J), 1))
-     IF (IS .GT. ML + 1) IS = IS - 1
-     IF (J .LE. MU) L = L + 1
-     IF (J .GE. N - ML) L = L - 1
+     IF (IS .GT. ML + 1) IS = IS - iONE
+     IF (J .LE. MU) L = L + iONE
+     IF (J .GE. N - ML) L = L - iONE
    ENDDO
 
    CALL this%SGBFA(ABD, N, ML, MU, IPVT, INFO)
@@ -72,15 +75,15 @@
 
 !                     ** SOLVE TRANS(U)*W = E
 	EK = rONE
-	Z(1:N) = rZERO
+	Z(:N) = rZERO
 
-	M = ML + MU + 1
-	JU = 0
-	DO K = 1, N
+	M = ML + MU + iONE
+	JU = iZERO
+	DO K = iONE, N
 	   IF (Z(K) /= rZERO) EK = SIGN(EK, -Z(K))
 	   IF (ABS(EK-Z(K)) > ABS(ABD(M,K))) THEN
 	      S = ABS(ABD(M,K))/ABS(EK-Z(K))
-	      CALL SSCAL(N, S, Z, 1)
+	      CALL SSCAL(N, S, Z, iONE)
 	      EK = S*EK
 	   ENDIF
 	   WK = EK - Z(K)
@@ -94,12 +97,12 @@
 	      WK  = rONE
 	      WKM = rONE
 	   ENDIF
-	   KP1 = K + 1
+	   KP1 = K + iONE
 	   JU = MIN(MAX(JU, MU+IPVT(K)), N)
 	   MM = M
 	   IF (KP1 <= JU) THEN
 	      DO J = KP1, JU
-	         MM = MM - 1
+	         MM = MM - iONE
 	         SM = SM + ABS(Z(J)+WKM*ABD(MM,J))
 	         Z(J) = Z(J) + WK*ABD(MM,J)
 	         S = S + ABS(Z(J))
@@ -117,19 +120,19 @@
 	   Z(K) = WK
         ENDDO
 
-	S = rONE / SASUM(N, Z, 1)
-	CALL SSCAL(N, S, Z, 1)
+	S = rONE / SASUM(N, Z, iONE)
+	CALL SSCAL(N, S, Z, iONE)
 
 !                         ** SOLVE TRANS(L)*Y = W
-	DO KB = 1, N
-	   K = N + 1 - KB
+	DO KB = iONE, N
+	   K = N + iONE - KB
 	   LM = MIN(ML, N-K)
 	   IF (K < N) THEN
-             Z(K) = Z(K) + SDOT(LM, ABD(M+1:,K), 1, Z(K+1:), 1)
+             Z(K) = Z(K) + SDOT(LM, ABD(M+iONE:,K), iONE, Z(K+iONE:), iONE)
 	   ENDIF
 	   IF (ABS(Z(K)) > rONE) THEN
 	      S = rONE / ABS(Z(K))
-	      CALL SSCAL(N, S, Z, 1)
+	      CALL SSCAL(N, S, Z, iONE)
 	   ENDIF
 	   L = IPVT(K)
 	   T = Z(L)
@@ -137,36 +140,36 @@
 	   Z(K) = T
 	ENDDO
 
-	S = rONE / SASUM(N, Z, 1)
-	CALL SSCAL(N, S, Z, 1)
+	S = rONE / SASUM(N, Z, iONE)
+	CALL SSCAL(N, S, Z, iONE)
 
 	YNORM = rONE
 !                         ** SOLVE L*V = Y
-	DO K = 1, N
+	DO K = iONE, N
 	   L = IPVT(K)
 	   T = Z(L)
 	   Z(L) = Z(K)
 	   Z(K) = T
 	   LM = MIN(ML, N-K)
 	   IF (K < N) THEN
-             CALL SAXPY(LM, T, ABD(M+1:,K), 1, Z(K+1:), 1)
+             CALL SAXPY(LM, T, ABD(M+iONE:,K), iONE, Z(K+iONE:), iONE)
 	   ENDIF
 	   IF (ABS(Z(K)) > rONE) THEN
 	      S = rONE / ABS(Z(K))
-	      CALL SSCAL(N, S, Z, 1)
+	      CALL SSCAL(N, S, Z, iONE)
 	      YNORM = S*YNORM
 	   ENDIF
 	ENDDO
 
-	S = rONE/SASUM(N, Z, 1)
-	CALL SSCAL(N, S, Z, 1)
+	S = rONE/SASUM(N, Z, iONE)
+	CALL SSCAL(N, S, Z, iONE)
 	YNORM = S*YNORM
 !                           ** SOLVE  U*Z = W
-	DO KB = 1, N
-	   K = N + 1 - KB
+	DO KB = iONE, N
+	   K = N + iONE - KB
 	   IF (ABS(Z(K)) > ABS(ABD(M,K))) THEN
 	      S = ABS(ABD(M,K)) / ABS(Z(K))
-	      CALL SSCAL(N, S, Z, 1)
+	      CALL SSCAL(N, S, Z, iONE)
 	      YNORM = S*YNORM
 	   ENDIF
 	   IF (ABD(M,K) /= rZERO) THEN
@@ -174,15 +177,15 @@
            ELSE
 	      Z(K) = rONE
            ENDIF
-	   LM = MIN(K, M) - 1
+	   LM = MIN(K, M) - iONE
 	   LA = M - LM
 	   LZ = K - LM
 	   T = -Z(K)
-	   CALL SAXPY(LM, T, ABD(LA:,K), 1, Z(LZ:), 1)
+	   CALL SAXPY(LM, T, ABD(LA:,K), iONE, Z(LZ:), iONE)
 	ENDDO
 !                              ** MAKE ZNORM = 1.0
-	S = rONE / SASUM(N, Z, 1)
-	CALL SSCAL(N, S, Z, 1)
+	S = rONE / SASUM(N, Z, iONE)
+	CALL SSCAL(N, S, Z, iONE)
 	YNORM = S*YNORM
 
 	IF (ANORM /= rZERO) THEN
@@ -195,7 +198,7 @@
 
    SUBROUTINE SGBFA( this, ABD, N, ML, MU, IPVT, INFO )
 
-   use abs_linalgebra, only : SAXPY, SSCAL, ISAMAX
+   use abs_linalgebra_type, only : SAXPY, SSCAL, ISAMAX
 
 !         FACTORS A REAL BAND MATRIX BY ELIMINATION.
 
@@ -225,35 +228,35 @@
 !                       FROM FORTRAN: MAX, MIN
 
    class(linalgebra_t), intent(inout) :: this
-   INTEGER, intent(in)   ::  N, ML, MU
-   INTEGER, intent(out)  ::  INFO
-   INTEGER, intent(out)  ::  IPVT(:)
-   REAL, intent(inout)   ::  ABD(:,:)
+   INTEGER(ik), intent(in)   ::  N, ML, MU
+   INTEGER(ik), intent(out)  ::  INFO
+   INTEGER(ik), intent(out)  ::  IPVT(:)
+   REAL(dk), intent(inout)   ::  ABD(:,:)
 
-   REAL     :: T
-   INTEGER  :: I,I0,J,JU,JZ,J0,J1,K,KP1,L,LM,M,MM,NM1
+   REAL(dk)     :: T
+   INTEGER(ik)  :: I,I0,J,JU,JZ,J0,J1,K,KP1,L,LM,M,MM,NM1
 
 
-	M = ML + MU + 1
-	INFO = 0
+	M = ML + MU + iONE
+	INFO = iZERO
 !                        ** ZERO INITIAL FILL-IN COLUMNS
-	J0 = MU + 2
-	J1 = MIN(N, M) - 1
+	J0 = MU + 2_ik
+	J1 = MIN(N, M) - iONE
 	DO JZ = J0, J1
-	   I0 = M + 1 - JZ
+	   I0 = M + iONE - JZ
 	   DO I = I0, ML
 	      ABD(I,JZ) = rZERO
            ENDDO
         ENDDO
 	JZ = J1
-	JU = 0
+	JU = iZERO
 
 !                       ** GAUSSIAN ELIMINATION WITH PARTIAL PIVOTING
-	NM1 = N - 1
-        DO K = 1, NM1
-           KP1 = K + 1
+	NM1 = N - iONE
+        DO K = iONE, NM1
+           KP1 = K + iONE
 !                                  ** ZERO NEXT FILL-IN COLUMN
-	   JZ = JZ + 1
+	   JZ = JZ + iONE
 	   IF (JZ <= N) THEN
 	      DO I = 1, ML
 	         ABD(I,JZ) = rZERO
@@ -261,7 +264,7 @@
 	   ENDIF
 !                                  ** FIND L = PIVOT INDEX
 	   LM = MIN(ML, N-K)
-	   L = ISAMAX(LM+1, ABD(M:,K), 1) + M - 1
+	   L = ISAMAX(LM+iONE, ABD(M:,K), iONE) + M - iONE
 	   IPVT(K) = L + K - M
 
 	   IF (ABD(L,K) == rZERO) THEN
@@ -276,21 +279,21 @@
 	      ENDIF
 !                                   ** COMPUTE MULTIPLIERS
 	      T = -rONE / ABD(M,K)
-	      CALL SSCAL(LM, T, ABD(M+1:,K), 1)
+	      CALL SSCAL(LM, T, ABD(M+iONE:,K), iONE)
 
 !                               ** ROW ELIMINATION WITH COLUMN INDEXING
 
 	      JU = MIN(MAX(JU, MU+IPVT(K)), N)
 	      MM = M
 	      DO J = KP1, JU
-	         L = L - 1
-	         MM = MM - 1
+	         L = L - iONE
+	         MM = MM - iONE
 	         T = ABD(L,J)
 	         IF (L /= MM) THEN
 	            ABD(L,J) = ABD(MM,J)
 	            ABD(MM,J) = T
 	         ENDIF
-	         CALL SAXPY(LM, T, ABD(M+1:,K), 1, ABD(MM+1:,J), 1)
+	         CALL SAXPY(LM, T, ABD(M+iONE:,K), iONE, ABD(MM+iONE:,J), iONE)
               ENDDO
            ENDIF
         ENDDO
@@ -302,7 +305,7 @@
 
    SUBROUTINE SGBSL( this, ABD, N, ML, MU, IPVT, B, JOB )
 
-   use abs_linalgebra, only : SAXPY, SDOT
+   use abs_linalgebra_type, only : SAXPY, SDOT
 
 !         SOLVES THE REAL BAND SYSTEM
 !            A * X = B  OR  TRANSPOSE(A) * X = B
@@ -362,22 +365,22 @@
 
    class(linalgebra_t), intent(inout) :: this
 
-   INTEGER, intent(in) ::  N, ML, MU, JOB
-   INTEGER, intent(in) ::  IPVT(:)
-   REAL, intent(in)    ::  ABD(:,:)
-   REAL, intent(inout) ::  B(:)
+   INTEGER(ik), intent(in) ::  N, ML, MU, JOB
+   INTEGER(ik), intent(in) ::  IPVT(:)
+   REAL(dk), intent(in)    ::  ABD(:,:)
+   REAL(dk), intent(inout) ::  B(:)
 
-	REAL     :: T
-	INTEGER  :: K,KB,L,LA,LB,LM,M,NM1
+	REAL(dk)     :: T
+	INTEGER(ik)  :: K,KB,L,LA,LB,LM,M,NM1
 
 
-        M = MU + ML + 1
-        NM1 = N - 1
+        M = MU + ML + iONE
+        NM1 = N - iONE
         IF (JOB == 0) THEN
 !                               ** JOB = 0 , SOLVE  A * X = B
 !                               ** FIRST SOLVE L*Y = B
-	   IF (ML /= 0) THEN
-	      DO K = 1, NM1
+	   IF (ML /= iZERO) THEN
+	      DO K = iONE, NM1
 	         LM = MIN(ML, N-K)
 	         L = IPVT(K)
 	         T = B(L)
@@ -385,35 +388,35 @@
 	            B(L) = B(K)
 	            B(K) = T
 	         ENDIF
-	         CALL SAXPY( LM, T, ABD(M+1:,K), 1, B(K+1:), 1 )
+	         CALL SAXPY( LM, T, ABD(M+iONE:,K), iONE, B(K+iONE:), iONE )
 	      ENDDO
 	   ENDIF
 !                           ** NOW SOLVE  U*X = Y
-	   DO KB = 1, N
-	      K = N + 1 - KB
+	   DO KB = iONE, N
+	      K = N + iONE - KB
 	      B(K) = B(K) / ABD(M,K)
-	      LM = MIN(K, M) - 1
+	      LM = MIN(K, M) - iONE
 	      LA = M - LM
 	      LB = K - LM
 	      T = -B(K)
-	      CALL SAXPY(LM, T, ABD(LA:,K), 1, B(LB:), 1)
+	      CALL SAXPY(LM, T, ABD(LA:,K), iONE, B(LB:), iONE)
 	   ENDDO
         ELSE
 !                          ** JOB = NONZERO, SOLVE  TRANS(A) * X = B
 !                                  ** FIRST SOLVE  TRANS(U)*Y = B
-	   DO K = 1, N
-	      LM = MIN(K, M) - 1
+	   DO K = iONE, N
+	      LM = MIN(K, M) - iONE
 	      LA = M - LM
 	      LB = K - LM
-	      T = SDOT(LM, ABD(LA:,K), 1, B(LB:), 1)
+	      T = SDOT(LM, ABD(LA:,K), iONE, B(LB:), iONE)
 	      B(K) = (B(K) - T)/ABD(M,K)
 	   ENDDO
 !                                  ** NOW SOLVE TRANS(L)*X = Y
-	   IF (ML /= 0) THEN
-	      DO KB = 1, NM1
+	   IF (ML /= iZERO) THEN
+	      DO KB = iONE, NM1
 	         K = N - KB
 	         LM = MIN(ML, N-K)
-	         B(K) = B(K) + SDOT(LM, ABD(M+1:,K), 1, B(K+1:), 1)
+	         B(K) = B(K) + SDOT(LM, ABD(M+iONE:,K), iONE, B(K+iONE:), iONE)
 	         L = IPVT(K)
 	         IF (L /= K) THEN
 	            T = B(L)
@@ -428,7 +431,7 @@
 
    SUBROUTINE SGESL( this, A, N, IPVT, B, JOB )
 
-   use abs_linalgebra, only : SAXPY, SDOT
+   use abs_linalgebra_type, only : SAXPY, SDOT
 
 !         SOLVES THE REAL SYSTEM
 !            A * X = B  OR  TRANS(A) * X = B
@@ -479,47 +482,47 @@
 
    class(linalgebra_t), intent(inout) :: this
 
-        INTEGER, intent(in) :: N, JOB
-        INTEGER, intent(in) :: IPVT(:)
-	REAL, intent(in)    :: A(:,:)
-	REAL, intent(inout) :: B(:)
+        INTEGER(ik), intent(in) :: N, JOB
+        INTEGER(ik), intent(in) :: IPVT(:)
+	REAL(dk), intent(in)    :: A(:,:)
+	REAL(dk), intent(inout) :: B(:)
 
-	REAL     :: T
-	INTEGER  :: K,KB,L,NM1
+	REAL(dk)     :: T
+	INTEGER(ik)  :: K,KB,L,NM1
 
 
-	NM1 = N - 1
-	IF (JOB == 0) THEN
+	NM1 = N - iONE
+	IF (JOB == iZERO) THEN
 !                                 ** JOB = 0 , SOLVE  A * X = B
 !                                     ** FIRST SOLVE  L*Y = B
-	   DO K = 1, NM1
+	   DO K = iONE, NM1
 	      L = IPVT(K)
 	      T = B(L)
 	      IF (L /= K) THEN
 	         B(L) = B(K)
 	         B(K) = T
 	      ENDIF
-	      CALL SAXPY( N-K, T, A(K+1:,K), 1, B(K+1:), 1 )
+	      CALL SAXPY( N-K, T, A(K+iONE:,K), iONE, B(K+iONE:), iONE )
            ENDDO
 !                                    ** NOW SOLVE  U*X = Y
-	   DO KB = 1, N
-	      K = N + 1 - KB
+	   DO KB = iONE, N
+	      K = N + iONE - KB
 	      B(K) = B(K) / A(K,K)
 	      T = -B(K)
-	      CALL SAXPY( K-1, T, A(1:,K), 1, B, 1 )
+	      CALL SAXPY( K-iONE, T, A(iONE:,K), iONE, B, iONE )
            ENDDO
 
 	ELSE
 !                         ** JOB = NONZERO, SOLVE  TRANS(A) * X = B
 !                                    ** FIRST SOLVE  TRANS(U)*Y = B
-	   DO K = 1, N
-	      T = SDOT( K-1, A(1:,K), 1, B, 1 )
+	   DO K = iONE, N
+	      T = SDOT( K-iONE, A(iONE:,K), iONE, B, iONE )
 	      B(K) = (B(K) - T) / A(K,K)
            ENDDO
 !                                    ** NOW SOLVE  TRANS(L)*X = Y
-	   DO KB = 1, NM1
+	   DO KB = iONE, NM1
 	      K = N - KB
-	      B(K) = B(K) + SDOT( N-K, A(K+1:,K), 1, B(K+1:), 1 )
+	      B(K) = B(K) + SDOT( N-K, A(K+iONE:,K), iONE, B(K+iONE:), iONE )
 	      L = IPVT(K)
 	      IF (L /= K) THEN
 	         T = B(L)
@@ -534,7 +537,7 @@
 
    SUBROUTINE SGECO( this, A, N, IPVT, RCOND, Z )
 
-   use abs_linalgebra, only : SAXPY, SSCAL, SDOT, SASUM
+   use abs_linalgebra_type, only : SAXPY, SSCAL, SDOT, SASUM
 
 !         FACTORS A REAL MATRIX BY GAUSSIAN ELIMINATION
 !         AND ESTIMATES THE CONDITION OF THE MATRIX.
@@ -588,21 +591,21 @@
 
    class(linalgebra_t), intent(inout) :: this
 
-   INTEGER, intent(in)    :: N
-   INTEGER, intent(out)   :: IPVT(:)
-   REAL, intent(out)      :: RCOND
-   REAL, intent(inout)    :: A(:,:)
-   REAL, intent(out)      :: Z(:)
+   INTEGER(ik), intent(in)    :: N
+   INTEGER(ik), intent(out)   :: IPVT(:)
+   REAL(dk), intent(out)      :: RCOND
+   REAL(dk), intent(inout)    :: A(:,:)
+   REAL(dk), intent(out)      :: Z(:)
 
-   REAL ::  EK,T,WK,WKM
-   REAL ::  ANORM,S,SM,YNORM
-   INTEGER  :: INFO,J,K,KB,KP1,L
+   REAL(dk) ::  EK,T,WK,WKM
+   REAL(dk) ::  ANORM,S,SM,YNORM
+   INTEGER(ik)  :: INFO,J,K,KB,KP1,L
 
 !                        ** COMPUTE 1-NORM OF A
-	ANORM = 0.0E0
-	DO 10 J = 1, N
-	   ANORM = MAX( ANORM, SASUM(N,A(1:,J),1) )
-   10 CONTINUE
+	ANORM = rZERO
+	DO J = iONE, N
+	   ANORM = MAX( ANORM, SASUM(N,A(iONE:,J),iONE) )
+	ENDDO
 !                                      ** FACTOR
       CALL this%SGEFA(A,N,IPVT,INFO)
 
@@ -614,111 +617,111 @@
 !     OVERFLOW.
 
 !                        ** SOLVE TRANS(U)*W = E
-	EK = 1.0E0
-	DO 20 J = 1, N
-	   Z(J) = 0.0E0
-   20 CONTINUE
+	EK = rONE
+	DO J = iONE, N
+	   Z(J) = rZERO
+	ENDDO
 
-	DO 100 K = 1, N
-	   IF (Z(K) .NE. 0.0E0) EK = SIGN(EK, -Z(K))
+	DO K = iONE, N
+	   IF (Z(K) .NE. rZERO) EK = SIGN(EK, -Z(K))
 	   IF (ABS(EK-Z(K)) .GT. ABS(A(K,K))) THEN
 	      S = ABS(A(K,K)) / ABS(EK-Z(K))
-	      CALL SSCAL(N, S, Z, 1)
+	      CALL SSCAL(N, S, Z, iONE)
 	      EK = S*EK
 	   ENDIF
 	   WK = EK - Z(K)
 	   WKM = -EK - Z(K)
 	   S = ABS(WK)
 	   SM = ABS(WKM)
-	   IF (A(K,K) .NE. 0.0E0) THEN
+	   IF (A(K,K) .NE. rZERO) THEN
 	      WK  = WK  / A(K,K)
 	      WKM = WKM / A(K,K)
 	   ELSE
-	      WK  = 1.0E0
-	      WKM = 1.0E0
+	      WK  = rONE
+	      WKM = rONE
 	   ENDIF
-	   KP1 = K + 1
+	   KP1 = K + iONE
 	   IF (KP1 .LE. N) THEN
-	      DO 60 J = KP1, N
+	      DO J = KP1, N
 	         SM = SM + ABS(Z(J)+WKM*A(K,J))
 	         Z(J) = Z(J) + WK*A(K,J)
 	         S = S + ABS(Z(J))
-   60       CONTINUE
+	      ENDDO
 	      IF (S .LT. SM) THEN
 	         T = WKM - WK
 	         WK = WKM
-	         DO 70 J = KP1, N
+	         DO J = KP1, N
 	            Z(J) = Z(J) + T*A(K,J)
-   70          CONTINUE
+	         ENDDO
 	      ENDIF
 	   ENDIF
 	   Z(K) = WK
-  100 CONTINUE
+        ENDDO
 
-	S = 1.0E0 / SASUM(N, Z, 1)
-	CALL SSCAL(N, S, Z, 1)
+	S = rONE / SASUM(N, Z, iONE)
+	CALL SSCAL(N, S, Z, iONE)
 !                                ** SOLVE TRANS(L)*Y = W
-	DO 120 KB = 1, N
-	   K = N + 1 - KB
+	DO KB = iONE, N
+	   K = N + iONE - KB
 	   IF (K .LT. N) THEN
-             Z(K) = Z(K) + SDOT(N-K, A(K+1:,K), 1, Z(K+1:), 1)
+             Z(K) = Z(K) + SDOT(N-K, A(K+iONE:,K), iONE, Z(K+iONE:), iONE)
 	   ENDIF
-	   IF (ABS(Z(K)) .GT. 1.0E0) THEN
-	      S = 1.0E0/ABS(Z(K))
-	      CALL SSCAL(N, S, Z, 1)
+	   IF (ABS(Z(K)) .GT. rONE) THEN
+	      S = rONE/ABS(Z(K))
+	      CALL SSCAL(N, S, Z, iONE)
 	   ENDIF
 	   L = IPVT(K)
 	   T = Z(L)
 	   Z(L) = Z(K)
 	   Z(K) = T
-  120 CONTINUE
+	ENDDO
 
-	S = 1.0E0 / SASUM(N, Z, 1)
-	CALL SSCAL(N, S, Z, 1)
+	S = rONE / SASUM(N, Z, iONE)
+	CALL SSCAL(N, S, Z, iONE)
 !                                 ** SOLVE L*V = Y
-	YNORM = 1.0E0
-	DO 140 K = 1, N
+	YNORM = rONE
+	DO K = iONE, N
 	   L = IPVT(K)
 	   T = Z(L)
 	   Z(L) = Z(K)
 	   Z(K) = T
-	   IF (K .LT. N) CALL SAXPY(N-K, T, A(K+1:,K), 1, Z(K+1:), 1)
-	   IF (ABS(Z(K)) .GT. 1.0E0) THEN
-	      S = 1.0E0/ABS(Z(K))
-	      CALL SSCAL(N, S, Z, 1)
+	   IF (K .LT. N) CALL SAXPY(N-K, T, A(K+iONE:,K), iONE, Z(K+iONE:), iONE)
+	   IF (ABS(Z(K)) .GT. rONE) THEN
+	      S = rONE/ABS(Z(K))
+	      CALL SSCAL(N, S, Z, iONE)
 	      YNORM = S*YNORM
 	   ENDIF
-  140 CONTINUE
+	ENDDO
 
-	S = 1.0E0 / SASUM(N, Z, 1)
-	CALL SSCAL(N, S, Z, 1)
+	S = rONE / SASUM(N, Z, iONE)
+	CALL SSCAL(N, S, Z, iONE)
 !                                  ** SOLVE  U*Z = V
 	YNORM = S*YNORM
-	DO 160 KB = 1, N
-	   K = N + 1 - KB
+	DO KB = iONE, N
+	   K = N + iONE - KB
 	   IF (ABS(Z(K)) .GT. ABS(A(K,K))) THEN
 	      S = ABS(A(K,K))/ABS(Z(K))
-	      CALL SSCAL(N, S, Z, 1)
+	      CALL SSCAL(N, S, Z, iONE)
 	      YNORM = S*YNORM
 	   ENDIF
-	   IF (A(K,K) .NE. 0.0E0) Z(K) = Z(K)/A(K,K)
-	   IF (A(K,K) .EQ. 0.0E0) Z(K) = 1.0E0
+	   IF (A(K,K) .NE. rZERO) Z(K) = Z(K)/A(K,K)
+	   IF (A(K,K) .EQ. rZERO) Z(K) = 1.0E0
 	   T = -Z(K)
-	   CALL SAXPY(K-1, T, A(1:,K), 1, Z, 1)
-  160 CONTINUE
+	   CALL SAXPY(K-iONE, T, A(iONE:,K), iONE, Z, iONE)
+	ENDDO
 !                                   ** MAKE ZNORM = 1.0
-	S = 1.0E0 / SASUM(N, Z, 1)
-	CALL SSCAL(N, S, Z, 1)
+	S = rONE / SASUM(N, Z, iONE)
+	CALL SSCAL(N, S, Z, iONE)
 	YNORM = S*YNORM
 
-	IF (ANORM .NE. 0.0E0) RCOND = YNORM/ANORM
-	IF (ANORM .EQ. 0.0E0) RCOND = 0.0E0
+	IF (ANORM .NE. rZERO) RCOND = YNORM/ANORM
+	IF (ANORM .EQ. rZERO) RCOND = rZERO
 	
    END SUBROUTINE SGECO
 
    SUBROUTINE SGEFA( this, A, N, IPVT, INFO )
 
-   use abs_linalgebra, only : SAXPY, SSCAL, ISAMAX
+   use abs_linalgebra_type, only : SAXPY, SSCAL, ISAMAX
 
 !         FACTORS A REAL MATRIX BY GAUSSIAN ELIMINATION.
 
@@ -747,25 +750,25 @@
 
    class(linalgebra_t), intent(inout) :: this
 
-   INTEGER, intent(in)  ::  N
-   INTEGER, intent(out) ::  INFO
-   INTEGER, intent(out) ::  IPVT(:)
-   REAL, intent(inout)  ::  A(:,:)
+   INTEGER(ik), intent(in)  ::  N
+   INTEGER(ik), intent(out) ::  INFO
+   INTEGER(ik), intent(out) ::  IPVT(:)
+   REAL(dk), intent(inout)  ::  A(:,:)
 
-	REAL     :: T
-	INTEGER  :: J,K,KP1,L,NM1
+	REAL(dk)     :: T
+	INTEGER(ik)  :: J,K,KP1,L,NM1
 
 
 !                      ** GAUSSIAN ELIMINATION WITH PARTIAL PIVOTING
-	INFO = 0
-	NM1 = N - 1
-	DO 60 K = 1, NM1
-	   KP1 = K + 1
+	INFO = iZERO
+	NM1 = N - iONE
+	DO K = iONE, NM1
+	   KP1 = K + iONE
 !                                            ** FIND L = PIVOT INDEX
-	   L = ISAMAX( N-K+1, A(K:,K), 1) + K-1
+	   L = ISAMAX( N-K+iONE, A(K:,K), iONE) + K-iONE
 	   IPVT(K) = L
 
-	   IF (A(L,K) .EQ. 0.0E0) THEN
+	   IF (A(L,K) .EQ. rZERO) THEN
 !                                     ** ZERO PIVOT IMPLIES THIS COLUMN 
 !                                     ** ALREADY TRIANGULARIZED
 	      INFO = K
@@ -777,22 +780,21 @@
 	         A(K,K) = T
 	      ENDIF
 !                                     ** COMPUTE MULTIPLIERS
-	      T = -1.0E0 / A(K,K)
-	      CALL SSCAL( N-K, T, A(K+1:,K), 1 )
+	      T = -rONE / A(K,K)
+	      CALL SSCAL( N-K, T, A(K+iONE:,K), iONE )
 
 !                              ** ROW ELIMINATION WITH COLUMN INDEXING
-	      DO 30 J = KP1, N
+	      DO J = KP1, N
 	         T = A(L,J)
 	         IF (L .NE. K) THEN
 	            A(L,J) = A(K,J)
 	            A(K,J) = T
 	         ENDIF
-	         CALL SAXPY( N-K, T, A(K+1:,K), 1, A(K+1:,J), 1 )
-   30       CONTINUE
+	         CALL SAXPY( N-K, T, A(K+iONE:,K), iONE, A(K+iONE:,J), iONE )
+	      ENDDO
 
 	   ENDIF
-
-   60 CONTINUE
+	ENDDO
 
 	IPVT(N) = N
 	IF (A(N,N) == rZERO) INFO = N
@@ -800,23 +802,25 @@
    END SUBROUTINE SGEFA
 
    FUNCTION tridiag(this, a, b, c, r) result(u)
+
+   use musica_constants, only : dk => musica_dk
 !_______________________________________________________________________
 ! solves tridiagonal system.  From Numerical Recipies, p. 40
 !_______________________________________________________________________
 
 ! input:
-      REAL, intent(in) :: a(:), b(:), c(:), r(:)
+      REAL(dk), intent(in) :: a(:), b(:), c(:), r(:)
       class(linalgebra_t), intent(in) :: this
 
 ! output:
-      REAL :: u(size(b))
+      REAL(dk) :: u(size(b))
 
 ! local:
-      INTEGER :: j
-      INTEGER :: n
+      INTEGER(ik) :: j
+      INTEGER(ik) :: n
 
-      REAL :: bet
-      REAL :: gam(2*size(b))
+      REAL(dk) :: bet
+      REAL(dk) :: gam(2*size(b))
 !_______________________________________________________________________
 
       IF (b(1) == rZERO) THEN
@@ -842,4 +846,4 @@
 
       END FUNCTION tridiag
 
-   end module linalgebra
+   end module linalgebra_type

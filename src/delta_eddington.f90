@@ -1,151 +1,164 @@
 
-   module delta_eddington
+   module delta_eddington_type
 
-   use abstract_radXfer, only : abstract_radXfer_t
+   use abstract_radXfer_type, only : abstract_radXfer_t, radField_t
+   use musica_constants,      only : ik => musica_ik, dk => musica_dk
+   use tuv_params,            only : pi
 
    implicit none
 
    private
    public :: delta_eddington_t
 
-   logical :: initialized = .true.
-
    type, extends(abstract_radXfer_t) :: delta_eddington_t
-     real                 :: umu0
-     integer, allocatable :: nid(:)
-     real, allocatable    :: dsdh(:,:)
-     real, allocatable    :: dt(:), om(:), g(:)
    contains
-     procedure :: initialize
-     procedure :: calculate
-     final     :: finalize
+     procedure :: upDateRadField
    end type delta_eddington_t
 
-   REAL(8), PARAMETER :: largest = 1.e36_8
-   REAL(8), PARAMETER :: rZERO  = 0.0_8
-   REAL(8), PARAMETER :: rONE   = 1.0_8
-   REAL(8), PARAMETER :: rTWO   = 2.0_8
-   REAL(8), PARAMETER :: rTHREE = 3.0_8
-   REAL(8), PARAMETER :: rFOUR  = 4.0_8
-   REAL(8), PARAMETER :: rSEVEN = 7.0_8
+   real(dk), parameter :: rZERO = 0.0_dk
+   real(dk), parameter :: rONE  = 1.0_dk
+   real(dk), parameter :: rTWO  = 2.0_dk
+   real(dk), parameter :: d2r   = pi/180._dk
 
    contains
 
-   subroutine initialize( this, nlyr, nstr, zen, nid, dsdh, &
-                          dtrl, dto3, dto2, dtso2, dtno2, &
-                          dtcld, omcld, gcld, &
-                          dtaer, omaer, gaer, &
-                          dtsnw, omsnw, gsnw, &
-                          dtany, omany, gany )
+   function upDateRadField( this, sza, nstr, nlyr, &
+                            sphericalGeom, gridWareHouse, ProfileWareHouse, radiatorWareHouse ) &
+                           result( radField )
 
-   use tuv_params, only : pi
+   use musica_string,                   only : string_t
+   use micm_abs_radiator_type,          only : radiator_state_t
+   use micm_grid_warehouse,             only : grid_warehouse_t
+   use micm_Profile_warehouse,          only : Profile_warehouse_t
+   use micm_radiator_warehouse,         only : radiator_warehouse_t
+   use micm_radiator_warehouse,         only : warehouse_iterator_t
+   use spherical_geom_type,             only : spherical_geom_t
+   use micm_1d_grid,                    only : abs_1d_grid_t
+   use micm_Profile,                    only : abs_Profile_t
+   use micm_abs_radiator_type,          only : abs_radiator_t
+   use linalgebra_type,                 only : linalgebra_t
+   use debug,                           only : diagout
 
-   class(delta_eddington_t), intent(inout) :: this
-   integer, intent(in)  :: nlyr, nstr
-   integer, intent(in)  :: nid(0:)
-   real, intent(in)     :: zen
-   real, intent(in)     :: dsdh(0:,:)
-   real, intent(in)     :: dtrl(:), dto3(:), dto2(:), dtso2(:), dtno2(:)
-   real, intent(in)     :: dtcld(:), omcld(:), gcld(:)
-   real, intent(in)     :: dtaer(:), omaer(:), gaer(:)
-   real, intent(in)     :: dtsnw(:), omsnw(:), gsnw(:)
-   real, intent(in)     :: dtany(:), omany(:), gany(:)
-
-   real(8), parameter :: dr = pi/180._8
-   real(8), parameter :: floor = rONE/largest
-
-   real :: dscld(nlyr), dacld(nlyr)
-   real :: dsaer(nlyr), daaer(nlyr)
-   real :: dssnw(nlyr), dasnw(nlyr)
-   real :: dsany(nlyr), daany(nlyr)
-   real :: dtsct(nlyr), dtabs(nlyr)
-
-   allocate( this%nid(0:nlyr) )
-   allocate( this%dsdh(0:nlyr,nlyr) )
-   allocate( this%dt(nlyr), this%om(nlyr), this%g(nlyr) )
-
-   this%umu0 = cos( zen*dr )
-   this%nid  = nid
-   this%dsdh = dsdh
-
-   dscld = dtcld * omcld
-   dacld = dtcld * (rONE - omcld)
-
-   dsaer = dtaer * omaer
-   daaer = dtaer * (rONE - omaer)
-
-   dssnw = dtsnw * omsnw
-   dasnw = dtsnw * (rONE - omsnw)
-
-   dsany = dtany * omany
-   daany = dtany * (rONE - omany)
-
-   dtsct = max( dtrl + dscld + dsaer + dssnw + dsany,floor )
-   dtabs = max( dto2 + dto3 + dtso2 + dtno2 + dacld + daaer + dasnw + daany,floor )
-
-   !> reorder from bottum-up to top-down
-   this%dt(nlyr:1:-1) = dtsct + dtabs
-   this%om(nlyr:1:-1) = dtsct/(dtsct + dtabs)
-   where( dtsct == floor )
-     this%om(nlyr:1:-1) = floor
-   endwhere
-
-   this%g(nlyr:1:-1) = (gcld*dscld + gaer*dsaer + gsnw*dssnw + gany*dsany)/dtsct
-
-   end subroutine initialize
-
-   subroutine calculate( this, nlyr, nstr, albedo, &
-                         fdr, fup, fdn, edr, eup, edn )
-
-   use tuv_params, only : precis
-   use linalgebra, only : linalgebra_t
-   use debug,      only : diagout
-
+   !> Arguments
    class(delta_eddington_t), intent(inout) :: this
 
-   INTEGER, intent(in) :: nlyr, nstr
-   REAL, intent(in)    :: albedo
-   REAL, intent(out)   :: fup(:), fdn(:), fdr(:)
-   REAL, intent(out)   :: eup(:), edn(:),edr(:)
+   integer(ik), intent(in) :: nlyr
+   integer(ik), intent(in) :: nstr                          ! not used in delta eddington
+   real(dk), intent(in)    :: sza
+   type(grid_warehouse_t), intent(inout)     :: gridWareHouse
+   type(Profile_warehouse_t), intent(inout)  :: ProfileWareHouse
+   type(radiator_warehouse_t), intent(inout) :: radiatorWareHouse
+   type(spherical_geom_t), intent(inout)     :: sphericalGeom
 
+   class(radField_t), allocatable            :: radField
 
-!******
-! local:
-!******
-      REAL :: sum
-      REAL :: tausla(0:nlyr), tauc(0:nlyr)
-      REAL :: mu2(0:nlyr)
+   !> Local variables
+   character(len=*), parameter :: Iam = 'upDateRadField: '
+   real(dk) :: sum
+   real(dk) :: mu
+   real(dk) :: tausla(0:nlyr), tauc(0:nlyr)
+   real(dk) :: mu2(0:nlyr)
 
 ! internal coefficients and matrix
-      INTEGER :: row
-      REAL    :: lam(nlyr),taun(nlyr),bgam(nlyr)
-      REAL    :: e1(nlyr),e2(nlyr),e3(nlyr),e4(nlyr)
-      REAL    :: cup(nlyr),cdn(nlyr)
-      REAL    :: cuptn(nlyr),cdntn(nlyr)
-      REAL    :: mu1(nlyr)
-      REAL    :: a(2*nlyr),b(2*nlyr),d(2*nlyr)
-      REAL    :: e(2*nlyr),y(2*nlyr)
+   integer(ik) :: row
+   real(dk)    :: lam(nlyr),taun(nlyr),bgam(nlyr)
+   real(dk)    :: e1(nlyr),e2(nlyr),e3(nlyr),e4(nlyr)
+   real(dk)    :: cup(nlyr),cdn(nlyr)
+   real(dk)    :: cuptn(nlyr),cdntn(nlyr)
+   real(dk)    :: mu1(nlyr)
+   real(dk)    :: a(2*nlyr),b(2*nlyr),d(2*nlyr)
+   real(dk)    :: e(2*nlyr),y(2*nlyr)
 
-!******
-! other:
-!******
-      REAL :: pifs, fdn0, surfem, tempg
-      REAL :: f, g, om
-      REAL :: gam1, gam2, gam3, gam4
-      REAL :: gi(nlyr), omi(nlyr)
+   real(dk) :: pifs, fdn0, surfem, tempg
+   real(dk) :: f, g, om
+   real(dk) :: gam1, gam2, gam3, gam4
+   real(dk) :: gi(nlyr), omi(nlyr)
 
-      INTEGER :: mrows, lev
-      INTEGER :: i, j
-      REAL :: expon, expon0, expon1, divisr, temp, up, dn
-      REAL :: ssfc
+   integer(ik) :: mrows, lev
+   integer(ik) :: i, j
+   real(dk) :: expon, expon0, expon1, divisr, temp, up, dn
+   real(dk) :: ssfc
 
-      TYPE(linalgebra_t) :: linpack
+   !> Linear algebra package, radiation field type
+   type(linalgebra_t) :: linpack
 
-! Some additional program constants:
+    !> Local variables
+    real(dk), parameter                  :: largest = 1.e36_dk
+    real(dk), parameter                  :: kfloor = rONE/largest
+    real(dk), parameter                  :: precis = 1.e-7_dk
+    real(dk), parameter                  :: eps    = 1.e-3_dk
 
-      REAL(8), parameter :: eps = 1.E-3_8
-!_______________________________________________________________________
+    integer(ik)                          :: nlambda, lambdaNdx
+    real(dk), allocatable                :: dscat(:,:)
+    real(dk), allocatable                :: dscat_accum(:,:)
+    real(dk), allocatable                :: dabs_accum(:,:)
+    real(dk), allocatable                :: asym_accum(:,:)
+    type(string_t)                       :: Handle
+    type(warehouse_iterator_t), pointer  :: iter
+    class(abs_radiator_t), allocatable   :: aRadiator
+    type(radiator_state_t)               :: atmRadiatorState
+    class(abs_1d_grid_t), pointer        :: zGrid
+    class(abs_1d_grid_t), pointer        :: lambdaGrid
+    class(abs_Profile_t), pointer        :: surfaceAlbedo
 
+    write(*,*) ' '
+    write(*,*) Iam // 'entering'
+
+    allocate( radField )
+
+    Handle = 'Vertical Z' ; zGrid => GridWareHouse%get_grid( Handle )
+    Handle = 'Photolysis, wavelength' ; lambdaGrid => GridWareHouse%get_grid( Handle )
+    Handle = 'Surface albedo' ; surfaceAlbedo => ProfileWareHouse%get_Profile( Handle )
+
+    nlambda = lambdaGrid%ncells_
+    allocate( dscat(nlyr,nlambda) )
+    allocate( dscat_accum, mold=dscat )
+    allocate( dabs_accum,  mold=dscat )
+    allocate( asym_accum,  mold=dscat )
+    allocate( radField%edr_(nlyr+1,nlambda) )
+    allocate( radField%edn_, mold=radField%edr_ )
+    allocate( radField%eup_, mold=radField%edr_ )
+    allocate( radField%fdr_, mold=radField%edr_ )
+    allocate( radField%fdn_, mold=radField%edr_ )
+    allocate( radField%fup_, mold=radField%edr_ )
+    !> initialize the accumulators
+    dscat_accum = rZERO
+    dabs_accum  = rZERO
+    asym_accum  = rZERO
+
+    !> iterate over radiators accumulating radiative properties
+    iter => RadiatorWareHouse%get_iterator()
+    do while( iter%next() )
+      aRadiator = RadiatorWareHouse%get_radiator( iter )
+      write(*,*) Iam // 'doing radiator ',aRadiator%handle_
+      associate( OD => aRadiator%state_%layer_OD_, SSA => aRadiator%state_%layer_SSA_, &
+                 G  => aRadiator%state_%layer_G_ )
+        write(*,*) Iam // 'shape OD = ',size(OD,dim=1),' x ',size(OD,dim=2)
+        write(*,*) Iam // 'shape OD = ',size(aRadiator%state_%layer_OD_,dim=1),' x ', &
+                                        size(aRadiator%state_%layer_OD_,dim=2)
+        dscat       = OD * SSA
+        dscat_accum = dscat_accum + dscat
+        dabs_accum  = dabs_accum + OD*(rONE - SSA)
+        asym_accum  = asym_accum + G*dscat
+      end associate
+      deallocate( aRadiator )
+    enddo
+    deallocate( iter )
+
+    !> set atmosphere radiative properties
+    dscat_accum = max( dscat_accum, kfloor )
+    dabs_accum  = max( dabs_accum, kfloor )
+
+      atmRadiatorState%layer_OD_ = dscat_accum + dabs_accum
+      allocate( atmRadiatorState%layer_SSA_, mold = atmRadiatorState%layer_OD_ )
+      where( dscat_accum == kfloor )
+        atmRadiatorState%layer_SSA_ = kfloor
+      elsewhere
+        atmRadiatorState%layer_SSA_ = dscat_accum/atmRadiatorState%layer_OD_
+      endwhere
+
+      atmRadiatorState%layer_G_ = asym_accum/dscat_accum
+    
 ! MU = cosine of solar zenith angle
 ! RSFC = surface albedo
 ! TAUU =  unscaled optical depth of each layer
@@ -154,119 +167,117 @@
 ! NLAYER = number of layers in the atmosphere
 ! NLEVEL = nlayer + 1 = number of levels
 
+   mu = cos( sza*d2r )
+   associate( nid  => sphericalGeom%nid_, &
+              dsdh => sphericalGeom%dsdh_ )
+
+wavelength_loop: &
+   do lambdaNdx = 1,nlambda
+      associate( rsfc => surfaceAlbedo%mid_val_(lambdaNdx), &
+                 tauu => atmRadiatorState%layer_OD_(nlyr:1:-1,lambdaNdx), &
+                 omu  => atmRadiatorState%layer_SSA_(nlyr:1:-1,lambdaNdx), & 
+                 gu   => atmRadiatorState%layer_G_(nlyr:1:-1,lambdaNdx) )
+
 ! initial conditions:  pi*solar flux = 1;  diffuse incidence = 0
       pifs = rONE
       fdn0 = rZERO
-
 ! emission at surface (for night light pollution, set pifs = 0, surfem = 1.)
-
       surfem = rZERO
-
 !************* compute coefficients for each layer:
-
 ! GAM1 - GAM4 = 2-stream coefficients, different for different approximations
 ! EXPON0 = calculation of e when TAU is zero
 ! EXPON1 = calculation of e when TAU is TAUN
 ! CUP and CDN = calculation when TAU is zero
 ! CUPTN and CDNTN = calc. when TAU is TAUN
 ! DIVISR = prevents division by zero
-
       tauc   = rZERO
       tausla = rZERO
       mu2    = rONE/SQRT(largest)
-
 ! delta-scaling. Has to be done for delta-Eddington approximation, 
 ! delta discrete ordinate, Practical Improved Flux Method, delta function,
 ! and Hybrid modified Eddington-delta function methods approximations
 
-   associate( mu => this%umu0, rsfc => albedo, nid => this%nid, dsdh => this%dsdh, &
-              tauu => this%dt, gu => this%g, omu => this%om )
+      DO i = 1, nlyr
+        f      = gu(i)*gu(i)
+        gi(i)  = (gu(i) - f)/(rONE - f)
+        omi(i) = (rONE - f)*omu(i)/(rONE - omu(i)*f)       
+        taun(i) = (rONE - omu(i)*f)*tauu(i)
+      ENDDO
 
-       DO i = 1, nlyr
-         f     = gu(i)*gu(i)
-         gi(i) = (gu(i) - f)/(rONE - f)
-         omi(i) = (rONE - f)*omu(i)/(rONE - omu(i)*f)       
-         taun(i) = (rONE - omu(i)*f)*tauu(i)
-       ENDDO
-       if( initialized ) then
-         call diagout( 'tauu.old',tauu )
-         call diagout( 'gu.old',gu )
-         call diagout( 'omu.old',omu )
-         call diagout( 'taun.old',taun )
-       endif
+      if( lambdaNdx == 1_ik ) then
+        call diagout( 'tauu.new',tauu )
+        call diagout( 'gu.new',gu )
+        call diagout( 'omu.new',omu )
+        call diagout( 'taun.new',taun )
+      endif
 
 ! calculate slant optical depth at the top of the atmosphere when zen>90.
 ! in this case, higher altitude of the top layer is recommended which can 
 ! be easily changed in gridz.f.
 
-         IF(mu < rZERO) THEN
-           IF(nid(0) < 0) THEN
-             tausla(0) = largest
-           ELSE
-             sum = rZERO
-             DO j = 1, nid(0)
-              sum = sum + rTWO*taun(j)*dsdh(0,j)
-             END DO
-             tausla(0) = sum 
-           END IF
-         END IF
+      IF(mu < rZERO) THEN
+        IF(nid(0) < 0) THEN
+          tausla(0) = largest
+        ELSE
+          sum = rZERO
+          DO j = 1, nid(0)
+           sum = sum + rTWO*taun(j)*dsdh(0,j)
+          END DO
+          tausla(0) = sum 
+        END IF
+      END IF
 
-        layer_loop: DO i = 1, nlyr
+      layer_loop: DO i = 1, nlyr
 
-          g  = gi(i)
-          om = omi(i)
-          tauc(i) = tauc(i-1) + taun(i)
+         g  = gi(i)
+         om = omi(i)
+         tauc(i) = tauc(i-1) + taun(i)
 
 ! stay away from 1 by precision.  For g, also stay away from -1
 
-          tempg = MIN(abs(g),rONE - precis)
-          g = SIGN(tempg,g)
-          om = MIN(om,rONE-precis)
+         tempg = MIN(abs(g),rONE - precis)
+         g = SIGN(tempg,g)
+         om = MIN(om,rONE-precis)
 
 
 ! calculate slant optical depth
 
-          IF(nid(i) < 0) THEN
-            tausla(i) = largest
-          ELSE
-            sum = rZERO
-            DO j = 1, MIN(nid(i),i)
-               sum = sum + taun(j)*dsdh(i,j)
-            ENDDO
-            DO j = MIN(nid(i),i)+1,nid(i)
-               sum = sum + rTWO*taun(j)*dsdh(i,j)
-            ENDDO
-            tausla(i) = sum 
-            IF(tausla(i) == tausla(i-1)) THEN
-              mu2(i) = SQRT(largest)
-            ELSE
-              mu2(i) = (tauc(i)-tauc(i-1))/(tausla(i)-tausla(i-1))
-              mu2(i) = SIGN( MAX(ABS(mu2(i)),rONE/SQRT(largest)),mu2(i) )
-            END IF
-    
-            if( initialized .and. i == 2 ) then
-              write(*,*)'TUV: dsdh diagnostic'
-              write(*,*) dsdh(i,1:i)
-            endif
-          END IF
+         IF(nid(i) < 0) THEN
+           tausla(i) = largest
+         ELSE
+           sum = rZERO
+           DO j = 1, MIN(nid(i),i)
+              sum = sum + taun(j)*dsdh(i,j)
+           ENDDO
+           DO j = MIN(nid(i),i)+1,nid(i)
+              sum = sum + rTWO*taun(j)*dsdh(i,j)
+           ENDDO
+           tausla(i) = sum 
+           IF(tausla(i) == tausla(i-1)) THEN
+             mu2(i) = SQRT(largest)
+           ELSE
+             mu2(i) = (tauc(i) - tauc(i-1))/(tausla(i) - tausla(i-1))
+             mu2(i) = SIGN( MAX(ABS(mu2(i)),rONE/SQRT(largest)),mu2(i) )
+           END IF
+         END IF
 
 !** the following gamma equations are from pg 16,289, Table 1
 !** save mu1 for each approx. for use in converting irradiance to actinic flux
 
 ! Eddington approximation(Joseph et al., 1976, JAS, 33, 2452):
 
-        gam1 =  (rSEVEN - om*(rFOUR + rTHREE*g))/rFOUR
-        gam2 = -(rONE - om*(rFOUR - rTHREE*g))/rFOUR
-        gam3 = (rTWO - rTHREE*g*mu)/rFOUR
-        gam4 = rONE - gam3
-        mu1(i) = 0.5_8
+         gam1 =  (7._dk - om*(4._dk + 3._dk*g))/4._dk
+         gam2 = -(rONE - om*(4._dk - 3._dk*g))/4._dk
+         gam3 = (rTWO - 3._dk*g*mu)/4._dk
+         gam4 = rONE - gam3
+         mu1(i) = 0.5_dk
 
          lam(i) = sqrt(gam1*gam1 - gam2*gam2)
 
          IF( gam2 /= rZERO) THEN
-            bgam(i) = (gam1 - lam(i))/gam2
+           bgam(i) = (gam1 - lam(i))/gam2
          ELSE
-            bgam(i) = rZERO
+           bgam(i) = rZERO
          ENDIF
 
          expon = EXP(-lam(i)*taun(i))
@@ -301,28 +312,20 @@
          cuptn(i) = up*expon1
          cdntn(i) = dn*expon1
 
-         if( initialized .and. i == 3 ) then
-           write(*,*) 'TUV: cup diagnostic'
-           write(*,*) expon, expon0, expon1, divisr, temp, up, dn
-           write(*,*) lam(i), mu2(i), gam1, gam2, gam3, gam4
-           write(*,*) tauc(i-1:i), tausla(i-1:i)
-         endif
- 
       ENDDO layer_loop
 
-       if( initialized ) then
-         call diagout( 'e1.old',e1 )
-         call diagout( 'e2.old',e2 )
-         call diagout( 'e3.old',e3 )
-         call diagout( 'e4.old',e4 )
-         call diagout( 'cup.old',cup )
-         call diagout( 'cdn.old',cdn )
-         call diagout( 'cuptn.old',cuptn )
-         call diagout( 'cdntn.old',cdntn )
-         call diagout( 'lam.old',lam )
-         call diagout( 'tausla.old',tausla )
-         call diagout( 'mu2.old',mu2 )
-       endif
+      if( lambdaNdx == 1_ik ) then
+        call diagout( 'e1.new',e1 )
+        call diagout( 'e2.new',e2 )
+        call diagout( 'e3.new',e3 )
+        call diagout( 'e4.new',e4 )
+        call diagout( 'cup.new',cup )
+        call diagout( 'cdn.new',cdn )
+        call diagout( 'cuptn.new',cuptn )
+        call diagout( 'cdntn.new',cdntn )
+        call diagout( 'lam.new',lam )
+        call diagout( 'mu2.new',mu2 )
+      endif
 
 !**************** set up matrix ******
 ! ssfc = pg 16,292 equation 37  where pi Fs is one (unity).
@@ -372,15 +375,14 @@
       d(mrows) = rZERO
       e(mrows) = ssfc - cuptn(nlyr) + rsfc*cdntn(nlyr)
 
-      if( initialized ) then
-        call diagout( 'a.old',a )
-        call diagout( 'b.old',b )
-        call diagout( 'd.old',d )
-        call diagout( 'e.old',e )
-        write(*,*) 'e diagnostic'
-        write(*,*) e(5), e1(2), e3(2), cup(3), cdn(3), cuptn(2), cdntn(2)
-        initialized = .false.
+      if( lambdaNdx == 1_ik ) then
+        call diagout( 'a.new',a )
+        call diagout( 'b.new',b )
+        call diagout( 'd.new',d )
+        call diagout( 'e.new',e )
+        call diagout( 'tausla.new',tausla )
       endif
+
 ! solve tri-diagonal system:
 
       y = linpack%tridiag(a, b, d, e)
@@ -389,6 +391,10 @@
       
 ! the following equations are from pg 16,291  equations 31 & 32
 
+      associate( edr => radField%edr_(:,lambdaNdx), eup => radField%eup_(:,lambdaNdx), &
+                 edn => radField%edn_(:,lambdaNdx), &
+                 fdr => radField%fdr_(:,lambdaNdx), fup => radField%fup_(:,lambdaNdx), &
+                 fdn => radField%fdn_(:,lambdaNdx) )
       fdr(1) = pifs * EXP( -tausla(0) )
       edr(1) = mu * fdr(1)
       edn(1) = fdn0
@@ -409,31 +415,21 @@
          row = row + 2
          j = j + 1
       ENDDO
+      !> transform from top-down to buttom-up
+      fdr = fdr(nlyr+1:1:-1) ; fup = fup(nlyr+1:1:-1) ; fdn = fdn(nlyr+1:1:-1)
+      edr = edr(nlyr+1:1:-1) ; eup = eup(nlyr+1:1:-1) ; edn = edn(nlyr+1:1:-1)
+
+      end associate
 
    end associate
 
-   end subroutine calculate
+   enddo wavelength_loop
 
-   subroutine finalize( this )
+   end associate
 
-   type(delta_eddington_t), intent(inout) :: this
+    write(*,*) ' '
+    write(*,*) Iam // 'exiting'
 
-   if( allocated( this%nid ) ) then
-     deallocate( this%nid )
-   endif
-   if( allocated( this%dsdh ) ) then
-     deallocate( this%dsdh )
-   endif
-   if( allocated( this%dt ) ) then
-     deallocate( this%dt )
-   endif
-   if( allocated( this%om ) ) then
-     deallocate( this%om )
-   endif
-   if( allocated( this%g ) ) then
-     deallocate( this%g )
-   endif
+   end function upDateRadField
 
-   end subroutine finalize
-
-   end module delta_eddington
+   end module delta_eddington_type

@@ -16,7 +16,7 @@
    subroutine diagnostic_1d( filename, variable )
    
    character(len=*), intent(in) :: filename
-   real(4), intent(in)          :: variable(:)
+   real, intent(in)             :: variable(:)
 
    integer :: ios
 
@@ -64,7 +64,7 @@
    subroutine diagnostic_2d( filename, variable )
    
    character(len=*), intent(in) :: filename
-   real(4), intent(in)          :: variable(:,:)
+   real, intent(in)             :: variable(:,:)
 
    integer :: ios
 

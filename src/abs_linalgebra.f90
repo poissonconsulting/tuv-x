@@ -1,10 +1,16 @@
 
-   module abs_linalgebra
+   module abs_linalgebra_type
+
+   use musica_constants, only : ik => musica_ik, dk => musica_dk
 
    implicit none
 
    private
    public :: abs_linalgebra_t, sscal, saxpy, sasum, sdot, isamax
+
+   integer(ik), parameter :: iZERO = 0_ik
+   integer(ik), parameter :: iONE  = 1_ik
+   real(dk), parameter    :: rZERO = 0.0_dk
 
    type, abstract :: abs_linalgebra_t
      contains
@@ -19,72 +25,79 @@
 
    interface
       SUBROUTINE SGBCO( this, ABD, N, ML, MU, IPVT, RCOND, Z )
+        use musica_constants, only : ik => musica_ik, dk => musica_dk
         import abs_linalgebra_t
         class(abs_linalgebra_t), intent(inout) :: this
-        INTEGER, intent(in)  :: N, ML, MU
-        INTEGER, intent(out) :: IPVT(:)
-	REAL, intent(out)    :: RCOND
-	REAL, intent(inout)  :: ABD(:,:)
-	REAL, intent(out)    :: Z(:)
+        INTEGER(ik), intent(in)  :: N, ML, MU
+        INTEGER(ik), intent(out) :: IPVT(:)
+	REAL(dk), intent(out)    :: RCOND
+	REAL(dk), intent(inout)  :: ABD(:,:)
+	REAL(dk), intent(out)    :: Z(:)
       END SUBROUTINE SGBCO
 
       SUBROUTINE SGBFA( this, ABD, N, ML, MU, IPVT, INFO )
+        use musica_constants, only : ik => musica_ik, dk => musica_dk
         import abs_linalgebra_t
         class(abs_linalgebra_t), intent(inout) :: this
-        INTEGER, intent(in)  :: N, ML, MU
-        INTEGER, intent(out) ::  INFO
-        INTEGER, intent(out) :: IPVT(:)
-	REAL, intent(inout)  :: ABD(:,:)
+        INTEGER(ik), intent(in)  :: N, ML, MU
+        INTEGER(ik), intent(out) ::  INFO
+        INTEGER(ik), intent(out) :: IPVT(:)
+	REAL(dk), intent(inout)  :: ABD(:,:)
       END SUBROUTINE SGBFA
 
       SUBROUTINE SGBSL( this, ABD, N, ML, MU, IPVT, B, JOB )
+        use musica_constants, only : ik => musica_ik, dk => musica_dk
         import abs_linalgebra_t
         class(abs_linalgebra_t), intent(inout) :: this
-        INTEGER, intent(in) ::  N, ML, MU, JOB
-        INTEGER, intent(in) ::  IPVT(:)
-        REAL, intent(in)    ::  ABD(:,:)
-        REAL, intent(inout) ::  B(:)
+        INTEGER(ik), intent(in) ::  N, ML, MU, JOB
+        INTEGER(ik), intent(in) ::  IPVT(:)
+        REAL(dk), intent(in)    ::  ABD(:,:)
+        REAL(dk), intent(inout) ::  B(:)
       END SUBROUTINE SGBSL
 
       SUBROUTINE SGECO( this, A, N,IPVT, RCOND, Z )
+        use musica_constants, only : ik => musica_ik, dk => musica_dk
         import abs_linalgebra_t
         class(abs_linalgebra_t), intent(inout) :: this
-        INTEGER, intent(in)  :: N
-        INTEGER, intent(out) :: IPVT(:)
-	REAL, intent(out)    :: RCOND
-        REAL, intent(inout)  :: A(:,:)
-	REAL, intent(out)    :: Z(:)
+        INTEGER(ik), intent(in)  :: N
+        INTEGER(ik), intent(out) :: IPVT(:)
+	REAL(dk), intent(out)    :: RCOND
+        REAL(dk), intent(inout)  :: A(:,:)
+	REAL(dk), intent(out)    :: Z(:)
       END SUBROUTINE SGECO
 
       SUBROUTINE SGEFA( this, A, N, IPVT, INFO )
+        use musica_constants, only : ik => musica_ik, dk => musica_dk
         import abs_linalgebra_t
         class(abs_linalgebra_t), intent(inout) :: this
-        INTEGER, intent(in)  :: N
-        INTEGER, intent(out) :: INFO
-        INTEGER, intent(out) :: IPVT(:)
-        REAL, intent(inout)  :: A(:,:)
+        INTEGER(ik), intent(in)  :: N
+        INTEGER(ik), intent(out) :: INFO
+        INTEGER(ik), intent(out) :: IPVT(:)
+        REAL(dk), intent(inout)  :: A(:,:)
       END SUBROUTINE SGEFA
 
       SUBROUTINE SGESL( this, A, N, IPVT, B, JOB )
+        use musica_constants, only : ik => musica_ik, dk => musica_dk
         import abs_linalgebra_t
         class(abs_linalgebra_t), intent(inout) :: this
-        INTEGER, intent(in) :: N, JOB
-        INTEGER, intent(in) :: IPVT(:)
-        REAL, intent(in)    :: A(:,:)
-        REAL, intent(inout) :: B(:)
+        INTEGER(ik), intent(in) :: N, JOB
+        INTEGER(ik), intent(in) :: IPVT(:)
+        REAL(dk), intent(in)    :: A(:,:)
+        REAL(dk), intent(inout) :: B(:)
       END SUBROUTINE SGESL
 
       FUNCTION tridiag(this, a, b, c, r) result(u)
+        use musica_constants, only : dk => musica_dk
         import abs_linalgebra_t
         class(abs_linalgebra_t), intent(in) :: this
-        REAL, intent(in) :: a(:), b(:), c(:), r(:)
-        REAL :: u(size(b))
+        REAL(dk), intent(in) :: a(:), b(:), c(:), r(:)
+        REAL(dk) :: u(size(b))
       END FUNCTION tridiag
    end interface
 
    contains
 
-   INTEGER FUNCTION ISAMAX( N, SX, INCX )
+   INTEGER(ik) FUNCTION ISAMAX( N, SX, INCX )
 
 !  --INPUT--  N  NUMBER OF ELEMENTS IN VECTOR OF INTEREST
 !            SX  SING-PREC ARRAY, LENGTH 1+(N-1)*INCX, CONTAINING VECTOR
@@ -93,33 +106,32 @@
 ! --OUTPUT-- ISAMAX   FIRST I, I = 1 TO N, TO MAXIMIZE
 !                         ABS(SX(1+(I-1)*INCX))
 
-        INTEGER, intent(in) :: N, INCX
-	REAL, intent(in)    :: SX(:)
+        INTEGER(ik), intent(in) :: N, INCX
+	REAL(dk), intent(in)    :: SX(:)
 
-        INTEGER :: I,II
-	REAL :: SMAX, XMAG
+        INTEGER(ik) :: I,II
+	REAL(dk) :: SMAX, XMAG
 
-
-	IF( N.LE.0 ) THEN
-	   ISAMAX = 0
-	ELSE IF( N.EQ.1 ) THEN
-	   ISAMAX = 1
-	ELSE
-	   SMAX = 0.0
-	   II = 1
-	   DO I = 1, 1+(N-1)*INCX, INCX
+        IF( N <= iZERO ) THEN
+          ISAMAX = iZERO
+        ELSEIF( N == iONE ) THEN
+          ISAMAX = iONE
+        ELSE
+	   SMAX = rZERO
+	   II = iONE
+	   DO I = iONE, iONE+(N-1)*INCX, INCX
 	      XMAG = ABS(SX(I))
 	      IF( SMAX.LT.XMAG ) THEN
 	         SMAX = XMAG
 	         ISAMAX = II
 	      ENDIF
-	      II = II + 1
+	      II = II + iONE
            ENDDO
-	ENDIF
+        ENDIF
 
    END FUNCTION  ISAMAX
 
-   REAL FUNCTION SASUM( N, SX, INCX )
+   REAL(dk) FUNCTION SASUM( N, SX, INCX )
 
 !  --INPUT--  N  NUMBER OF ELEMENTS IN VECTOR TO BE SUMMED
 !            SX  SING-PREC ARRAY, LENGTH 1+(N-1)*INCX, CONTAINING VECTOR
@@ -127,38 +139,39 @@
 
 ! --OUTPUT-- SASUM   SUM FROM 0 TO N-1 OF  ABS(SX(1+I*INCX))
 
-        INTEGER, intent(in) :: N, INCX
-	REAL, intent(in)    :: SX(:)
+        INTEGER(ik), intent(in) :: N, INCX
+	REAL(dk), intent(in)    :: SX(:)
 
-        INTEGER :: I, M
+        INTEGER(ik) :: I, M
 
-	SASUM = 0.0
-	IF( N.LE.0 )  RETURN
-	IF( INCX.NE.1 ) THEN
+        SASUM = rZERO
+        IF( N > iZERO ) THEN
+          IF( INCX.NE. iONE ) THEN
 !                                          ** NON-UNIT INCREMENTS
-	    DO 10 I = 1, 1+(N-1)*INCX, INCX
+	    DO I = iONE, iONE+(N-1)*INCX, INCX
 	       SASUM = SASUM + ABS(SX(I))
-   10     CONTINUE
-	ELSE
+            ENDDO
+          ELSE
 !                                          ** UNIT INCREMENTS
-	   M = MOD(N,6)
-	   IF( M.NE.0 ) THEN
+	    M = MOD(N,6_ik)
+	    IF( M.NE. iZERO ) THEN
 !                             ** CLEAN-UP LOOP SO REMAINING VECTOR 
 !                             ** LENGTH IS A MULTIPLE OF 6.
-	      DO 30  I = 1, M
+	      DO I = iONE, M
 	        SASUM = SASUM + ABS(SX(I))
-   30       CONTINUE
-	   ENDIF
+              ENDDO
+            ENDIF
 !                              ** UNROLL LOOP FOR SPEED
-	   DO 50  I = M+1, N, 6
-	     SASUM = SASUM + ABS(SX(I))   + ABS(SX(I+1)) + ABS(SX(I+2)) &
-                           + ABS(SX(I+3)) + ABS(SX(I+4)) + ABS(SX(I+5))
-   50    CONTINUE
-	ENDIF
+	    DO I = M+iONE, N, 6_ik
+	     SASUM = SASUM + ABS(SX(I))   + ABS(SX(I+1_ik)) + ABS(SX(I+2_ik)) &
+                           + ABS(SX(I+3_ik)) + ABS(SX(I+4_ik)) + ABS(SX(I+5_ik))
+            ENDDO
+          ENDIF
+        ENDIF
 
    END FUNCTION SASUM
 
-   REAL FUNCTION SDOT( N, SX, INCX, SY, INCY )
+   REAL(dk) FUNCTION SDOT( N, SX, INCX, SY, INCY )
 
 !          S.P. DOT PRODUCT OF VECTORS  'X'  AND  'Y'
 
@@ -175,51 +188,52 @@
 !                      = (-INCX)*N  IF INCX .LT. 0,
 !            AND LY IS DEFINED IN A SIMILAR WAY USING INCY.
 
-        INTEGER, intent(in) :: N, INCX, INCY
-	REAL, intent(in)    :: SX(:), SY(:)
+        INTEGER(ik), intent(in) :: N, INCX, INCY
+	REAL(dk), intent(in)    :: SX(:), SY(:)
 
-        INTEGER :: I, M, IX, IY
+        INTEGER(ik) :: I, M, IX, IY
 
-	SDOT = 0.0
-	IF( N.LE.0 )  RETURN
+        SDOT = rZERO
+        IF( N > iZERO ) THEN
 
-	IF ( INCX.EQ.INCY .AND. INCX.GT.1 )  THEN
+          IF ( INCX.EQ.INCY .AND. INCX.GT. iONE )  THEN
 
-	    DO 10  I = 1, 1+(N-1)*INCX, INCX
+	    DO I = iONE, iONE+(N-1)*INCX, INCX
 	       SDOT = SDOT + SX(I) * SY(I)
-   10     CONTINUE
+            ENDDO
 
-	ELSE IF ( INCX.EQ.INCY .AND. INCX.EQ.1 )  THEN
+          ELSE IF ( INCX.EQ.INCY .AND. INCX.EQ.iONE )  THEN
 
 !                                        ** EQUAL, UNIT INCREMENTS
-	   M = MOD(N,5)
-	   IF( M .NE. 0 ) THEN
+	    M = MOD(N,5_ik)
+	    IF( M .NE. iZERO ) THEN
 !                            ** CLEAN-UP LOOP SO REMAINING VECTOR LENGTH
 !                            ** IS A MULTIPLE OF 4.
-	      DO 20  I = 1, M
+	      DO I = iONE, M
 	         SDOT = SDOT + SX(I) * SY(I)
-   20       CONTINUE
-	   ENDIF
+              ENDDO
+	    ENDIF
 !                              ** UNROLL LOOP FOR SPEED
-	   DO 30  I = M+1, N, 5
-	      SDOT = SDOT + SX(I)*SY(I) + SX(I+1)*SY(I+1) &
-                          + SX(I+2)*SY(I+2) + SX(I+3)*SY(I+3) &
-                          + SX(I+4)*SY(I+4)
-   30    CONTINUE
+	    DO I = M+iONE, N, 5_ik
+	      SDOT = SDOT + SX(I)*SY(I) + SX(I+1_ik)*SY(I+1_ik) &
+                          + SX(I+2_ik)*SY(I+2_ik) + SX(I+3_ik)*SY(I+3_ik) &
+                          + SX(I+4_ik)*SY(I+4_ik)
+            ENDDO
 
-	ELSE
+          ELSE
 !               ** NONEQUAL OR NONPOSITIVE INCREMENTS.
-	   IX = 1
-	   IY = 1
-	   IF( INCX.LT.0 )  IX = 1 + (N-1)*(-INCX)
-	   IF( INCY.LT.0 )  IY = 1 + (N-1)*(-INCY)
-	   DO 40  I = 1, N
+	    IX = iONE
+	    IY = iONE
+	    IF( INCX.LT. iZERO )  IX = iONE + (N-iONE)*(-INCX)
+	    IF( INCY.LT. iZERO )  IY = iONE + (N-iONE)*(-INCY)
+	    DO I = iONE, N
 	      SDOT = SDOT + SX(IX) * SY(IY)
 	      IX = IX + INCX
 	      IY = IY + INCY
-   40    CONTINUE
+            ENDDO
 
-	ENDIF
+          ENDIF
+        ENDIF
 
    END FUNCTION SDOT
 
@@ -234,40 +248,36 @@
 ! --OUTPUT-- SX  REPLACE  SX(1+I*INCX)  WITH  SA * SX(1+I*INCX) 
 !                FOR I = 0 TO N-1
 
-        INTEGER, intent(in) :: N, INCX
-	REAL, intent(in)    :: SA
-	REAL, intent(inout) :: SX(:)
+        INTEGER(ik), intent(in) :: N, INCX
+	REAL(dk), intent(in)    :: SA
+	REAL(dk), intent(inout) :: SX(:)
 
-        INTEGER :: I, M
+        INTEGER(ik) :: I, M
 
-	IF( N.LE.0 ) RETURN
-
-	IF( INCX.NE.1 ) THEN
-
-	    DO 10  I = 1, 1+(N-1)*INCX, INCX
+        IF( N > iZERO ) THEN
+          IF( INCX.NE. iONE ) THEN
+	    DO I = iONE, iONE+(N-1)*INCX, INCX
 	       SX(I) = SA * SX(I)
-   10     CONTINUE
-
-	ELSE
-
-	   M = MOD(N,5)
-	   IF( M.NE.0 ) THEN
+            ENDDO
+          ELSE
+	    M = MOD(N,5_ik)
+	    IF( M.NE. iZERO ) THEN
 !                           ** CLEAN-UP LOOP SO REMAINING VECTOR LENGTH
 !                           ** IS A MULTIPLE OF 5.
-	      DO 30  I = 1, M
+	      DO I = iONE, M
 	         SX(I) = SA * SX(I)
-   30       CONTINUE
-	   ENDIF
+              ENDDO
+	    ENDIF
 !                             ** UNROLL LOOP FOR SPEED
-	   DO 50  I = M+1, N, 5
+	    DO I = M+iONE, N, 5_ik
 	      SX(I)   = SA * SX(I)
-	      SX(I+1) = SA * SX(I+1)
-	      SX(I+2) = SA * SX(I+2)
-	      SX(I+3) = SA * SX(I+3)
-	      SX(I+4) = SA * SX(I+4)
-   50    CONTINUE
-
-	ENDIF
+	      SX(I+iONE) = SA * SX(I+iONE)
+	      SX(I+2_ik) = SA * SX(I+2_ik)
+	      SX(I+3_ik) = SA * SX(I+3_ik)
+	      SX(I+4_ik) = SA * SX(I+4_ik)
+            ENDDO
+          ENDIF
+        ENDIF
 
         END SUBROUTINE SSCAL
 
@@ -288,54 +298,49 @@
 !                     = (-INCX)*N  IF INCX .LT. 0
 !            AND LY IS DEFINED IN A SIMILAR WAY USING INCY.
 
-        INTEGER, intent(in) :: N, INCX, INCY
-	REAL, intent(in)    :: SA
-	REAL, intent(in)    :: SX(:)
-	REAL, intent(inout) :: SY(:)
+        INTEGER(ik), intent(in) :: N, INCX, INCY
+	REAL(dk), intent(in)    :: SA
+	REAL(dk), intent(in)    :: SX(:)
+	REAL(dk), intent(inout) :: SY(:)
 
-        INTEGER :: I, M, IX, IY
+        INTEGER(ik) :: I, M, IX, IY
 
-	IF( N.LE.0 .OR. SA.EQ.0.0 ) RETURN
-
-	IF ( INCX.EQ.INCY .AND. INCX.GT.1 )  THEN
-
-	    DO 10  I = 1, 1+(N-1)*INCX, INCX
+        IF( N > iZERO .and. SA /= rZERO ) THEN
+          IF ( INCX.EQ.INCY .AND. INCX.GT. iONE )  THEN
+	    DO I = iONE, iONE+(N-1)*INCX, INCX
 	       SY(I) = SY(I) + SA * SX(I)
-   10     CONTINUE
-
-	ELSE IF ( INCX.EQ.INCY .AND. INCX.EQ.1 )  THEN
-
+            ENDDO
+          ELSE IF ( INCX.EQ.INCY .AND. INCX.EQ. iONE )  THEN
 !                                        ** EQUAL, UNIT INCREMENTS
-	   M = MOD(N,4)
-	   IF( M .NE. 0 ) THEN
+	    M = MOD(N,4_ik)
+	    IF( M .NE. iZERO ) THEN
 !                            ** CLEAN-UP LOOP SO REMAINING VECTOR LENGTH
 !                            ** IS A MULTIPLE OF 4.
-	      DO 20  I = 1, M
+	      DO I = iONE, M
 	        SY(I) = SY(I) + SA * SX(I)
-   20       CONTINUE
-	   ENDIF
+              ENDDO
+	    ENDIF
 !                              ** UNROLL LOOP FOR SPEED
-	   DO 30  I = M+1, N, 4
+	    DO I = M+iONE, N, 4_ik
 	      SY(I)   = SY(I)   + SA * SX(I)
-	      SY(I+1) = SY(I+1) + SA * SX(I+1)
-	      SY(I+2) = SY(I+2) + SA * SX(I+2)
-	      SY(I+3) = SY(I+3) + SA * SX(I+3)
-   30    CONTINUE
-
-	ELSE
+	      SY(I+iONE) = SY(I+iONE) + SA * SX(I+iONE)
+	      SY(I+2_ik) = SY(I+2_ik) + SA * SX(I+2_ik)
+	      SY(I+3_ik) = SY(I+3_ik) + SA * SX(I+3_ik)
+            ENDDO
+          ELSE
 !               ** NONEQUAL OR NONPOSITIVE INCREMENTS.
-	   IX = 1
-	   IY = 1
-	   IF( INCX.LT.0 )  IX = 1 + (N-1)*(-INCX)
-	   IF( INCY.LT.0 )  IY = 1 + (N-1)*(-INCY)
-	   DO 40  I = 1, N
+	    IX = iONE
+	    IY = iONE
+	    IF( INCX.LT. iZERO )  IX = iONE + (N-iONE)*(-INCX)
+	    IF( INCY.LT. iZERO )  IY = iONE + (N-iONE)*(-INCY)
+	    DO I = iONE, N
 	      SY(IY) = SY(IY) + SA*SX(IX)
 	      IX = IX + INCX
 	      IY = IY + INCY
-   40    CONTINUE
-
-	ENDIF
+            ENDDO
+          ENDIF
+        ENDIF
 
         END SUBROUTINE SAXPY
 
-   end module abs_linalgebra
+   end module abs_linalgebra_type

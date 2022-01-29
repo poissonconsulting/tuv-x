@@ -346,7 +346,7 @@
 * can read interactively (intrct = .TRUE.) 
 * or in batch mode (intrct = .FALSE.)
 
-      intrct = .FALSE.
+      intrct = .TRUE.
       IF ( .NOT. intrct) inpfil = 'usrinp'
 
       CALL rdinp(intrct, 

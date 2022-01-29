@@ -10,7 +10,11 @@ RUN dnf -y update \
         make \
         lcov \
         valgrind \
+        python3 \
+        python3-pip \
     && dnf clean all
+
+RUN pip3 install numpy scipy
 
 COPY . /photo-decomp/
 

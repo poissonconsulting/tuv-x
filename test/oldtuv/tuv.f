@@ -908,11 +908,11 @@ C      CALL setany(nz,z,nw,wl,aircol, dt_any,om_any, g_any)
          CALL sjo2(o2xs,sj(1,:,:))
          call diagout( 'dto2.old',dto2 )
 
-         dtrl = rZERO
+!         dtrl = rZERO
 !        dto2 = rZERO
-         dto3 = rZERO
-         dtaer = rZERO ; gaer = rZERO ; omaer = rZERO
-         omcld = rZERO ; omsnw = rZERO
+!         dto3 = rZERO
+!         dtaer = rZERO ; gaer = rZERO ; omaer = rZERO
+!         omcld = rZERO ; omsnw = rZERO
          if( all( dtrl == 0. ) ) write(*,*) 'TUV: dtrl = 0'
          if( all( dto3 == 0. ) ) write(*,*) 'TUV: dto3 = 0'
          if( all( dto2 == 0. ) ) write(*,*) 'TUV: dto2 = 0'

@@ -1,4 +1,13 @@
 cmake_minimum_required(VERSION 3.12)
+
+################################################################################
+# set compiler flags for specific build types
+
+set(CMAKE_Fortran_FLAGS_DEBUG "-g -fcheck=bounds,do,pointer -ffpe-trap=zero,overflow,invalid" CACHE STRING "")
+set(CMAKE_Fortran_FLAGS_COVERAGE "-g -fprofile-arcs -ftest-coverage -fprofile-abs-path -fcheck=bounds,do,pointer -ffpe-trap=zero,overflow,invalid" CACHE STRING "")
+
+################################################################################
+# project
 project(photo-decomp)
 enable_language(Fortran)
 

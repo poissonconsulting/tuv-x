@@ -33,7 +33,7 @@ add_std_test(radXfer_test)
 add_executable(radiator_test radiator/radiator_core.F90 radiator/radiator_test.F90)
 add_std_test(radiator_test)
 
-add_test(NAME regression_o2_radiator COMMAND test/regression/photolysis.radiation.sh WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+add_test(NAME regression_all_radiators COMMAND test/regression/photolysis.radiation.sh WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_executable(config_test config_tst/config.F90 config_tst/test.F90)
 add_std_test(config_test)

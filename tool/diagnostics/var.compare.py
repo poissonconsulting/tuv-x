@@ -8,7 +8,7 @@ import os
 import json
 
 data_path = os.path.relpath("OUTPUTS")
-n_vertial_bins = 120
+n_vertical_bins = 120
 n_wavelength_bins = 156
 arrays_2D = [ "dtrl", "radField" ]
 
@@ -30,7 +30,12 @@ def get_variable_from_file(file_path, var_type):
 # Compares values of real arrays from Fortran binary files
 # using provided tolerances
 def compare_var(var_name):
-    var_old = get_variable_from_file(os.path.join(data_path,var_name + ".old"), numpy.float32)
+    global data_path
+    global n_vertical_bins
+    global n_wavelength_bins
+    global arrays_2D
+
+    var_old = get_variable_from_file(os.path.join(data_path,var_name + ".old"), numpy.float64)
     var_new = get_variable_from_file(os.path.join(data_path,var_name + ".new"), numpy.float64)
 
     # compare array sizes
@@ -54,7 +59,7 @@ def compare_var(var_name):
         diff = ( var_old / var_new - 1.0 ) * 100.0
 
     # reshape 2D arrays
-    if var_name in arrays2D :
+    if var_name in arrays_2D :
         var_new = numpy.reshape( var_new, ( n_vertical_bins, n_wavelength_bins ) )
         var_old = numpy.reshape( var_old, ( n_vertical_bins, n_wavelength_bins ) )
         diff    = numpy.reshape(    diff, ( n_vertical_bins, n_wavelength_bins ) )

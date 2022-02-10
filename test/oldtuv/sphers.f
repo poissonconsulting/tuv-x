@@ -69,7 +69,7 @@
 
 * local 
 
-      real(8), parameter :: rZERO = 1._8
+      real(8), parameter :: rZERO = 0._8
       real(8), parameter :: rONE  = 1._8
       real(8), parameter :: rNINETY  = 90._8
 

@@ -1,5 +1,3 @@
-#!/Library/Frameworks/Python.framework/Versions/3.8/bin/python3
-
 import numpy
 from numpy import unravel_index
 import sys
@@ -53,10 +51,17 @@ def compare_var(var_name):
             sys.exit(-1)
 
     # get percent difference
-    if numpy.any( var_new == 0.0 ) :
-        diff = var_old
-    else:
-        diff = ( var_old / var_new - 1.0 ) * 100.0
+    diff = numpy.zeros( var_old.size )
+    max_val = max( numpy.max(numpy.abs(var_old)),numpy.max(numpy.abs(var_new)) )
+    threshold = 1.0e-20*max_val
+    for n in range( var_old.size ):
+        if( max( abs(var_old[n]),abs(var_new[n]) ) > threshold ):
+            diff[n] = abs(var_old[n] / var_new[n] - 1.0) * 100.0
+
+#   if numpy.any( var_new == 0.0 ) :
+#       diff = var_old
+#   else:
+#       diff = ( var_old / var_new - 1.0 ) * 100.0
 
     # reshape 2D arrays
     if var_name in arrays_2D :

@@ -1,5 +1,5 @@
 {
   "radField" : {
-    "RMS difference" : 1e-6
+    "RMS difference" : 1e-4
   }
 }

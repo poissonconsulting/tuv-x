@@ -282,6 +282,9 @@
       type(spectral_wght_warehouse_t), pointer :: 
      $       spectral_wght_warehouse
 
+* radiators to include in calculations
+      logical :: do_rayleigh, do_o2, do_o3, do_aerosols, do_clouds
+
 * --- END OF DECLARATIONS ---------------------------------------------
 
 * get radiative transfer cross section configuration filespec
@@ -291,6 +294,11 @@
       Obj_radXfer_xsects = .false.
       Obj_photo_rates    = .false.
       Obj_spectral_wghts = .false.
+      do_rayleigh        = .false.
+      do_o2              = .false.
+      do_o3              = .false.
+      do_aerosols        = .false.
+      do_clouds          = .false.
       delim = '='
       do is = 1, COMMAND_ARGUMENT_COUNT( )
         CALL GET_COMMAND_ARGUMENT( is, command_option )
@@ -317,6 +325,16 @@
      $       spectral_wght_config%from_file( 
      $                     spectral_wght_config_filespec )
             Obj_spectral_wghts = .true.
+          case( 'DO_RAYLEIGH' )
+            do_rayleigh = .true.
+          case( 'DO_O2' )
+            do_o2       = .true.
+          case( 'DO_O3' )
+            do_o3       = .true.
+          case( 'DO_AEROSOLS' )
+            do_aerosols = .true.
+          case( 'DO_CLOUDS' )
+            do_clouds   = .true.
           case default
             write(*,*) 'tuv: ',trim(command_tokens(1)%to_char())
             write(*,*) '       is not a valid keyword'
@@ -908,11 +926,15 @@ C      CALL setany(nz,z,nw,wl,aircol, dt_any,om_any, g_any)
          CALL sjo2(o2xs,sj(1,:,:))
          call diagout( 'dto2.old',dto2 )
 
-!         dtrl = rZERO
-!        dto2 = rZERO
-!         dto3 = rZERO
-!         dtaer = rZERO ; gaer = rZERO ; omaer = rZERO
-!         omcld = rZERO ; omsnw = rZERO
+         if( .not. do_rayleigh ) dtrl = rZERO
+         if( .not. do_o2       ) dto2 = rZERO
+         if( .not. do_o3       ) dto3 = rZERO
+         if( .not. do_aerosols ) then
+           dtaer = rZERO ; gaer = rZERO ; omaer = rZERO
+         endif
+         if( .not. do_clouds   ) then
+           omcld = rZERO ; omsnw = rZERO
+         endif
          if( all( dtrl == 0. ) ) write(*,*) 'TUV: dtrl = 0'
          if( all( dto3 == 0. ) ) write(*,*) 'TUV: dto3 = 0'
          if( all( dto2 == 0. ) ) write(*,*) 'TUV: dto2 = 0'

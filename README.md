@@ -4,6 +4,8 @@ PhotoDecomp
 PhotoDecomp: A photolysis rate constant calculator.
 
 [![License](https://img.shields.io/github/license/NCAR/photo-decomp.svg)](https://github.com/NCAR/photo-decomp/blob/main/LICENSE)
+[![CI Status](https://github.com/NCAR/photo-decomp/actions/workflows/test.yml/badge.svg)](https://github.com/NCAR/photo-decomp/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/NCAR/photo-decomp/branch/main/graph/badge.svg?token=H46AAEAQF9)](https://codecov.io/gh/NCAR/photo-decomp)
 
 Copyright (C) 2020 National Center for Atmospheric Research
 

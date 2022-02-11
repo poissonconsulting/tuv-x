@@ -1,77 +1,44 @@
 ################################################################################
 # Photo-decomp tool source
 
-set(PHOTO_SRC abs_linalgebra.f90
-              abstract.cross_section.type.F90
-              abstract_radXfer.f90
-              delta_eddington.f90
-              disord.f90
-              disord_subs.f
+set(PHOTO_SRC abs_linalgebra.F90
+              abstract_radXfer.F90
+              delta_eddington.F90
+              diagout.F90
               environment.F90
-              functs.f
-              grids.f
-              la_srb.f
-              lepoly.f
-              linalgebra.f90
+              interpolate.F90
+              la_srb.type.F90
+              linalgebra.F90
               netcdf_util.F90
-              newlst.f
-              numer.f
-              odo3.f
-              odrl.f
-              orbit.f
-              photo_kinetics.F90
+              photolysis_component.F90
+              photolysis_component_factory.F90
+              photolysis_component_set.F90
+              photolysis_core.F90
               photo_utils.F90
-              psndo.f
-              quantum_yield_factory.F90
-              qys.f
-              radXfer_xsect_factory.F90
-              radXfer_xsect_warehouse.F90
-              rdetfl.f
-              rdinp.f
-              rdxs.f
-              rtlink.f
-              rtrans.f
-              rxn.f
-              savout.f
-              setaer.f
-              setalb.f
-              setcld.f
-              #              seth2o.f - Flagged as inactive in source comments
-              setmtx.f
-              setno2.f
-              seto2.f
-              setsnw.f
-              setso2.f
-              sphers.f
-              solvec.f
-              spectral_wght_factory.F90
-              spectral_wght_warehouse.F90
-              swbiol.f
-              swchem.f
-              swdom.f
-              swphys.f
-              terint.f
-              tuv_params.f
-              vpair.f
-              vpo3.f
-              vptmp.f
-              waters.f
-              wavelength.F90
-              wrflut.f
-              wshift.f
-              zeroal.f
+              radXfer_component_core.F90
+              sphers.F90
+              tuv_params.F90
               )
 
-add_subdirectory(cross_section)
-add_subdirectory(quantum_yield)
+add_subdirectory(grid)
+add_subdirectory(profiles)
+add_subdirectory(radiator)
 add_subdirectory(radXfer_cross_section)
-add_subdirectory(spectral_wght)
 
-add_library(photolib ${PHOTO_SRC} ${CROSS_SRC} ${QY_SRC} ${RAD_SRC} ${SW_SRC})
+file(GLOB LITTLE_F_SRC *.f)
+set_property(SOURCE ${LITTLE_F_SRC} APPEND PROPERTY COMPILE_OPTIONS "-fdefault-real-8")
+set_property(SOURCE ${LITTLE_F_SRC} APPEND PROPERTY COMPILE_OPTIONS "-fdefault-double-8")
+
+file(GLOB LITTLE_F90_SRC *.f90)
+set_property(SOURCE ${LITTLE_F90_SRC} APPEND PROPERTY COMPILE_OPTIONS "-fdefault-real-8")
+set_property(SOURCE ${LITTLE_F90_SRC} APPEND PROPERTY COMPILE_OPTIONS "-fdefault-double-8")
+
+add_library(photolib ${PHOTO_SRC} ${GRID_SRC} ${PROFILE_SRC} ${RADIATOR_SRC}
+                     ${RAD_SRC})
 target_link_libraries(photolib musicalib ${NETCDF_LIBS} ${NC4F_LIB})
 set_target_properties(photolib PROPERTIES OUTPUT_NAME photo)
 
-add_executable(photo tuv.f)
+add_executable(photo photolysis.F90)
 target_link_libraries(photo photolib)
 
 ################################################################################

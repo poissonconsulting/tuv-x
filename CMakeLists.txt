@@ -1,8 +1,37 @@
 cmake_minimum_required(VERSION 3.12)
+
+################################################################################
+# set compiler flags for specific build types
+
+set(CMAKE_Fortran_FLAGS_DEBUG "-g -fcheck=bounds,do,pointer -ffpe-trap=zero,overflow,invalid" CACHE STRING "")
+set(CMAKE_Fortran_FLAGS_COVERAGE "-g -fprofile-arcs -ftest-coverage -fprofile-abs-path -fcheck=bounds,do,pointer -ffpe-trap=zero,overflow,invalid" CACHE STRING "")
+
+################################################################################
+# project
 project(photo-decomp)
 enable_language(Fortran)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake-modules)
+
+################################################################################
+# options
+
+option(ENABLE_COVERAGE "Enable code coverage output" ON)
+
+################################################################################
+# Test code coverage
+
+if(ENABLE_COVERAGE)
+  include(CodeCoverage)
+  if(CMAKE_COMPILER_IS_GNUCXX)
+    setup_target_for_coverage_lcov(
+        NAME coverage
+        EXECUTABLE "ctest"
+        EXCLUDE "${PROJECT_SOURCE_DIR}/test/*"
+        BASE_DIRECTORY "${PROJECT_SOURCE_DIR}/src")
+  endif()
+endif()
 
 ################################################################################
 # json-fortran library
@@ -72,18 +101,20 @@ add_subdirectory(libs/musica-core/src)
 include_directories(${CMAKE_BINARY_DIR}/libs/musica-core/src)
 
 ################################################################################
-# Photo-decomp source
+# copy data
 
-add_custom_target(copy-DATAE1 ALL COMMAND ${CMAKE_COMMAND}
-  -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/data/DATAE1 ${CMAKE_BINARY_DIR}/DATAE1)
+add_custom_target(copy-data ALL COMMAND ${CMAKE_COMMAND}
+  -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/data ${CMAKE_BINARY_DIR}/data)
 add_custom_target(copy-DATAJ1 ALL COMMAND ${CMAKE_COMMAND}
-  -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/data/DATAJ1 ${CMAKE_BINARY_DIR}/DATAJ1)
-add_custom_target(copy-DATAS1 ALL COMMAND ${CMAKE_COMMAND}
-  -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/data/DATAS1 ${CMAKE_BINARY_DIR}/DATAS1)
-add_custom_target(copy-INPUTS ALL COMMAND ${CMAKE_COMMAND}
   -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/test/data/INPUTS ${CMAKE_BINARY_DIR}/INPUTS)
 add_custom_target(copy-OUTPUTS ALL COMMAND ${CMAKE_COMMAND}
   -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/test/data/OUTPUTS ${CMAKE_BINARY_DIR}/OUTPUTS)
+add_custom_target(copy-tool ALL COMMAND ${CMAKE_COMMAND}
+  -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tool ${CMAKE_BINARY_DIR}/tool)
+
+################################################################################
+# Photo-decomp source
+
 add_subdirectory(src)
 include_directories(${CMAKE_BINARY_DIR}/src)
 

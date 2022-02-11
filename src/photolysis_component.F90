@@ -64,12 +64,13 @@ interface
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Update the component for a given timestep
-  subroutine upDate( this, la_srb, SphericalGeom, GridWareHouse, ProfileWareHouse )
+  subroutine upDate( this, la_srb, SphericalGeom, GridWareHouse, ProfileWareHouse, radiationFld )
     use micm_grid_warehouse,           only : grid_warehouse_t
     use micm_Profile_warehouse,        only : Profile_warehouse_t
     use musica_constants,              only : dk => musica_dk
     use spherical_geom_type,           only : spherical_geom_t
     use la_srb_type,                   only : la_srb_t
+    use abstract_radXfer_type,         only : radField_t
 
     import component_t
     !> Model component
@@ -78,6 +79,7 @@ interface
     type(Profile_warehouse_t), intent(inout) :: ProfileWareHouse
     type(spherical_geom_t), intent(inout)    :: SphericalGeom
     type(la_srb_t), intent(inout)            :: la_srb
+    class(radField_t), allocatable           :: radiationFld
   end subroutine upDate
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

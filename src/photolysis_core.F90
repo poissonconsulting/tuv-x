@@ -1,4 +1,4 @@
-! Copyright (C) 2021 National Center for Atmospheric Research
+!Copyright (C) 2021 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 !
 !> \file
@@ -146,6 +146,7 @@ contains
   use micm_Profile,                 only : abs_Profile_t
   use micm_radiator_warehouse,      only : radiator_warehouse_t
   use micm_abs_radiator_type,       only : abs_radiator_t
+  use abstract_radXfer_type,        only : radField_t
   use debug,                        only : diagout
 
   !> Arguments
@@ -158,6 +159,7 @@ contains
   class(component_t), pointer :: RadiativeXfer
   class(abs_Profile_t), pointer  :: SZAngles
   class(abs_radiator_t), pointer :: aRadiator => null()
+  class(radField_t), allocatable :: radiationFld
   type(string_t)                 :: Handle
 
   write(*,*) ' '
@@ -176,7 +178,8 @@ contains
     if( associated( this%sphericalGeom_ ) ) then
       call this%sphericalGeom_%setSphericalParams( SZAngles%edge_val_(ndx), this%GridWareHouse_ )
     endif
-    call RadiativeXfer%upDate( this%la_srb_, this%sphericalGeom_, this%GridWareHouse_, this%ProfileWareHouse_ )
+    call RadiativeXfer%upDate( this%la_srb_, this%sphericalGeom_, this%GridWareHouse_, this%ProfileWareHouse_, radiationFld )
+    call diagout( 'radField.new',radiationFld%fdr_+radiationFld%fup_+radiationFld%fdn_ )
   enddo
 
   ! diagnostic output

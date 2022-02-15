@@ -130,7 +130,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Calculate the radiation field
-  subroutine upDate( this, la_srb, SphericalGeom, GridWareHouse, ProfileWareHouse )
+  subroutine upDate( this, la_srb, SphericalGeom, GridWareHouse, ProfileWareHouse, radiationFld )
 
     use musica_assert,                 only : die_msg
     use musica_string,                 only : to_char
@@ -142,7 +142,6 @@ contains
     use spherical_geom_type,           only : spherical_geom_t
     use la_srb_type,                   only : la_srb_t
     use abstract_radXfer_type,         only : radField_t
-    use debug,                         only : diagout
 
     !> Arguments
     !> radXfer component radXfer component
@@ -156,6 +155,8 @@ contains
     !> Lyman Alpha, SRB
     type(la_srb_t), intent(inout)                  :: la_srb
 
+    class(radField_t), allocatable                 :: radiationFld
+
     !> Local variables
     character(len=*), parameter          :: Iam = 'radXfer component upDate: '
 
@@ -167,7 +168,6 @@ contains
     type(warehouse_iterator_t), pointer  :: iter
     class(abs_radiator_t), pointer       :: aRadiator => null()
     class(abs_Profile_t), pointer        :: airProfile => null()
-    class(radField_t), allocatable       :: radField
 
     write(*,*) ' '
     write(*,*) Iam // 'entering'
@@ -198,12 +198,10 @@ contains
 
     zenithAngle = SphericalGeom%SolarZenithAngle_ 
     associate( theSolver => this%radXferSolver_ )
-    radField = theSolver%upDateRadField( &
+    radiationFld = theSolver%upDateRadField( &
                     zenithAngle, this%nStreams_, nlyr, SphericalGeom, &
                     GridWareHouse, ProfileWareHouse, this%RadiatorWareHouse_ )
     end associate
-
-    call diagout( 'radField.new',radField%fdr_+radField%fup_+radField%fdn_ )
 
     write(*,*) ' '
     write(*,*) Iam // 'exiting'

@@ -223,6 +223,7 @@
       CHARACTER(len=256) :: photo_rate_config_filespec
       CHARACTER(len=256) :: spectral_wght_config_filespec
       CHARACTER(len=256) :: command_option
+      CHARACTER(len=2)   :: number
       type(string_t)     :: command_string
       type(string_t)     :: delim
       type(string_t), allocatable :: command_tokens(:)
@@ -891,8 +892,7 @@ C      CALL setany(nz,z,nw,wl,aircol, dt_any,om_any, g_any)
 
 
 * Loop over time or solar zenith angle (zen):
-*     sza_loop: DO it = 1, nt
-      sza_loop: DO it = 1, 1
+      sza_loop: DO it = 1, nt
 
          zen = sza(it)
 
@@ -1066,7 +1066,8 @@ C      CALL setany(nz,z,nw,wl,aircol, dt_any,om_any, g_any)
         CLOSE(unit=44)
       endif
 
-         call diagout( 'radField.old',radField )
+         write(number,'(i2.2)') it
+         call diagout( 'radField.' // number // '.old',radField )
          CYCLE sza_loop
 
 **** integrate doses over time: 

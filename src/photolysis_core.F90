@@ -156,6 +156,7 @@ contains
   character(len=*), parameter :: Iam = 'Photolysis core run: '
 
   integer(ik)                 :: ndx, i_diag
+  character(len=2)            :: number
   class(component_t), pointer :: RadiativeXfer
   class(abs_Profile_t), pointer  :: SZAngles
   class(abs_radiator_t), pointer :: aRadiator => null()
@@ -172,14 +173,14 @@ contains
   Handle = 'Sza' ; SZAngles => this%ProfileWareHouse_%get_Profile( Handle )
 
   ! calculate the radiation field
-! do ndx = 1,size(SZAngles%edge_val_)
-  do ndx = 1,1
+  do ndx = 1,size(SZAngles%edge_val_)
     write(*,*) Iam // 'calculating rad field @ ndx,sza = ',ndx,SZAngles%edge_val_(ndx)
     if( associated( this%sphericalGeom_ ) ) then
       call this%sphericalGeom_%setSphericalParams( SZAngles%edge_val_(ndx), this%GridWareHouse_ )
     endif
     call RadiativeXfer%upDate( this%la_srb_, this%sphericalGeom_, this%GridWareHouse_, this%ProfileWareHouse_, radiationFld )
-    call diagout( 'radField.new',radiationFld%fdr_+radiationFld%fup_+radiationFld%fdn_ )
+    write(number,'(i2.2)') ndx
+    call diagout( 'radField.' // number // '.new',radiationFld%fdr_+radiationFld%fup_+radiationFld%fdn_ )
   enddo
 
   ! diagnostic output

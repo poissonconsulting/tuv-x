@@ -87,7 +87,8 @@ def analyze_output(config):
                 sys.exit(-1)
             if tolerance < results[ metric ] :
                 print(f"Error: comparison failure for {var_name}:")
-                print(f"       {metric} = {results[metric]} > {tolerance}")
+                print(f"{var_name} {metric} = {results[metric]} > {tolerance}")
+                print(f"       Max diff = {results['maximum difference']}")
                 sys.exit(-1)
             else:
                 print(f"{var_name} {metric} within tolerance: {results[metric]} <= {tolerance}")

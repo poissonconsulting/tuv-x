@@ -9,13 +9,13 @@ module photolysis_core
   use musica_config,        only : config_t
   use musica_string,        only : string_t
   use musica_assert,        only : assert
-  use photolysis_component_set, only : component_set_t
   use musica_constants,         only : ik => musica_ik, dk => musica_dk, lk => musica_lk
   use micm_grid_warehouse,      only : grid_warehouse_t
   use micm_1d_grid,             only : abs_1d_grid_t
   use micm_Profile_warehouse,   only : Profile_warehouse_t
   use spherical_geom_type,      only : spherical_geom_t
   use la_srb_type,              only : la_srb_t
+  use radXfer_component_core,   only : radXfer_component_core_t
 
   implicit none
 
@@ -23,12 +23,12 @@ module photolysis_core
   public :: photolysis_core_t
 
   type :: photolysis_core_t
-    type(grid_warehouse_t), pointer     :: GridWarehouse_ => null()
-    type(Profile_warehouse_t), pointer  :: ProfileWarehouse_ => null()
-    type(component_set_t), pointer      :: components_ => null()
+    type(grid_warehouse_t), pointer     :: GridWareHouse_ => null()
+    type(Profile_warehouse_t), pointer  :: ProfileWareHouse_ => null()
     type(spherical_geom_t), pointer     :: sphericalGeom_ => null()
     type(la_srb_t), pointer             :: la_srb_ => null()
     type(string_t), allocatable         :: diagnostics_(:)
+    type(radXfer_component_core_t), pointer :: radXfer_component_ => null()
   contains
     procedure :: run
     final     :: finalize
@@ -44,8 +44,6 @@ contains
 
   function constructor( config_flsp ) result( photolysis_core_obj )
 
-    use photolysis_component,         only : component_t
-    use photolysis_component_factory, only : component_builder
     use musica_iterator,              only : iterator_t
     use musica_string,                only : string_t
     use micm_Profile,                 only : abs_Profile_t
@@ -66,7 +64,6 @@ contains
     type(config_t)              :: radXfer_cross_sections_config, Radiators_config
     type(config_t)              :: component_config
     type(string_t)              :: Handle
-    class(component_t), pointer :: component
     class(iterator_t), pointer  :: iter
     class(abs_Profile_t), pointer :: aProfile
 
@@ -108,7 +105,6 @@ contains
     Handle = 'O3' ; aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( Handle )
     call diagout( 'vpco3.new', aProfile%layer_dens_ )
 
-    photolysis_core_obj%components_ => component_set_t()
     !> set up the components
     iter => components_config%get_iterator()
     do while( iter%next() )
@@ -118,10 +114,11 @@ contains
       keyString = keyChar
       call components_config%get( iter, component_config, Iam )
       call component_config%add( 'type', keyString, Iam )
-      component => component_builder( component_config, photolysis_core_obj%GridWareHouse_, &
-                                                        photolysis_core_obj%ProfileWareHouse_ )
-      call photolysis_core_obj%components_%add( component )
-      component => null()
+      if( keyChar == 'Radiative transfer' ) then
+        photolysis_core_obj%radXfer_component_ => &
+               radXfer_component_core_t( component_config, photolysis_core_obj%GridWareHouse_, &
+                                         photolysis_core_obj%ProfileWareHouse_ )
+      endif
     enddo
     deallocate( iter )
 
@@ -140,9 +137,6 @@ contains
 
   subroutine run( this )
 
-  use musica_component_set,         only : component_set_t
-  use photolysis_component,         only : component_t
-  use radXfer_component_core,       only : radXfer_component_core_t
   use micm_Profile,                 only : abs_Profile_t
   use micm_radiator_warehouse,      only : radiator_warehouse_t
   use micm_abs_radiator_type,       only : abs_radiator_t
@@ -155,9 +149,8 @@ contains
   !> Local variables
   character(len=*), parameter :: Iam = 'Photolysis core run: '
 
-  integer(ik)                 :: ndx, i_diag
+  integer(ik)                 :: i_ndx, i_diag
   character(len=2)            :: number
-  class(component_t), pointer :: RadiativeXfer
   class(abs_Profile_t), pointer  :: SZAngles
   class(abs_radiator_t), pointer :: aRadiator => null()
   class(radField_t), allocatable :: radiationFld
@@ -166,42 +159,37 @@ contains
   write(*,*) ' '
   write(*,*) Iam // 'entering'
 
-  ! get the radiative transfer component
-  RadiativeXfer => this%components_%get( 'radXfer component' )
-
   ! get the solar zenith angles
   Handle = 'Sza' ; SZAngles => this%ProfileWareHouse_%get_Profile( Handle )
 
   ! calculate the radiation field
-  do ndx = 1,size(SZAngles%edge_val_)
-    write(*,*) Iam // 'calculating rad field @ ndx,sza = ',ndx,SZAngles%edge_val_(ndx)
+  do i_ndx = 1,size(SZAngles%edge_val_)
+    write(*,*) Iam // 'calculating rad field @ i_ndx,sza = ',i_ndx,SZAngles%edge_val_(i_ndx)
     if( associated( this%sphericalGeom_ ) ) then
-      call this%sphericalGeom_%setSphericalParams( SZAngles%edge_val_(ndx), this%GridWareHouse_ )
+      call this%sphericalGeom_%setSphericalParams( SZAngles%edge_val_(i_ndx), this%GridWareHouse_ )
     endif
-    call RadiativeXfer%upDate( this%la_srb_, this%sphericalGeom_, this%GridWareHouse_, this%ProfileWareHouse_, radiationFld )
-    write(number,'(i2.2)') ndx
+    call this%RadXfer_component_%upDate( this%la_srb_, this%sphericalGeom_, this%GridWareHouse_, &
+                                        this%ProfileWareHouse_, radiationFld )
+    write(number,'(i2.2)') i_ndx
     call diagout( 'radField.' // number // '.new',radiationFld%fdr_+radiationFld%fup_+radiationFld%fdn_ )
   enddo
 
   ! diagnostic output
-  select type( RadiativeXfer )
-    class is( radXfer_component_core_t)
-      do i_diag = 1, size( this%diagnostics_ )
-      associate( diagnostic => this%diagnostics_( i_diag ) )
-        aRadiator => RadiativeXfer%RadiatorWareHouse_%get_radiator( diagnostic )
+  do i_diag = 1, size( this%diagnostics_ )
+    associate( diagnostic => this%diagnostics_( i_diag ) )
+      aRadiator => this%RadXfer_component_%RadiatorWareHouse_%get_radiator( diagnostic )
         ! Diagnostics for testing
-        if( diagnostic == 'Air' ) then
-          call diagout( 'dtrl.new', aRadiator%state_%layer_OD_ )
-        elseif( diagnostic == 'Aerosols' ) then
-          call diagout( 'dtaer.new', aRadiator%state_%layer_OD_ )
-        elseif( diagnostic == 'O3' ) then
-          call diagout( 'dto3.new', aRadiator%state_%layer_OD_ )
-        elseif( diagnostic == 'O2' ) then
-          call diagout( 'dto2.new', aRadiator%state_%layer_OD_ )
-        endif
-      end associate
-      end do
-  end select
+      if( diagnostic == 'Air' ) then
+        call diagout( 'dtrl.new', aRadiator%state_%layer_OD_ )
+      elseif( diagnostic == 'Aerosols' ) then
+        call diagout( 'dtaer.new', aRadiator%state_%layer_OD_ )
+      elseif( diagnostic == 'O3' ) then
+        call diagout( 'dto3.new', aRadiator%state_%layer_OD_ )
+      elseif( diagnostic == 'O2' ) then
+        call diagout( 'dto2.new', aRadiator%state_%layer_OD_ )
+      endif
+    end associate
+  end do
 
   write(*,*) ' '
   write(*,*) Iam // 'exiting'
@@ -230,10 +218,6 @@ contains
 
     if( associated( this%la_srb_ ) ) then
       deallocate( this%la_srb_ )
-    end if
-
-    if( associated( this%components_ ) ) then
-      deallocate( this%components_ )
     end if
 
   end subroutine finalize

@@ -7,7 +7,6 @@
 !> The radXfer_component_t type and related functions
 module radXfer_component_core
 
-  use photolysis_component,            only : component_t
   use musica_config,                   only : config_t
   use musica_constants,                only : dk => musica_dk, ik => musica_ik
   use musica_string,                   only : string_t
@@ -27,7 +26,7 @@ module radXfer_component_core
   !> radXfer component core
   !!
   !! Calculates the atmospheric radiation field
-  type, extends(component_t) :: radXfer_component_core_t
+  type :: radXfer_component_core_t
     private
     integer(ik)                              :: nStreams_ = 0_ik
     class(abstract_radXfer_t), pointer       :: radXferSolver_ => null()

@@ -10,9 +10,6 @@ set(PHOTO_SRC abs_linalgebra.F90
               la_srb.type.F90
               linalgebra.F90
               netcdf_util.F90
-              photolysis_component.F90
-              photolysis_component_factory.F90
-              photolysis_component_set.F90
               photolysis_core.F90
               photo_utils.F90
               radXfer_component_core.F90

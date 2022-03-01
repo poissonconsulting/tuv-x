@@ -9,7 +9,7 @@
 module micm_radiator_warehouse
 
   use musica_constants,                only : musica_dk, musica_ik
-  use micm_abs_radiator_type,          only : radiator_ptr
+  use photolysis_radiator,             only : radiator_ptr
   use musica_string,                   only : string_t
   use musica_iterator,                 only : iterator_t
 
@@ -129,15 +129,15 @@ contains
   !> Get copy of a specific radiator object
   function get_radiator_from_handle( this, radiator_handle ) result( radiator )
 
-    use micm_abs_radiator_type, only : abs_radiator_t
-    use musica_string,      only : string_t
-    use musica_constants,   only : lk => musica_lk, ik => musica_ik
-    use musica_assert,      only : die_msg
+    use photolysis_radiator,           only : radiator_t
+    use musica_string,                 only : string_t
+    use musica_constants,              only : lk => musica_lk, ik => musica_ik
+    use musica_assert,                 only : die_msg
 
     !> Arguments
     class(radiator_warehouse_t), intent(inout) :: this
     type(string_t), intent(in)                 :: radiator_handle
-    class(abs_radiator_t), pointer             :: radiator
+    class(radiator_t), pointer             :: radiator
 
     !> Local variables
     character(len=*), parameter :: Iam = 'radiator warehouse get_radiator: '
@@ -165,13 +165,15 @@ contains
 
   end function get_radiator_from_handle
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   !> Get index of a specific radiator object
   function get_radiator_ndx_from_handle( this, radiator_handle ) result( Index )
 
-    use micm_abs_radiator_type, only : abs_radiator_t
-    use musica_string,      only : string_t
-    use musica_constants,   only : lk => musica_lk, ik => musica_ik
-    use musica_assert,      only : die_msg
+    use photolysis_radiator,           only : radiator_t
+    use musica_string,                 only : string_t
+    use musica_constants,              only : lk => musica_lk, ik => musica_ik
+    use musica_assert,                 only : die_msg
 
     !> Arguments
     class(radiator_warehouse_t), intent(inout) :: this
@@ -203,17 +205,19 @@ contains
 
   end function get_radiator_ndx_from_handle
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   !> Get copy of a radiator object using an iterator
   function get_radiator_from_iterator( this, iterator ) result( radiator )
 
-    use micm_abs_radiator_type, only : abs_radiator_t
-    use musica_constants,   only : lk => musica_lk, ik => musica_ik
-    use musica_assert,      only : die_msg
+    use photolysis_radiator,           only : radiator_t
+    use musica_constants,              only : lk => musica_lk, ik => musica_ik
+    use musica_assert,                 only : die_msg
 
     !> Arguments
     class(radiator_warehouse_t), intent(inout) :: this
     type(warehouse_iterator_t),  intent(in)    :: iterator
-    class(abs_radiator_t), pointer             :: radiator
+    class(radiator_t), pointer                 :: radiator
 
     !> Local variables
     character(len=*), parameter :: Iam = 'radiator warehouse get_radiator from iterator: '
@@ -240,13 +244,15 @@ contains
 
   end function get_radiator_from_iterator
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   !> Is a radiator in the warehouse?
   function in_warehouse( this, radiator_handle )
 
-    use micm_abs_radiator_type, only : abs_radiator_t
-    use musica_string,      only : string_t
-    use musica_constants,   only : lk => musica_lk, ik => musica_ik
-    use musica_assert,      only : die_msg
+    use photolysis_radiator,           only : radiator_t
+    use musica_string,                 only : string_t
+    use musica_constants,              only : lk => musica_lk, ik => musica_ik
+    use musica_assert,                 only : die_msg
 
     !> Arguments
     class(radiator_warehouse_t), intent(inout) :: this
@@ -273,6 +279,8 @@ contains
 
   end function in_warehouse
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   !> Gets an interator for the radiator warehouse
   function get_iterator( this )
 
@@ -291,6 +299,8 @@ contains
     end select
 
   end function get_iterator
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Advances the iterator
   !> Returns false if the end of the collection has been reached

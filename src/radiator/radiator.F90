@@ -2,29 +2,45 @@
 ! SPDX-License-Identifier: Apache-2.0
 !
 !> \file
-!> The base_micm_radiator module
+!> The photolysis_radiator module
 
-!> The base_radiator_t type and related functions
+!> The radiator_t type and related functions
 !!
-module micm_base_radiator_type
+module photolysis_radiator
 
   use musica_constants,       only : dk => musica_dk, ik => musica_ik
   use musica_string,          only : string_t
-  use micm_abs_radiator_type, only : abs_radiator_t
 
   implicit none
-
   private
-  public :: base_radiator_t
 
-  !> base radiator type
-  type, extends(abs_radiator_t) :: base_radiator_t
+  public :: radiator_t, radiator_state_t, radiator_ptr
+
+  !> Radiator state type
+  type :: radiator_state_t
+    !> layer optical depth
+    real(kind=dk), allocatable :: layer_OD_(:,:)
+    !> layer single scattering albedo
+    real(kind=dk), allocatable :: layer_SSA_(:,:)
+    !> layer asymmetry factor
+    real(kind=dk), allocatable :: layer_G_(:,:)
+  end type radiator_state_t
+
+  !> Base radiator type
+  type :: radiator_t
+    type(string_t)         :: handle_
+    type(radiator_state_t) :: state_
   contains
     !> Initialize radiator
     procedure :: initialize
     !> Update radiator for new environmental conditions
     procedure :: upDateState
-  end type base_radiator_t
+  end type radiator_t
+
+  !> Pointer type for building sets of radiator objects
+  type :: radiator_ptr
+    class(radiator_t), pointer :: val_ => null( )
+  end type radiator_ptr
 
 contains
 
@@ -38,7 +54,7 @@ contains
     use micm_1d_grid,         only : abs_1d_grid_t
 
     !> radiator object
-    class(base_radiator_t), intent(inout) :: this
+    class(radiator_t), intent(inout)      :: this
     !> radiator configuration object
     type(config_t), intent(inout)         :: radiator_config
     !> grid warehouse
@@ -91,9 +107,9 @@ contains
 
     !> Arguments
     !> radiator obj
-    class(base_radiator_t), intent(inout) :: this
+    class(radiator_t), intent(inout)               :: this
     !> Grid warehouse
-    type(grid_warehouse_t), intent(inout) :: gridWareHouse
+    type(grid_warehouse_t), intent(inout)          :: gridWareHouse
     !> Profile warehouse
     type(Profile_warehouse_t), intent(inout)       :: ProfileWareHouse
     !> RadXfer cross section warehouse
@@ -160,4 +176,6 @@ contains
 
   end subroutine upDateState
 
-end module micm_base_radiator_type
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+end module photolysis_radiator

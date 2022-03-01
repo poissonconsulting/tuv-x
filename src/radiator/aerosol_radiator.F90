@@ -2,15 +2,15 @@
 ! SPDX-License-Identifier: Apache-2.0
 !
 !> \file
-!> The aerosol_micm_radiator module
+!> The aerosol_radiator module
 
 !> The aerosol_radiator_t type and related functions
 !!
-module micm_aerosol_radiator_type
+module photolysis_aerosol_radiator
 
   use musica_constants,       only : dk => musica_dk, ik => musica_ik
   use musica_string,          only : string_t
-  use micm_abs_radiator_type, only : abs_radiator_t
+  use photolysis_radiator,    only : radiator_t
 
   implicit none
 
@@ -18,7 +18,7 @@ module micm_aerosol_radiator_type
   public :: aerosol_radiator_t
 
   !> aerosol radiator type
-  type, extends(abs_radiator_t) :: aerosol_radiator_t
+  type, extends(radiator_t) :: aerosol_radiator_t
   contains
     !> Initialize radiator
     procedure :: initialize
@@ -249,4 +249,6 @@ contains
 
   end subroutine upDateState
 
-end module micm_aerosol_radiator_type
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+end module photolysis_aerosol_radiator

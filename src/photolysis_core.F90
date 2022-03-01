@@ -139,7 +139,7 @@ contains
 
   use micm_Profile,                 only : abs_Profile_t
   use micm_radiator_warehouse,      only : radiator_warehouse_t
-  use micm_abs_radiator_type,       only : abs_radiator_t
+  use photolysis_radiator,          only : radiator_t
   use abstract_radXfer_type,        only : radField_t
   use debug,                        only : diagout
 
@@ -152,7 +152,7 @@ contains
   integer(ik)                 :: i_ndx, i_diag
   character(len=2)            :: number
   class(abs_Profile_t), pointer  :: SZAngles
-  class(abs_radiator_t), pointer :: aRadiator => null()
+  class(radiator_t), pointer     :: aRadiator => null()
   class(radField_t), allocatable :: radiationFld
   type(string_t)                 :: Handle
 

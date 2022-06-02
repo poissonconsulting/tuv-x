@@ -40,12 +40,18 @@
          }
       }
    },
-   "Radiators": {
-      "Air": {
-        "radiator type": "Base radiator"
+   "radiators": [
+      {
+        "name": "air",
+        "type": "base",
+        "cross section": "Air",
+        "vertical profile": "Air"
       },
-      "CO2": {
-        "radiator type": "Base radiator"
+      {
+        "name": "CO2",
+        "type": "base",
+        "cross section": "CO2",
+        "vertical profile": "CO2"
       }
-    }
+    ]
 }

@@ -84,12 +84,10 @@ contains
     type(config_t)              :: radiator_config_set, radiator_config
     class(iterator_t), pointer  :: iter
     type(radiator_ptr)          :: aRadiator
-    character(len=32)           :: keychar
-    type(string_t)              :: keyString
 
     write(*,*) Iam // 'entering'
 
-    call config%get( 'Radiators', radiator_config_set, Iam )
+    call config%get( 'radiators', radiator_config_set, Iam )
 
     allocate( radiator_warehouse )
     allocate( radiator_warehouse%radiators_(0) )
@@ -97,18 +95,13 @@ contains
 
     iter => radiator_config_set%get_iterator()
     do while( iter%next() )
-      keychar = radiator_config_set%key(iter)
-      write(*,*) ' '
-      write(*,*) Iam,'key = ',trim(keychar)
-      keyString = keychar
       call radiator_config_set%get( iter, radiator_config, Iam )
-      call radiator_config%add( 'Handle', keyString, Iam )
 !-----------------------------------------------------------------------------
 !> build and store the radiator
 !-----------------------------------------------------------------------------
       aRadiator%val_ => radiator_builder( radiator_config, gridWareHouse )
       radiator_warehouse%radiators_ = [radiator_warehouse%radiators_,aRadiator]
-      radiator_warehouse%handle_ = [radiator_warehouse%handle_,keyString]
+      radiator_warehouse%handle_ = [radiator_warehouse%handle_,aRadiator%val_%handle_]
     end do
 
     deallocate( iter )

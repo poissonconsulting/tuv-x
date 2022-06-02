@@ -80,7 +80,7 @@ contains
     !> Radiative transfer cross sections are optional
     call radXfer_config%get( "Radiative xfer cross sections", radXfer_cross_sections_config, Iam, found=found )
     !> Radiators keys must be in config
-    call radXfer_config%get( "Radiators", Radiators_config, Iam )
+    call radXfer_config%get( "radiators", Radiators_config, Iam )
 
 
     !> Instantiate photolysis core
@@ -203,7 +203,7 @@ sza_loop: &
     associate( diagnostic => this%diagnostics_( i_diag ) )
       aRadiator => this%RadXfer_component_%RadiatorWareHouse_%get_radiator( diagnostic )
         ! Diagnostics for testing
-      if( diagnostic == 'Air' ) then
+      if( diagnostic == 'air' ) then
         call diagout( 'dtrl.new', aRadiator%state_%layer_OD_ )
       elseif( diagnostic == 'Aerosols' ) then
         call diagout( 'dtaer.new', aRadiator%state_%layer_OD_ )

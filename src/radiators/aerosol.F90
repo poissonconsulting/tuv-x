@@ -57,8 +57,8 @@ contains
     real(dk)                      :: tau550, alpha, wscaling, ODscaling
     real(dk)                      :: coldens
     real(dk), allocatable         :: input_OD(:), rad_OD(:)
-    real(dk), allocatable         :: input_SSA(:)
-    real(dk), allocatable         :: input_G(:)
+    real(dk)                      :: input_SSA
+    real(dk)                      :: input_G
     real(dk), allocatable         :: input_zgrid(:)
     real(dk), allocatable         :: winput_SSA(:), winput_G(:)
     type(string_t)                :: Handle
@@ -75,7 +75,7 @@ contains
 !-----------------------------------------------------------------------------
 !> Get radiator "Handle"
 !-----------------------------------------------------------------------------
-    call radiator_config%get( 'Handle', this%handle_, Iam )
+    call radiator_config%get( 'name', this%handle_, Iam )
     write(*,*) Iam // 'handle = ',this%handle_%to_char()
 
 !> allocate radiator state variables
@@ -84,8 +84,7 @@ contains
     allocate( this%state_%layer_G_(zGrid%ncells_,lambdaGrid%ncells_) )
 
 !> read json config
-    call radiator_config%get( "Optical depth", Aerosol_config, Iam )
-    call Aerosol_config%get( "Values", input_OD, Iam )
+    call radiator_config%get( "optical depths", input_OD, Iam )
     nInputBins = size(input_OD)
     if( nInputBins > 1 ) then
 !> interpolate input OD to state variable
@@ -115,43 +114,29 @@ contains
       this%state_%layer_OD_ = input_OD(1)
     endif
     
-    call radiator_config%get( "Single scattering albedo", Aerosol_config, Iam )
-    call Aerosol_config%get( "Values", input_SSA, Iam )
-    if( size(input_SSA) > 1 ) then
-      call die_msg( 234999,"Aerosol single scattering albedo must be a scalar" )
+    call radiator_config%get( "single scattering albedo", input_SSA, Iam )
 !> interpolate input SSA to state variable
-    else
-      winput_SSA = input_OD(:nInputBins-1) * input_SSA(1)
-      this%state_%layer_SSA_(:,1) = theInterpolator%interpolate( zGrid%edge_, input_zgrid,winput_SSA, 1 )
-      call diagout( 'omz.aer.new',this%state_%layer_SSA_(:,1) )
-!     this%state_%layer_SSA_ = input_SSA(1)
-      do binNdx = 2,lambdaGrid%ncells_
-        this%state_%layer_SSA_(:,binNdx) = this%state_%layer_SSA_(:,1) 
-      enddo
-      write(*,*) Iam // 'SSA from config'
-      write(*,*) Iam // 'size SSA = ',size(input_SSA)
-      write(*,*) input_SSA
-    endif
+    winput_SSA = input_OD(:nInputBins-1) * input_SSA
+    this%state_%layer_SSA_(:,1) = theInterpolator%interpolate( zGrid%edge_, input_zgrid,winput_SSA, 1 )
+    call diagout( 'omz.aer.new',this%state_%layer_SSA_(:,1) )
+    do binNdx = 2,lambdaGrid%ncells_
+      this%state_%layer_SSA_(:,binNdx) = this%state_%layer_SSA_(:,1) 
+    enddo
+    write(*,*) Iam // 'SSA from config'
+    write(*,*) input_SSA
 
-    call radiator_config%get( "Asymmetry factor", Aerosol_config, Iam )
-    call Aerosol_config%get( "Values", input_G, Iam )
-    if( size(input_G) > 1 ) then
-      call die_msg( 234999,"Aerosol asymmetry factor must be a scalar" )
+    call radiator_config%get( "asymmetry factor", input_G, Iam )
 !> interpolate input G to state variable
-    else
-      winput_G = input_OD(:nInputBins-1) * input_G(1)
-      this%state_%layer_G_(:,1) = theInterpolator%interpolate( zGrid%edge_, input_zgrid,winput_G, 1 )
-      call diagout( 'gz.aer.new',this%state_%layer_G_(:,1) )
-!     this%state_%layer_G_ = input_G(1)
-      do binNdx = 2,lambdaGrid%ncells_
-        this%state_%layer_G_(:,binNdx) = this%state_%layer_G_(:,1) 
-      enddo
-      write(*,*) Iam // 'G from config'
-      write(*,*) Iam // 'size G = ',size(input_G)
-      write(*,*) input_G
-    endif
+    winput_G = input_OD(:nInputBins-1) * input_G
+    this%state_%layer_G_(:,1) = theInterpolator%interpolate( zGrid%edge_, input_zgrid,winput_G, 1 )
+    call diagout( 'gz.aer.new',this%state_%layer_G_(:,1) )
+    do binNdx = 2,lambdaGrid%ncells_
+      this%state_%layer_G_(:,binNdx) = this%state_%layer_G_(:,1) 
+    enddo
+    write(*,*) Iam // 'G from config'
+    write(*,*) input_G
 
-    call radiator_config%get( "550 optical depth", tau550, Iam, default=0._dk )
+    call radiator_config%get( "550 nm optical depth", tau550, Iam, default=0._dk )
     call radiator_config%get( "Alpha", alpha, Iam, default=1._dk )
     write(*,*) Iam // 'tau550, alpha from config'
     write(*,*) tau550, alpha

@@ -5,33 +5,37 @@
 !> This base_cross_section module
 
 !> The base_cross_section type and related functions
-module tuvx_cross_section_base
+module tuvx_cross_section
 
-  use tuvx_cross_section, only : abs_cross_section_t
-  use musica_constants,                    only : dk => musica_dk, ik => musica_ik, lk => musica_lk
+  use musica_constants, only : dk => musica_dk, ik => musica_ik, lk => musica_lk
 
   implicit none
 
   private
-  public :: base_cross_section_t
+  public :: base_cross_section_t, cross_section_parms_t, base_constructor, base_cross_section_ptr
 
   type cross_section_parms_t
     real(dk), allocatable :: temperature(:)
+    real(dk), allocatable :: deltaT(:)
     real(dk), allocatable :: array(:,:)
   end type cross_section_parms_t
 
   !> Calculator for base_cross_section
-  type, extends(abs_cross_section_t) :: base_cross_section_t
+  type :: base_cross_section_t
     !> The cross section array
     type(cross_section_parms_t), allocatable :: cross_section_parms(:)
   contains
-    !> Initialize the cross section
-    procedure :: initialize
     !> Calculate the cross section
     procedure :: calculate => run
+    procedure :: addpnts
     !> clean up
     final     :: finalize
   end type base_cross_section_t
+
+  !> Pointer type for building sets of photo rate constants
+  type :: base_cross_section_ptr
+    class(base_cross_section_t), pointer :: val_ => null( )
+  end type base_cross_section_ptr
 
   integer(ik), parameter :: iONE = 1_ik
   real(dk), parameter    :: rZERO = 0.0_dk
@@ -42,7 +46,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Initialize base_cross_section_t object
-  subroutine initialize( this, config, gridWareHouse, ProfileWareHouse, atMidPoint )
+  subroutine base_constructor( base_component, config, gridWareHouse, ProfileWareHouse, atMidPoint )
 
     use musica_config,                   only : config_t
     use musica_string,                   only : string_t
@@ -55,7 +59,7 @@ contains
     use tuvx_profile,                    only : abs_Profile_t
 
     !> base cross section type
-    class(base_cross_section_t), intent(inout) :: this
+    class(base_cross_section_t), pointer :: base_component
     logical(lk), optional, intent(in)          :: atMidPoint
     !> cross section configuration object
     type(config_t), intent(inout) :: config
@@ -63,7 +67,7 @@ contains
     type(grid_warehouse_t), intent(inout)    :: gridWareHouse
     type(Profile_warehouse_t), intent(inout) :: ProfileWareHouse
 
-!   local variables
+    !   local variables
     character(len=*), parameter   :: Iam = 'base cross section initialize: '
     character(len=*), parameter   :: Hdr = 'cross_section_'
 
@@ -80,6 +84,7 @@ contains
     class(abs_1d_grid_t), pointer :: lambdaGrid
 
     write(*,*) Iam,'entering'
+
     !> Get model wavelength grids
     Handle = 'Photolysis, wavelength'
     lambdaGrid => gridWareHouse%get_grid( Handle )
@@ -89,9 +94,9 @@ contains
 
 has_netcdf_file: &
     if( found ) then
-      allocate( this%cross_section_parms(size(netcdfFiles)) )
+      allocate( base_component%cross_section_parms(size(netcdfFiles)) )
 file_loop: &
-      do fileNdx = iONE,size(this%cross_section_parms)
+      do fileNdx = iONE,size(base_component%cross_section_parms)
         allocate( netcdf_obj )
     !> read netcdf cross section parameters
         call netcdf_obj%read_netcdf_file( filespec=netcdfFiles(fileNdx)%to_char(), Hdr=Hdr )
@@ -103,23 +108,23 @@ file_loop: &
 
     !> interpolate from data to model wavelength grid
         if( allocated(netcdf_obj%wavelength) ) then
-          if( .not. allocated(this%cross_section_parms(fileNdx)%array) ) then
-            allocate(this%cross_section_parms(fileNdx)%array(lambdaGrid%ncells_,nParms))
+          if( .not. allocated(base_component%cross_section_parms(fileNdx)%array) ) then
+            allocate(base_component%cross_section_parms(fileNdx)%array(lambdaGrid%ncells_,nParms))
           endif
           do parmNdx = iONE,nParms
             data_lambda    = netcdf_obj%wavelength
             data_parameter = netcdf_obj%parameters(:,parmNdx)
-            call this%addpnts( config, data_lambda, data_parameter )
+            call base_component%addpnts( config, data_lambda, data_parameter )
             call inter2(xto=lambdaGrid%edge_, &
-                        yto=this%cross_section_parms(fileNdx)%array(:,parmNdx), &
+                        yto=base_component%cross_section_parms(fileNdx)%array(:,parmNdx), &
                         xfrom=data_lambda, &
                         yfrom=data_parameter,ierr=retcode)
           enddo
         else
-          this%cross_section_parms(fileNdx)%array = netcdf_obj%parameters
+          base_component%cross_section_parms(fileNdx)%array = netcdf_obj%parameters
         endif
         if( allocated(netcdf_obj%temperature) ) then
-          this%cross_section_parms(fileNdx)%temperature = netcdf_obj%temperature
+          base_component%cross_section_parms(fileNdx)%temperature = netcdf_obj%temperature
         endif
         deallocate( netcdf_obj )
       enddo file_loop
@@ -127,7 +132,7 @@ file_loop: &
 
     write(*,*) Iam,'exiting'
 
-  end subroutine initialize
+  end subroutine base_constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -181,6 +186,63 @@ file_loop: &
 
   end function run
 
+  subroutine addpnts( this, config, data_lambda, data_parameter )
+    use musica_config, only : config_t
+    use musica_string, only : string_t
+    use tuvx_util,   only : addpnt
+
+    class(base_cross_section_t)    :: this
+    type(config_t), intent(inout) :: config
+    real(dk), allocatable, intent(inout) :: data_lambda(:)
+    real(dk), allocatable, intent(inout) :: data_parameter(:)
+
+    real(dk), parameter :: rZERO = 0.0_dk
+    real(dk), parameter :: rONE  = 1.0_dk
+    real(dk), parameter :: deltax = 1.e-5_dk
+    character(len=*), parameter :: Iam = 'cross_section; addpnts: '
+
+    integer(ik) :: nRows
+    real(dk) :: lowerLambda, upperLambda
+    real(dk) :: addpnt_val_lower, addpnt_val_upper
+    type(string_t)  :: addpnt_type_
+    logical         :: found
+    character(len=:), allocatable :: number
+
+    write(*,*) Iam,'entering'
+
+    !> add endpoints to data arrays; first the lower bound
+    nRows = size(data_lambda)
+    lowerLambda = data_lambda(1) ; upperLambda = data_lambda(nRows)
+    call config%get( 'lower extrapolation', addpnt_type_, Iam, found=found )
+    if( .not. found ) then
+      addpnt_val_lower = rZERO
+    elseif( addpnt_type_ == 'boundary' ) then
+      addpnt_val_lower = data_parameter(1)
+    else
+      number = addpnt_type_%to_char()
+      read( number, '(g30.20)' ) addpnt_val_lower
+    endif
+
+    !> add endpoints to data arrays; now the upper bound
+    call config%get( 'upper extrapolation', addpnt_type_, Iam, found=found )
+    if( .not. found ) then
+      addpnt_val_upper = rZERO
+    elseif( addpnt_type_ == 'boundary' ) then
+      addpnt_val_upper = data_parameter(nRows)
+    else
+      number = addpnt_type_%to_char()
+      read( number, '(g30.20)' ) addpnt_val_upper
+    endif
+
+    call addpnt(x=data_lambda,y=data_parameter,xnew=(rONE-deltax)*lowerLambda,ynew=addpnt_val_lower) 
+    call addpnt(x=data_lambda,y=data_parameter,xnew=rZERO,ynew=addpnt_val_lower) 
+    call addpnt(x=data_lambda,y=data_parameter,xnew=(rONE+deltax)*upperLambda,ynew=addpnt_val_upper) 
+    call addpnt(x=data_lambda,y=data_parameter,xnew=1.e38_dk,ynew=addpnt_val_upper) 
+
+    write(*,*) Iam,'exiting'
+
+  end subroutine addpnts
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !> finalize the cross section type
@@ -209,4 +271,4 @@ file_loop: &
    
    end subroutine finalize
 
-end module tuvx_cross_section_base
+end module tuvx_cross_section

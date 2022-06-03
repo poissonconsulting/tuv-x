@@ -7,7 +7,7 @@
 !> The bro+hv->br+o_cross_section type and related functions
 module tuvx_cross_section_bro_br_o
 
-  use tuvx_cross_section_base,    only : base_cross_section_t
+  use tuvx_cross_section, only : base_cross_section_t
 
   implicit none
 
@@ -17,16 +17,19 @@ module tuvx_cross_section_bro_br_o
   !> Calculator for base_cross_section
   type, extends(base_cross_section_t) :: bro_br_o_cross_section_t
   contains
-    !> Initialize the cross section
-    procedure :: initialize
+    final     :: finalize
   end type bro_br_o_cross_section_t
+
+  interface bro_br_o_cross_section_t
+    module procedure constructor
+  end interface bro_br_o_cross_section_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Initialize bro_br_o_cross_section_t object
-  subroutine initialize( this, config, gridWareHouse, ProfileWareHouse, atMidPoint )
+  function constructor( config, gridWareHouse, ProfileWareHouse, atMidPoint ) result( this )
 
     use musica_constants,                only : dk => musica_dk, ik => musica_ik, lk => musica_lk
     use musica_config,                   only : config_t
@@ -38,8 +41,9 @@ contains
     use tuvx_grid,                    only : abs_1d_grid_t
     use tuvx_profile_warehouse,          only : Profile_warehouse_t
 
+    type(bro_br_o_cross_section_t), pointer :: this
+
     !> Arguments
-    class(bro_br_o_cross_section_t), intent(inout) :: this
     logical(lk), optional, intent(in)              :: atMidPoint
     !> cross section configuration object
     type(config_t), intent(inout)                  :: config
@@ -65,6 +69,7 @@ contains
     class(abs_1d_grid_t), pointer :: zGrid
 
     write(*,*) Iam,'entering'
+    allocate( this )
 
     !> Get model wavelength grids
     Handle = 'Photolysis, wavelength' ; lambdaGrid => gridWareHouse%get_grid( Handle )
@@ -112,6 +117,13 @@ file_loop: &
 
     write(*,*) Iam,'exiting'
 
-  end subroutine initialize
+  end function constructor
+
+  subroutine finalize( this )
+    type(bro_br_o_cross_section_t), intent(inout) :: this
+
+    ! nothing to do, no one to be
+
+  end subroutine finalize
 
 end module tuvx_cross_section_bro_br_o

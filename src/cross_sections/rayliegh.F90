@@ -7,8 +7,8 @@
 !> The rayliegh_cross_section type and related functions
 module tuvx_cross_section_rayliegh
 
-  use tuvx_cross_section, only : abs_cross_section_t
-  use musica_constants,                    only : musica_dk, musica_ik, lk => musica_lk
+  use musica_constants, only : musica_dk, musica_ik, lk => musica_lk
+  use tuvx_cross_section, only : base_cross_section_t, base_constructor
 
   implicit none
 
@@ -16,43 +16,40 @@ module tuvx_cross_section_rayliegh
   public :: rayliegh_cross_section_t
 
   !> Calculator for rayliegh_cross_section
-  type, extends(abs_cross_section_t) :: rayliegh_cross_section_t
+  type, extends(base_cross_section_t) :: rayliegh_cross_section_t
   contains
-    !> Initialize the cross section
-    procedure :: initialize
     !> Calculate the cross section
     procedure :: calculate => run
     !> clean up
     final     :: finalize
   end type rayliegh_cross_section_t
 
+  !> Constructor
+  interface rayliegh_cross_section_t
+    module procedure constructor
+  end interface rayliegh_cross_section_t
+
 contains
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  !> Initialize rayliegh_cross_section_t object
-  subroutine initialize( this, config, gridWareHouse, ProfileWareHouse, atMidPoint )
-
-    use musica_config,               only : config_t
-    use tuvx_grid_warehouse,         only : grid_warehouse_t
+  !> Initialize the cross section
+  function constructor( config, gridWareHouse, ProfileWareHouse, atMidPoint ) result ( this )
+ 
+    use musica_config,    only : config_t
+    use musica_constants, only : lk => musica_lk
+    use tuvx_grid_warehouse,    only : grid_warehouse_t
     use tuvx_profile_warehouse, only : Profile_warehouse_t
+ 
+ 
+    !> Cross section calculator
+    logical(lk), optional, intent(in)          :: atMidPoint
+    class(base_cross_section_t), pointer  :: this
+    type(config_t), intent(inout)              :: config
+    type(grid_warehouse_t), intent(inout)      :: gridWareHouse
+    type(Profile_warehouse_t), intent(inout)   :: ProfileWareHouse
 
-    !> rayliegh cross section type
-    class(rayliegh_cross_section_t), intent(inout) :: this
-    logical(lk), optional, intent(in)              :: atMidPoint
-    !> cross section configuration object
-    type(config_t), intent(inout)                  :: config
-    !> The warehouses
-    type(grid_warehouse_t), intent(inout)          :: gridWareHouse
-    type(Profile_warehouse_t), intent(inout)       :: ProfileWareHouse
-
-    character(len=*), parameter :: Iam = 'rayliegh cross section initialize: '
-
-    write(*,*) Iam,'entering'
-
-    write(*,*) Iam,'exiting'
-
-  end subroutine initialize
+    allocate ( rayliegh_cross_section_t :: this )
+    call base_constructor( this, config, gridWareHouse, ProfileWareHouse, atMidPoint )
+  end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

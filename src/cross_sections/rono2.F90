@@ -7,8 +7,8 @@
 !> The rono2_cross_section type and related functions
 module tuvx_cross_section_rono2
 
-  use tuvx_cross_section_base,    only : base_cross_section_t
-  use musica_constants,                only : dk => musica_dk, ik => musica_ik, lk => musica_lk
+  use tuvx_cross_section, only : base_cross_section_t
+  use musica_constants,   only : dk => musica_dk, ik => musica_ik, lk => musica_lk
 
   implicit none
 
@@ -22,18 +22,21 @@ module tuvx_cross_section_rono2
   !> Calculator for rono2 cross section
   type, extends(base_cross_section_t) :: rono2_cross_section_t
   contains
-    !> Initialize the cross section
-    procedure :: initialize
     !> Calculate the cross section
     procedure :: calculate => run
   end type rono2_cross_section_t
+
+  !> Constructor
+  interface rono2_cross_section_t
+    module procedure constructor
+  end interface rono2_cross_section_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Initialize base_cross_section_t object
-  subroutine initialize( this, config, gridWareHouse, ProfileWareHouse, atMidPoint )
+  function constructor( config, gridWareHouse, ProfileWareHouse, atMidPoint ) result ( this )
 
     use musica_config,                   only : config_t
     use musica_string,                   only : string_t
@@ -44,8 +47,8 @@ contains
     use tuvx_grid,                    only : abs_1d_grid_t
     use tuvx_profile_warehouse,          only : Profile_warehouse_t
 
+    type(rono2_cross_section_t), pointer :: this
     !> Arguments
-    class(rono2_cross_section_t), intent(inout) :: this
     !> cross section configuration object
     type(config_t), intent(inout)               :: config
     logical(lk), optional, intent(in)           :: atMidPoint
@@ -72,6 +75,8 @@ contains
     class(abs_1d_grid_t), pointer :: lambdaGrid
 
     write(*,*) Iam,'entering'
+
+    allocate( this )
 
     !> Get model wavelength grids
     Handle = 'Photolysis, wavelength' ; lambdaGrid => gridWareHouse%get_grid( Handle )
@@ -130,7 +135,7 @@ file_loop: &
 
     write(*,*) Iam,'exiting'
 
-  end subroutine initialize
+  end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

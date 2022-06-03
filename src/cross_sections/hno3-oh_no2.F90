@@ -7,7 +7,7 @@
 !> The hno3->oh+no2_cross_section type and related functions
 module tuvx_cross_section_hno3_oh_no2
 
-  use tuvx_cross_section_base,    only : base_cross_section_t
+  use tuvx_cross_section,    only : base_cross_section_t
   use musica_constants,                        only : dk => musica_dk, ik => musica_ik, lk => musica_lk
   use musica_string,                           only : string_t
   use tuvx_grid_warehouse,                     only : grid_warehouse_t
@@ -26,18 +26,21 @@ module tuvx_cross_section_hno3_oh_no2
   !> Calculator for hno3-oh_no2 cross section
   type, extends(base_cross_section_t) :: hno3_oh_no2_cross_section_t
   contains
-    !> Initialize the cross section
-    procedure :: initialize
     !> Calculate the cross section
     procedure :: calculate => run
   end type hno3_oh_no2_cross_section_t
+
+  !> Constructor
+  interface hno3_oh_no2_cross_section_t
+    module procedure constructor
+  end interface hno3_oh_no2_cross_section_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Initialize base_cross_section_t object
-  subroutine initialize( this, config, gridWareHouse, ProfileWareHouse, atMidPoint )
+  function constructor( config, gridWareHouse, ProfileWareHouse, atMidPoint ) result( this )
 
     use musica_config,                   only : config_t
     use tuvx_netcdf_util,                     only : netcdf_t
@@ -45,7 +48,7 @@ contains
     use musica_assert,                   only : die_msg
 
     !> base cross section type
-    class(hno3_oh_no2_cross_section_t), intent(inout) :: this
+    type(hno3_oh_no2_cross_section_t), pointer :: this
     !> cross section configuration object
     type(config_t), intent(inout)            :: config
     type(grid_warehouse_t), intent(inout)    :: gridWareHouse
@@ -76,6 +79,8 @@ contains
 
     !> get cross section netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found=found )
+
+    allocate( this )
 
 has_netcdf_file: &
     if( found ) then
@@ -128,7 +133,7 @@ file_loop: &
 
     write(*,*) Iam,'exiting'
 
-  end subroutine initialize
+  end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

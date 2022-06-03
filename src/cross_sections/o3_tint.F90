@@ -24,20 +24,23 @@ module tuvx_cross_section_o3_tint
   type, extends(tint_cross_section_t) :: o3_tint_cross_section_t
     real(dk) :: v185(1), v195(1), v345(1)
   contains
-    !> Initialize the cross section
-    procedure :: initialize
     !> Calculate the cross section
     procedure :: calculate => run
     !> refraction
     procedure :: refraction
   end type o3_tint_cross_section_t
 
+  !> Constructor
+  interface o3_tint_cross_section_t
+    module procedure constructor
+  end interface o3_tint_cross_section_t
+
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Initialize o3_tint_cross_section_t object
-  subroutine initialize( this, config, gridWareHouse, ProfileWareHouse, atMidPoint )
+  function constructor( config, gridWareHouse, ProfileWareHouse, atMidPoint ) result ( this )
 
     use musica_config,                   only : config_t
     use musica_string,                   only : string_t
@@ -49,7 +52,7 @@ contains
     use tuvx_profile_warehouse,     only : Profile_warehouse_t
 
     !> o3 tint cross section type
-    class(o3_tint_cross_section_t), intent(inout) :: this
+    type(o3_tint_cross_section_t), pointer :: this
     logical(lk), optional, intent(in)             :: atMidPoint
     !> cross section configuration object
     type(config_t), intent(inout)                 :: config
@@ -81,6 +84,8 @@ contains
     type(string_t)     :: Handle
 
     write(*,*) Iam,'entering'
+
+    allocate( this )
 
     !> Get model wavelength grids
     Handle = 'Photolysis, wavelength'
@@ -160,7 +165,7 @@ file_loop: &
       this%v185 = this%refraction( (/ w185 /), refracDensity ) * w185
       this%v195 = this%refraction( (/ w195 /), refracDensity ) * w195
       this%v345 = this%refraction( (/ w345 /), refracDensity ) * w345
-      this%cross_section_parms(2)%array(:,4) = this%cross_section_parms(1)%array(:,1)
+      this%cross_section_parms(2)%array(:,4) =  this%cross_section_parms(1)%array(:,1)
     else has_netcdf_file
       write(msg,*) Iam//'must have at least one netcdf input file'
       call die_msg( 400000008, msg )
@@ -168,7 +173,7 @@ file_loop: &
 
     write(*,*) Iam,'exiting'
 
-  end subroutine initialize
+  end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

@@ -7,40 +7,36 @@
 !> The o2_cross_section type and related functions
 module tuvx_cross_section_o2
 
-  use tuvx_cross_section, only : abs_cross_section_t
-  use musica_constants,                    only : musica_dk, musica_ik
-  use la_srb_type,                         only : la_srb_t
+  use musica_constants, only : musica_dk, musica_ik
+  use tuvx_cross_section, only : base_cross_section_t, cross_section_parms_t
+  use la_srb_type,      only : la_srb_t
 
   implicit none
 
   private
   public :: o2_cross_section_t
 
-  type cross_section_parms_t
-    real(musica_dk), allocatable :: temperature(:)
-    real(musica_dk), allocatable :: array(:,:)
-  end type cross_section_parms_t
-
   !> Calculator for o2_cross_section
-  type, extends(abs_cross_section_t) :: o2_cross_section_t
-    !> The cross section array
-    type(cross_section_parms_t), allocatable :: cross_section_parms(:)
+  type, extends(base_cross_section_t) :: o2_cross_section_t
     type(la_srb_t), allocatable              :: la_srb_obj_
   contains
-    !> Initialize the cross section
-    procedure :: initialize
     !> Calculate the cross section
     procedure :: calculate => run
     !> clean up
     final     :: finalize
   end type o2_cross_section_t
 
+  !> Constructor
+  interface o2_cross_section_t
+    module procedure constructor
+  end interface o2_cross_section_t
+
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Initialize o2_cross_section_t object
-  subroutine initialize( this, config, gridWareHouse, ProfileWareHouse )
+  function constructor( config, gridWareHouse, ProfileWareHouse ) result( this )
 
     use musica_config,                   only : config_t
     use musica_string,                   only : string_t
@@ -53,7 +49,7 @@ contains
     use tuvx_profile,                    only : abs_Profile_t
 
     !> o2 cross section type
-    class(o2_cross_section_t), intent(inout) :: this
+    type(o2_cross_section_t), pointer :: this
     !> cross section configuration object
     type(config_t), intent(inout) :: config
     !> The warehouses
@@ -80,6 +76,9 @@ contains
     class(abs_1d_grid_t), pointer :: lambdaGrid
 
     write(*,*) Iam,'entering'
+
+    allocate( this )
+
     !> Get model wavelength grids
     Handle = 'Photolysis, wavelength'
     lambdaGrid => gridWareHouse%get_grid( Handle )
@@ -135,7 +134,7 @@ file_loop: &
 
     write(*,*) Iam,'exiting'
 
-  end subroutine initialize
+  end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

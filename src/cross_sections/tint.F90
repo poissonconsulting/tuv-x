@@ -7,8 +7,8 @@
 !> The temperature interpolation cross_section type and related functions
 module tuvx_cross_section_tint
 
-  use tuvx_cross_section,     only : abs_cross_section_t
-  use musica_constants,                        only : dk => musica_dk, ik => musica_ik, lk => musica_lk
+  use musica_constants, only : dk => musica_dk, ik => musica_ik, lk => musica_lk
+  use tuvx_cross_section, only : base_cross_section_t, cross_section_parms_t
 
   implicit none
 
@@ -19,31 +19,26 @@ module tuvx_cross_section_tint
   real(dk), parameter    :: rZERO = 0.0_dk
   real(dk), parameter    :: rONE  = 1.0_dk
 
-  type cross_section_parms_t
-    real(dk), allocatable :: temperature(:)
-    real(dk), allocatable :: deltaT(:)
-    real(dk), allocatable :: array(:,:)
-  end type cross_section_parms_t
-
   !> Calculator for tint_cross_section
-  type, extends(abs_cross_section_t) :: tint_cross_section_t
-    !> The cross section array
-    type(cross_section_parms_t), allocatable :: cross_section_parms(:)
+  type, extends(base_cross_section_t) :: tint_cross_section_t
   contains
-    !> Initialize the cross section
-    procedure :: initialize
     !> Calculate the cross section
     procedure :: calculate => run
     !> clean up
     final     :: finalize
   end type tint_cross_section_t
 
+  !> Constructor
+  interface tint_cross_section_t
+    module procedure constructor
+  end interface tint_cross_section_t
+
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Initialize tint_cross_section_t object
-  subroutine initialize( this, config, gridWareHouse, ProfileWareHouse, atMidPoint )
+  function constructor( config, gridWareHouse, ProfileWareHouse, atMidPoint ) result ( this )
 
     use musica_config,                   only : config_t
     use musica_string,                   only : string_t
@@ -55,7 +50,7 @@ contains
     use tuvx_profile_warehouse,     only : Profile_warehouse_t
 
     !> base cross section type
-    class(tint_cross_section_t), intent(inout) :: this
+    type(tint_cross_section_t), pointer :: this
     logical(lk), optional, intent(in)          :: atMidPoint
     !> cross section configuration object
     type(config_t), intent(inout) :: config
@@ -81,6 +76,9 @@ contains
     type(string_t)     :: Handle
 
     write(*,*) Iam,'entering'
+
+    allocate ( this )
+
     !> Get model wavelength grids
     Handle = 'Photolysis, wavelength'
     lambdaGrid => gridWareHouse%get_grid( Handle )
@@ -165,7 +163,7 @@ file_loop: &
 
     write(*,*) Iam,'exiting'
 
-  end subroutine initialize
+  end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

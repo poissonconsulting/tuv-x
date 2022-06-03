@@ -85,10 +85,10 @@ contains
                                     profile_warehouse, at_mid_point = .true. )
       case( 'CCl4+hv->Products cross section' )
         new_cross_section => cross_section_ccl4_t( config, grid_warehouse,    &
-                                    profile_warehouse, at_mid_point = .true. )
+                                                           profile_warehouse )
       case( 'CCl3F+hv->Products cross section' )
         new_cross_section => cross_section_cfc11_t( config, grid_warehouse,   &
-                                    profile_warehouse, at_mid_point = .true. )
+                                                           profile_warehouse )
       case( 'CHCl3+hv->Products cross section' )
         new_cross_section => cross_section_chcl3_t( config, grid_warehouse,   &
                                     profile_warehouse, at_mid_point = .true. )
@@ -97,13 +97,13 @@ contains
                     grid_warehouse, profile_warehouse, at_mid_point = .true. )
       case( 'CH2O cross section' )
         new_cross_section => cross_section_ch2o_t( config, grid_warehouse,    &
-                                    profile_warehouse, at_mid_point = .true. )
+                                                           profile_warehouse )
       case( 'CH3COCH2(ONO2)+hv->CH3COCH2(O.)+NO2 cross section' )
         new_cross_section => cross_section_nitroxy_acetone_t( config,         &
                     grid_warehouse, profile_warehouse, at_mid_point = .true. )
       case( 'CH3COCH3+hv->CH3CO+CH3 cross section' )
         new_cross_section => cross_section_ch3coch3_ch3co_ch3_t( config,      &
-                    grid_warehouse, profile_warehouse, at_mid_point = .true. )
+                                           grid_warehouse, profile_warehouse )
       case( 'CH3ONO2+hv->CH3O+NO2 cross section' )
         new_cross_section => cross_section_ch3ono2_ch3o_no2_t( config,        &
                     grid_warehouse, profile_warehouse, at_mid_point = .true. )

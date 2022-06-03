@@ -66,11 +66,14 @@
                }
             }
          },
-         "Radiators": {
-            "O3": {
-               "radiator type": "Base radiator"
+         "radiators": [
+            {
+               "name": "O3",
+               "type": "base",
+               "cross section": "O3",
+               "vertical profile": "O3"
             }
-         },
+         ],
          "Diagnostics" : [ "O3" ]
       }
    }

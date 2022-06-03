@@ -19,6 +19,10 @@ module tuvx_radiator_base
 
   !> base radiator type
   type, extends(abs_radiator_t) :: base_radiator_t
+    !> Name of the vertical profile to use
+    type(string_t) :: vertical_profile_name_
+    !> Name of the absorption cross-section to use
+    type(string_t) :: cross_section_name_
   contains
     !> Initialize radiator
     procedure :: initialize
@@ -58,8 +62,12 @@ contains
 !-----------------------------------------------------------------------------
 !> Get radiator "Handle"
 !-----------------------------------------------------------------------------
-    call radiator_config%get( 'Handle', this%handle_, Iam )
+    call radiator_config%get( 'name', this%handle_, Iam )
     write(*,*) Iam // 'handle = ',this%handle_%to_char()
+
+    call radiator_config%get( 'vertical profile', this%vertical_profile_name_, &
+                              Iam )
+    call radiator_config%get( 'cross section', this%cross_section_name_, Iam )
 
 !> allocate radiator state_ variables
     allocate( this%state_%layer_OD_(zGrid%ncells_,lambdaGrid%ncells_) )
@@ -123,11 +131,10 @@ contains
     Handle = 'Photolysis, wavelength' ; lambdaGrid => gridWareHouse%get_grid( Handle )
     write(*,*) Iam // 'nlyr,nbins = ',zGrid%ncells_,lambdaGrid%ncells_
 
-    !> Note: uses radiator handle for Profile handle
-    radiatorProfile => ProfileWareHouse%get_Profile( this%handle_ )
+    radiatorProfile => ProfileWareHouse%get_Profile( this%vertical_profile_name_ )
 
-    !> Note: uses radiator handle for cross section handle
-    radiatorCrossSection => radXferXsectWareHouse%get_radXfer_cross_section( this%handle_ )
+    radiatorCrossSection =>                                                   &
+      radXferXsectWareHouse%get_radXfer_cross_section( this%cross_section_name_ )
 
     !> check radiator state type allocation
     if( .not. allocated( this%state_%layer_OD_ ) ) then
@@ -146,7 +153,7 @@ contains
     enddo
 
     !> Settings for a gas phase radiator
-    if( this%handle_ == 'Air' ) then
+    if( this%handle_ == 'air' ) then
       this%state_%layer_SSA_ = 1._dk
       this%state_%layer_G_   = 0._dk
     else

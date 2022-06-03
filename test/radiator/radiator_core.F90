@@ -157,7 +157,7 @@ contains
     call assert( 412238775, all( aCrossSection(1,:) == aCrossSection(zGrid%ncells_,:) ) )
 
     !> Get copy of the rayliegh radiator
-    Handle = 'Air'
+    Handle = 'air'
     RaylieghRadiator = this%theRadiatorWarehouse_%get_radiator( Handle )
     call RaylieghRadiator%upDateState( this%theGridWareHouse_, this%theProfileWareHouse_, &
                                        this%theradXferXsectWareHouse_ )

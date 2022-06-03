@@ -41,12 +41,12 @@ contains
 
     write(*,*) Iam,'entering'
     new_radiator_t => null()
-    call config%get( 'radiator type', radiator_type, Iam )
+    call config%get( 'type', radiator_type, Iam )
 
     select case( radiator_type%to_char() )
-      case( 'Base radiator' )
+      case( 'base' )
         allocate( base_radiator_t :: new_radiator_t )
-      case( 'Aerosol radiator' )
+      case( 'aerosol' )
         allocate( aerosol_radiator_t :: new_radiator_t )
       case default
         call die_msg( 460768245, "Invalid radiator type: '" // radiator_type%to_char()//"'" )

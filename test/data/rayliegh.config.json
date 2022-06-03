@@ -53,12 +53,15 @@
                }
             }
          },
-         "Radiators": {
-            "Air": {
-               "radiator type": "Base radiator"
+         "radiators": [
+            {
+               "name": "air",
+               "type": "base",
+               "cross section": "Air",
+               "vertical profile": "Air",
             }
-         },
-         "Diagnostics" : [ "Air" ]
+         ],
+         "Diagnostics" : [ "air" ]
       }
    }
 }

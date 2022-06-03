@@ -12,7 +12,7 @@ module tuvx_radiative_transfer
   use musica_string,                   only : string_t
   use tuvx_grid_warehouse,             only : grid_warehouse_t
   use tuvx_profile_warehouse,          only : Profile_warehouse_t
-  use tuvx_cross_section_warehouse,    only : radXfer_xsect_warehouse_t
+  use tuvx_cross_section_warehouse,    only : cross_section_warehouse_t
   use tuvx_radiator_warehouse,         only : radiator_warehouse_t
   use tuvx_radiative_transfer_solver,           only : abstract_radXfer_t
   use tuvx_delta_eddington,            only : delta_eddington_t
@@ -33,7 +33,7 @@ module tuvx_radiative_transfer
     !> Copy of the original radXfer component configuration
     type(config_t)                           :: config_
     !> Copy of original radXfer cross section warehouse
-    type(radXfer_xsect_warehouse_t), pointer :: radXferXsectWareHouse_ => null()
+    type(cross_section_warehouse_t), pointer :: radXferXsectWareHouse_ => null()
     !> Copy of original radiator warehouse
     type(radiator_warehouse_t), public, pointer :: RadiatorWareHouse_ => null()
   contains
@@ -81,7 +81,7 @@ contains
     allocate( radXfer_component )
 
     !> instantiate and initialize the radXfer cross section warehouse
-    radXfer_component%radXferXsectWareHouse_ => radXfer_xsect_warehouse_t( config, gridWareHouse, ProfileWareHouse )
+    radXfer_component%radXferXsectWareHouse_ => cross_section_warehouse_t( config, gridWareHouse, ProfileWareHouse )
     !> instantiate and initialize the radiator warehouse
     radXfer_component%radiatorWareHouse_ => radiator_warehouse_t( config, gridWareHouse )
 

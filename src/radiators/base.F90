@@ -93,7 +93,7 @@ contains
     use tuvx_profile,                  only : abs_Profile_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_grid,                  only : abs_1d_grid_t
-    use tuvx_cross_section_warehouse,  only : radXfer_xsect_warehouse_t
+    use tuvx_cross_section_warehouse,  only : cross_section_warehouse_t
     use tuvx_cross_section, only : cross_section_t
     use musica_constants,              only : lk => musica_lk
     use tuvx_diagnostic_util,                         only : diagout
@@ -106,7 +106,7 @@ contains
     !> Profile warehouse
     type(Profile_warehouse_t), intent(inout)       :: ProfileWareHouse
     !> RadXfer cross section warehouse
-    type(radXfer_xsect_warehouse_t), intent(inout) :: radXferXsectWareHouse
+    type(cross_section_warehouse_t), intent(inout) :: radXferXsectWareHouse
 
     !> Local variables
     real(dk) , parameter  :: km2cm = 1.e5_dk
@@ -134,7 +134,7 @@ contains
     radiatorProfile => ProfileWareHouse%get_Profile( this%vertical_profile_name_ )
 
     radiatorCrossSection =>                                                   &
-      radXferXsectWareHouse%get_radXfer_cross_section( this%cross_section_name_ )
+      radXferXsectWareHouse%get( this%cross_section_name_ )
 
     !> check radiator state type allocation
     if( .not. allocated( this%state_%layer_OD_ ) ) then

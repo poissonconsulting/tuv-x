@@ -13,7 +13,7 @@ module radiator_core
   use tuvx_grid,        only : abs_1d_grid_t
   use tuvx_profile_warehouse, only : Profile_warehouse_t
   use tuvx_profile,           only : abs_Profile_t
-  use tuvx_cross_section_warehouse,        only : radXfer_xsect_warehouse_t
+  use tuvx_cross_section_warehouse,        only : cross_section_warehouse_t
   use tuvx_cross_section, only : cross_section_t
   use tuvx_radiator_warehouse,    only : radiator_warehouse_t
   use tuvx_radiator,     only : abs_radiator_t
@@ -27,7 +27,7 @@ module radiator_core
   type :: radiator_core_t
     type(grid_warehouse_t), pointer          :: theGridWarehouse_
     type(Profile_warehouse_t), pointer       :: theProfileWarehouse_
-    type(radXfer_xsect_warehouse_t), pointer :: theradXferXsectWarehouse_
+    type(cross_section_warehouse_t), pointer :: theradXferXsectWarehouse_
     type(radiator_warehouse_t), pointer      :: theRadiatorWarehouse_
   contains
     procedure :: test => run
@@ -68,7 +68,7 @@ contains
     radiator_core_obj%theProfileWarehouse_ => Profile_warehouse_t( tst_config, radiator_core_obj%theGridWareHouse_ )
 
     !> Initialize radXfer xsect warehouse
-    radiator_core_obj%theradXferXsectWarehouse_ => radXfer_xsect_warehouse_t( &
+    radiator_core_obj%theradXferXsectWarehouse_ => cross_section_warehouse_t( &
                                                   tst_config, &
                                                   radiator_core_obj%theGridWareHouse_, &
                                                   radiator_core_obj%theProfileWarehouse_ )
@@ -140,7 +140,7 @@ contains
 
     !> Get copy of the rayliegh cross section
     Handle = 'Air'
-    RaylieghCrossSection => this%theradXferXsectWareHouse_%get_radXfer_cross_section( Handle )
+    RaylieghCrossSection => this%theradXferXsectWareHouse_%get( Handle )
     aCrossSection = RaylieghCrossSection%calculate( this%theGridWareHouse_, this%theProfileWareHouse_ )
     call assert( 412238776, all( aCrossSection >= 0._dk ) )
     call assert( 412238776, all( aCrossSection < 1._dk ) )

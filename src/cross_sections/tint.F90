@@ -8,37 +8,37 @@
 module tuvx_cross_section_tint
 
   use musica_constants, only : dk => musica_dk, ik => musica_ik, lk => musica_lk
-  use tuvx_cross_section, only : base_cross_section_t, cross_section_parms_t
+  use tuvx_cross_section, only : cross_section_t, cross_section_parms_t
 
   implicit none
 
   private
-  public :: tint_cross_section_t
+  public ::cross_section_tint_t
 
   integer(ik), parameter :: iONE  = 1_ik
   real(dk), parameter    :: rZERO = 0.0_dk
   real(dk), parameter    :: rONE  = 1.0_dk
 
   !> Calculator for tint_cross_section
-  type, extends(base_cross_section_t) :: tint_cross_section_t
+  type, extends(cross_section_t) ::cross_section_tint_t
   contains
     !> Calculate the cross section
     procedure :: calculate => run
     !> clean up
     final     :: finalize
-  end type tint_cross_section_t
+  end type cross_section_tint_t
 
   !> Constructor
-  interface tint_cross_section_t
+  interface cross_section_tint_t
     module procedure constructor
-  end interface tint_cross_section_t
+  end interface cross_section_tint_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize tint_cross_section_t object
-  function constructor( config, gridWareHouse, ProfileWareHouse, atMidPoint ) result ( this )
+  !> Initializecross_section_tint_t object
+  function constructor( config, grid_warehouse, profile_warehouse, at_mid_point ) result ( this )
 
     use musica_config,                   only : config_t
     use musica_string,                   only : string_t
@@ -47,16 +47,16 @@ contains
     use musica_assert,                   only : die_msg
     use tuvx_grid_warehouse,             only : grid_warehouse_t
     use tuvx_grid,                    only : abs_1d_grid_t
-    use tuvx_profile_warehouse,     only : Profile_warehouse_t
+    use tuvx_profile_warehouse,     only : profile_warehouse_t
 
     !> base cross section type
-    type(tint_cross_section_t), pointer :: this
-    logical(lk), optional, intent(in)          :: atMidPoint
+    type(cross_section_tint_t), pointer :: this
+    logical(lk), optional, intent(in)          :: at_mid_point
     !> cross section configuration object
     type(config_t), intent(inout) :: config
     !> The warehouses
-    type(grid_warehouse_t), intent(inout)         :: gridWareHouse
-    type(Profile_warehouse_t), intent(inout) :: ProfileWareHouse
+    type(grid_warehouse_t), intent(inout)         :: grid_warehouse
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse
 
 !   local variables
     character(len=*), parameter :: Iam = 'tint cross section initialize: '
@@ -81,7 +81,7 @@ contains
 
     !> Get model wavelength grids
     Handle = 'Photolysis, wavelength'
-    lambdaGrid => gridWareHouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( Handle )
 
     !> Get cross section netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found=found )
@@ -114,7 +114,7 @@ file_loop: &
             call die_msg( 400000004, msg )
           endif
           Xsection%deltaT = Xsection%temperature(2:nParms) - Xsection%temperature(1:nParms-1)
-          monopos = all( Xsection%deltaT > rZERO )        
+          monopos = all( Xsection%deltaT > rZERO )
           if( .not. monopos ) then
             if( any( Xsection%deltaT > rZERO ) ) then
               write(msg,*) Iam//'File: ',trim(netcdfFiles(fileNdx)%to_char()),'  temperature array not monotonic'
@@ -144,7 +144,7 @@ file_loop: &
           do parmNdx = 1,nParms
             data_lambda    = netcdf_obj%wavelength
             data_parameter = netcdf_obj%parameters(:,parmNdx)
-            call this%addpnts( config, data_lambda, data_parameter )
+            call this%add_points( config, data_lambda, data_parameter )
             call inter2(xto=lambdaGrid%edge_, &
                         yto=Xsection%array(:,parmNdx), &
                         xfrom=data_lambda, &
@@ -168,21 +168,21 @@ file_loop: &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Calculate the photorate cross section for a given set of environmental conditions
-  function run( this, gridWareHouse, ProfileWareHouse, atMidpoint ) result( cross_section )
+  function run( this, grid_warehouse, profile_warehouse, at_mid_point ) result( cross_section )
 
     use tuvx_grid_warehouse,             only : grid_warehouse_t
     use tuvx_grid,                    only : abs_1d_grid_t
-    use tuvx_profile_warehouse,     only : Profile_warehouse_t
-    use tuvx_profile,               only : abs_Profile_t
+    use tuvx_profile_warehouse,     only : profile_warehouse_t
+    use tuvx_profile,               only : abs_profile_t
     use musica_string,                   only : string_t
 
     !> Arguments
     !> base cross section
-    class(tint_cross_section_t), intent(in)       :: this
-    logical(lk), optional, intent(in)             :: atMidPoint
+    class(cross_section_tint_t), intent(in)       :: this
+    logical(lk), optional, intent(in)             :: at_mid_point
     !> The warehouses
-    type(grid_warehouse_t), intent(inout)         :: gridWareHouse
-    type(Profile_warehouse_t), intent(inout)      :: ProfileWareHouse
+    type(grid_warehouse_t), intent(inout)         :: grid_warehouse
+    type(profile_warehouse_t), intent(inout)      :: profile_warehouse
     !> Calculated cross section
     real(kind=dk), allocatable             :: cross_section(:,:)
 
@@ -195,21 +195,21 @@ file_loop: &
     real(dk), allocatable  :: modelTemp(:)
     class(abs_1d_grid_t), pointer :: zGrid
     class(abs_1d_grid_t), pointer :: lambdaGrid
-    class(abs_Profile_t), pointer :: mdlTemperature
+    class(abs_profile_t), pointer :: mdlTemperature
     type(string_t)     :: Handle
 
     write(*,*) Iam,'entering'
 
     Handle = 'Vertical Z'
-    zGrid => gridWareHouse%get_grid( Handle )
+    zGrid => grid_warehouse%get_grid( Handle )
     Handle = 'Photolysis, wavelength'
-    lambdaGrid => gridWareHouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( Handle )
     Handle = 'Temperature'
-    mdlTemperature => ProfileWareHouse%get_Profile( Handle )
+    mdlTemperature => profile_warehouse%get_Profile( Handle )
 
     nzdim = zGrid%ncells_ + iONE
-    if( present(atMidPoint) ) then
-      if( atMidpoint ) then
+    if( present(at_mid_point) ) then
+      if( at_mid_point ) then
         nzdim = nzdim - iONE
         modelTemp = mdlTemperature%mid_val_
       else
@@ -227,7 +227,7 @@ file_loop: &
       nTemp = size( dataTemp )
       do k = 1,nzdim
         Tadj   = min( max( modelTemp(k),dataTemp(iONE) ),dataTemp(nTemp) )
-        do tNdx = 2,nTemp 
+        do tNdx = 2,nTemp
           if( Tadj <= dataTemp(tNdx) ) then
             exit
           endif
@@ -251,7 +251,7 @@ file_loop: &
 !> finalize the cross section type
    subroutine finalize( this )
 
-   type(tint_cross_section_t), intent(inout) :: this
+   type(cross_section_tint_t), intent(inout) :: this
 
    character(len=*), parameter :: Iam = 'tint cross section finalize: '
    integer(ik) :: ndx
@@ -276,7 +276,7 @@ file_loop: &
    endif
 
    write(*,*) Iam,'exiting'
-   
+
    end subroutine finalize
 
 end module tuvx_cross_section_tint

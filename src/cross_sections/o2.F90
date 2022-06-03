@@ -8,35 +8,35 @@
 module tuvx_cross_section_o2
 
   use musica_constants, only : musica_dk, musica_ik
-  use tuvx_cross_section, only : base_cross_section_t, cross_section_parms_t
+  use tuvx_cross_section, only : cross_section_t, cross_section_parms_t
   use la_srb_type,      only : la_srb_t
 
   implicit none
 
   private
-  public :: o2_cross_section_t
+  public ::cross_section_o2_t
 
   !> Calculator for o2_cross_section
-  type, extends(base_cross_section_t) :: o2_cross_section_t
+  type, extends(cross_section_t) ::cross_section_o2_t
     type(la_srb_t), allocatable              :: la_srb_obj_
   contains
     !> Calculate the cross section
     procedure :: calculate => run
     !> clean up
     final     :: finalize
-  end type o2_cross_section_t
+  end type cross_section_o2_t
 
   !> Constructor
-  interface o2_cross_section_t
+  interface cross_section_o2_t
     module procedure constructor
-  end interface o2_cross_section_t
+  end interface cross_section_o2_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize o2_cross_section_t object
-  function constructor( config, gridWareHouse, ProfileWareHouse ) result( this )
+  !> Initializecross_section_o2_t object
+  function constructor( config, grid_warehouse, profile_warehouse ) result( this )
 
     use musica_config,                   only : config_t
     use musica_string,                   only : string_t
@@ -45,16 +45,16 @@ contains
     use musica_assert,                   only : die_msg
     use tuvx_grid_warehouse,             only : grid_warehouse_t
     use tuvx_grid,                    only : abs_1d_grid_t
-    use tuvx_profile_warehouse,          only : Profile_warehouse_t
-    use tuvx_profile,                    only : abs_Profile_t
+    use tuvx_profile_warehouse,          only : profile_warehouse_t
+    use tuvx_profile,                    only : abs_profile_t
 
     !> o2 cross section type
-    type(o2_cross_section_t), pointer :: this
+    type(cross_section_o2_t), pointer :: this
     !> cross section configuration object
     type(config_t), intent(inout) :: config
     !> The warehouses
-    type(grid_warehouse_t), intent(inout)    :: gridWareHouse
-    type(Profile_warehouse_t), intent(inout) :: ProfileWareHouse
+    type(grid_warehouse_t), intent(inout)    :: grid_warehouse
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse
 
 !   local variables
     integer(musica_ik), parameter :: iONE = 1_musica_ik
@@ -81,7 +81,7 @@ contains
 
     !> Get model wavelength grids
     Handle = 'Photolysis, wavelength'
-    lambdaGrid => gridWareHouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( Handle )
 
     !> allocate la_srb object
     if( allocated(this%la_srb_obj_) ) then
@@ -114,7 +114,7 @@ file_loop: &
           do parmNdx = 1,nParms
             data_lambda    = netcdf_obj%wavelength
             data_parameter = netcdf_obj%parameters(:,parmNdx)
-            call this%addpnts( config, data_lambda, data_parameter )
+            call this%add_points( config, data_lambda, data_parameter )
             call inter2(xto=lambdaGrid%edge_, &
                         yto=this%cross_section_parms(fileNdx)%array(:,parmNdx), &
                         xfrom=data_lambda, &
@@ -139,18 +139,18 @@ file_loop: &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Calculate the photorate cross section for a given set of environmental conditions
-  function run( this, gridWareHouse, ProfileWareHouse ) result( cross_section )
+  function run( this, grid_warehouse, profile_warehouse ) result( cross_section )
 
     use tuvx_grid_warehouse,         only : grid_warehouse_t
     use tuvx_grid,                only : abs_1d_grid_t
-    use tuvx_profile_warehouse, only : Profile_warehouse_t
+    use tuvx_profile_warehouse, only : profile_warehouse_t
     use musica_string,               only : string_t
 
     !> base cross section
-    class(o2_cross_section_t), intent(in)    :: this
+    class(cross_section_o2_t), intent(in)    :: this
     !> The warehouses
-    type(grid_warehouse_t), intent(inout)    :: gridWareHouse
-    type(Profile_warehouse_t), intent(inout) :: ProfileWareHouse
+    type(grid_warehouse_t), intent(inout)    :: grid_warehouse
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse
     !> Calculated cross section
     real(kind=musica_dk), allocatable        :: cross_section(:,:)
 
@@ -164,7 +164,7 @@ file_loop: &
     write(*,*) Iam,'entering'
 
     Handle = 'Vertical Z'
-    zGrid => gridWareHouse%get_grid( Handle )
+    zGrid => grid_warehouse%get_grid( Handle )
 
     allocate( wrkCrossSection(size(this%cross_section_parms(1)%array,dim=1),zGrid%ncells_) )
 
@@ -172,7 +172,7 @@ file_loop: &
     do colndx = 1,zGrid%ncells_
       wrkCrossSection(:,colndx) = this%cross_section_parms(1)%array(:,1)
     enddo
- 
+
     cross_section = transpose( wrkCrossSection )
 
     write(*,*) Iam,'exiting'
@@ -184,7 +184,7 @@ file_loop: &
 !> finalize the cross section type
    subroutine finalize( this )
 
-   type(o2_cross_section_t), intent(inout) :: this
+   type(cross_section_o2_t), intent(inout) :: this
 
    character(len=*), parameter :: Iam = 'base cross section finalize: '
    integer(musica_ik) :: ndx
@@ -208,7 +208,7 @@ file_loop: &
    endif
 
    write(*,*) Iam,'exiting'
-   
+
    end subroutine finalize
 
 end module tuvx_cross_section_o2

@@ -7,67 +7,67 @@
 !> The h2o2+hv->oh_oh cross_section type and related functions
 module tuvx_cross_section_h2o2_oh_oh
 
-  use tuvx_cross_section, only : base_cross_section_t, base_constructor
+  use tuvx_cross_section, only : cross_section_t, base_constructor
   use musica_constants,   only : dk => musica_dk, ik => musica_ik, lk => musica_lk
 
   implicit none
 
   private
-  public :: h2o2_oh_oh_cross_section_t
+  public :: cross_section_h2o2_oh_oh_t
 
   !> Calculator for base_cross_section
-  type, extends(base_cross_section_t) :: h2o2_oh_oh_cross_section_t
+  type, extends(cross_section_t) :: cross_section_h2o2_oh_oh_t
   contains
     !> Calculate the cross section
     procedure :: calculate => run
-  end type h2o2_oh_oh_cross_section_t
+  end type cross_section_h2o2_oh_oh_t
 
   !> Constructor
-  interface h2o2_oh_oh_cross_section_t
+  interface cross_section_h2o2_oh_oh_t
     module procedure constructor
-  end interface h2o2_oh_oh_cross_section_t
+  end interface cross_section_h2o2_oh_oh_t
 
 contains
 
   !> Initialize the cross section
-  function constructor( config, gridWareHouse, ProfileWareHouse, atMidPoint ) result ( this )
- 
+  function constructor( config, grid_warehouse, profile_warehouse, at_mid_point ) result ( this )
+
     use musica_config,    only : config_t
     use musica_constants, only : lk => musica_lk
     use tuvx_grid_warehouse,    only : grid_warehouse_t
-    use tuvx_profile_warehouse, only : Profile_warehouse_t
- 
- 
-    !> Cross section calculator
-    logical(lk), optional, intent(in)          :: atMidPoint
-    class(base_cross_section_t), pointer  :: this
-    type(config_t), intent(inout)              :: config
-    type(grid_warehouse_t), intent(inout)      :: gridWareHouse
-    type(Profile_warehouse_t), intent(inout)   :: ProfileWareHouse
+    use tuvx_profile_warehouse, only : profile_warehouse_t
 
-    allocate ( h2o2_oh_oh_cross_section_t :: this )
-    call base_constructor( this, config, gridWareHouse, ProfileWareHouse, atMidPoint )
+
+    !> Cross section calculator
+    logical(lk), optional, intent(in)          :: at_mid_point
+    class(cross_section_t), pointer  :: this
+    type(config_t), intent(inout)              :: config
+    type(grid_warehouse_t), intent(inout)      :: grid_warehouse
+    type(profile_warehouse_t), intent(inout)   :: profile_warehouse
+
+    allocate ( cross_section_h2o2_oh_oh_t :: this )
+    call base_constructor( this, config, grid_warehouse, profile_warehouse )
   end function
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Calculate the photorate cross section for a given set of environmental conditions
-  function run( this, gridWareHouse, ProfileWareHouse, atMidPoint ) result( cross_section )
+  function run( this, grid_warehouse, profile_warehouse, at_mid_point ) result( cross_section )
 
     use tuvx_grid_warehouse,    only : grid_warehouse_t
-    use tuvx_profile_warehouse, only : Profile_warehouse_t
+    use tuvx_profile_warehouse, only : profile_warehouse_t
     use tuvx_grid,           only : abs_1d_grid_t
-    use tuvx_profile,           only : abs_Profile_t
+    use tuvx_profile,           only : abs_profile_t
     use musica_string,          only : string_t
 
     !> arguments
-    class(h2o2_oh_oh_cross_section_t), intent(in) :: this
+    class(cross_section_h2o2_oh_oh_t), intent(in) :: this
     !> the warehouses
-    type(grid_warehouse_t), intent(inout)         :: gridWareHouse
-    type(Profile_warehouse_t), intent(inout)      :: ProfileWareHouse
+    type(grid_warehouse_t), intent(inout)         :: grid_warehouse
+    type(profile_warehouse_t), intent(inout)      :: profile_warehouse
     !> Calculated cross section
     real(kind=dk), allocatable                    :: cross_section(:,:)
-    logical(lk), optional, intent(in)             :: atMidPoint
+    logical(lk), optional, intent(in)             :: at_mid_point
 
     !> local variables
     integer(ik), parameter ::  iONE = 1_ik
@@ -92,13 +92,13 @@ contains
     real(dk)       :: lambda, sumA, sumB, t, chi, xs
     type(string_t) :: Handle
     class(abs_1d_grid_t), pointer  :: zGrid, lambdaGrid
-    class(abs_Profile_t), pointer  :: temperature
+    class(abs_profile_t), pointer  :: temperature
 
     write(*,*) Iam,'entering'
 
-    Handle = 'Vertical Z'             ; zGrid => gridWareHouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength' ; lambdaGrid => gridWareHouse%get_grid( Handle )
-    Handle = 'Temperature'            ; temperature => ProfileWareHouse%get_Profile( Handle )
+    Handle = 'Vertical Z'             ; zGrid => grid_warehouse%get_grid( Handle )
+    Handle = 'Photolysis, wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
+    Handle = 'Temperature'            ; temperature => profile_warehouse%get_Profile( Handle )
 
     allocate( cross_section(lambdaGrid%ncells_,zGrid%ncells_+1) )
 
@@ -111,7 +111,7 @@ contains
            lambda = wc(wNdx)
            sumA = ((((((A7*lambda + A6)*lambda + A5)*lambda + A4)*lambda +A3)*lambda + A2)*lambda + A1)*lambda + A0
            sumB = (((B4*lambda + B3)*lambda + B2)*lambda + B1)*lambda + B0
-           t = min(max(temperature%edge_val_(vertNdx),200._dk),400._dk)            
+           t = min(max(temperature%edge_val_(vertNdx),200._dk),400._dk)
            chi = rONE/(rONE + exp(-1265._dk/t))
            cross_section(wNdx,vertNdx) = (chi * sumA + (rONE - chi)*sumB)*1.E-21_dk
          else

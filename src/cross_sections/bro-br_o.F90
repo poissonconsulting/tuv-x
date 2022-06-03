@@ -7,29 +7,29 @@
 !> The bro+hv->br+o_cross_section type and related functions
 module tuvx_cross_section_bro_br_o
 
-  use tuvx_cross_section, only : base_cross_section_t
+  use tuvx_cross_section, only : cross_section_t
 
   implicit none
 
   private
-  public :: bro_br_o_cross_section_t
+  public :: cross_section_bro_br_o_t
 
   !> Calculator for base_cross_section
-  type, extends(base_cross_section_t) :: bro_br_o_cross_section_t
+  type, extends(cross_section_t) :: cross_section_bro_br_o_t
   contains
     final     :: finalize
-  end type bro_br_o_cross_section_t
+  end type cross_section_bro_br_o_t
 
-  interface bro_br_o_cross_section_t
+  interface cross_section_bro_br_o_t
     module procedure constructor
-  end interface bro_br_o_cross_section_t
+  end interface cross_section_bro_br_o_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize bro_br_o_cross_section_t object
-  function constructor( config, gridWareHouse, ProfileWareHouse, atMidPoint ) result( this )
+  !> Initialize cross_section_bro_br_o_t object
+  function constructor( config, grid_warehouse, profile_warehouse, at_mid_point ) result( this )
 
     use musica_constants,                only : dk => musica_dk, ik => musica_ik, lk => musica_lk
     use musica_config,                   only : config_t
@@ -39,17 +39,17 @@ contains
     use musica_assert,                   only : die_msg
     use tuvx_grid_warehouse,             only : grid_warehouse_t
     use tuvx_grid,                    only : abs_1d_grid_t
-    use tuvx_profile_warehouse,          only : Profile_warehouse_t
+    use tuvx_profile_warehouse,          only : profile_warehouse_t
 
-    type(bro_br_o_cross_section_t), pointer :: this
+    type(cross_section_bro_br_o_t), pointer :: this
 
     !> Arguments
-    logical(lk), optional, intent(in)              :: atMidPoint
+    logical(lk), optional, intent(in)              :: at_mid_point
     !> cross section configuration object
     type(config_t), intent(inout)                  :: config
     !> The warehouses
-    type(grid_warehouse_t), intent(inout)          :: gridWareHouse
-    type(Profile_warehouse_t), intent(inout)       :: ProfileWareHouse
+    type(grid_warehouse_t), intent(inout)          :: grid_warehouse
+    type(profile_warehouse_t), intent(inout)       :: profile_warehouse
 
     !> Local variables
     character(len=*), parameter :: Iam = 'bro->br+o cross section initialize: '
@@ -72,8 +72,8 @@ contains
     allocate( this )
 
     !> Get model wavelength grids
-    Handle = 'Photolysis, wavelength' ; lambdaGrid => gridWareHouse%get_grid( Handle )
-    Handle = 'Vertical Z'             ; zGrid => gridWareHouse%get_grid( Handle )
+    Handle = 'Photolysis, wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
+    Handle = 'Vertical Z'             ; zGrid => grid_warehouse%get_grid( Handle )
 
     !> Get cross section netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found=found )
@@ -120,7 +120,7 @@ file_loop: &
   end function constructor
 
   subroutine finalize( this )
-    type(bro_br_o_cross_section_t), intent(inout) :: this
+    type(cross_section_bro_br_o_t), intent(inout) :: this
 
     ! nothing to do, no one to be
 

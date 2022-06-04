@@ -12,10 +12,10 @@ module tuvx_cross_section_chbr3
   implicit none
 
   private
-  public ::cross_section_chbr3_t
+  public :: cross_section_chbr3_t
 
   !> Calculator for base_cross_section
-  type, extends(cross_section_t) ::cross_section_chbr3_t
+  type, extends(cross_section_t) :: cross_section_chbr3_t
   contains
     !> Calculate the cross section
     procedure :: calculate => run

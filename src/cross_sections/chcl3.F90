@@ -12,10 +12,10 @@ module tuvx_cross_section_chcl3
   implicit none
 
   private
-  public ::cross_section_chcl3_t
+  public :: cross_section_chcl3_t
 
   !> Calculator for chcl3+hv->oh+h cross section
-  type, extends(cross_section_t) ::cross_section_chcl3_t
+  type, extends(cross_section_t) :: cross_section_chcl3_t
   contains
     !> Calculate the cross section
     procedure :: calculate => run

@@ -12,10 +12,10 @@ module tuvx_cross_section_ccl4
   implicit none
 
   private
-  public ::cross_section_ccl4_t
+  public :: cross_section_ccl4_t
 
   !> Calculator for ccl4 cross section
-  type, extends(cross_section_t) ::cross_section_ccl4_t
+  type, extends(cross_section_t) :: cross_section_ccl4_t
   contains
     !> Calculate the cross section
     procedure :: calculate => run

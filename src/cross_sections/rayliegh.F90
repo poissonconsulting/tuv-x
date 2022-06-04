@@ -12,10 +12,10 @@ module tuvx_cross_section_rayliegh
   implicit none
 
   private
-  public ::cross_section_rayliegh_t
+  public :: cross_section_rayliegh_t
 
   !> Calculator for rayliegh_cross_section
-  type, extends(cross_section_t) ::cross_section_rayliegh_t
+  type, extends(cross_section_t) :: cross_section_rayliegh_t
   contains
     !> Calculate the cross section
     procedure :: calculate => run

@@ -12,10 +12,10 @@ module tuvx_cross_section_cfc11
   implicit none
 
   private
-  public ::cross_section_cfc11_t
+  public :: cross_section_cfc11_t
 
   !> Calculator for cfc-11->Products cross section
-  type, extends(cross_section_t) ::cross_section_cfc11_t
+  type, extends(cross_section_t) :: cross_section_cfc11_t
   contains
     !> Calculate the cross section
     procedure :: calculate => run

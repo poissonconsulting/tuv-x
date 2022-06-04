@@ -12,10 +12,10 @@ module tuvx_cross_section_oclo
   implicit none
 
   private
-  public ::cross_section_oclo_t
+  public :: cross_section_oclo_t
 
   !> Calculator for oclo_cross_section
-  type, extends(cross_section_t) ::cross_section_oclo_t
+  type, extends(cross_section_t) :: cross_section_oclo_t
     !> The cross section array
   contains
     !> Calculate the cross section

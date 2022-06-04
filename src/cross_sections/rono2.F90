@@ -12,10 +12,10 @@ module tuvx_cross_section_rono2
   implicit none
 
   private
-  public ::cross_section_rono2_t
+  public :: cross_section_rono2_t
 
   !> Calculator for rono2 cross section
-  type, extends(cross_section_t) ::cross_section_rono2_t
+  type, extends(cross_section_t) :: cross_section_rono2_t
   contains
     !> Calculate the cross section
     procedure :: calculate => run

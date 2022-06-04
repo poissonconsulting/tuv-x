@@ -12,10 +12,10 @@ module tuvx_cross_section_hcfc
   implicit none
 
   private
-  public ::cross_section_hcfc_t
+  public :: cross_section_hcfc_t
 
   !> Calculator for acetone cross_section
-  type, extends(cross_section_t) ::cross_section_hcfc_t
+  type, extends(cross_section_t) :: cross_section_hcfc_t
   contains
     !> Initialize the cross section
     procedure :: calculate => run

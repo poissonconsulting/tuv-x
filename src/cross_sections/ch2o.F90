@@ -12,10 +12,10 @@ module tuvx_cross_section_ch2o
   implicit none
 
   private
-  public ::cross_section_ch2o_t
+  public :: cross_section_ch2o_t
 
   !> Calculator for acetone cross_section
-  type, extends(cross_section_t) ::cross_section_ch2o_t
+  type, extends(cross_section_t) :: cross_section_ch2o_t
   contains
     !> Initialize the cross section
     procedure :: calculate => run

@@ -12,10 +12,10 @@ module tuvx_cross_section_tint
   implicit none
 
   private
-  public ::cross_section_tint_t
+  public :: cross_section_tint_t
 
   !> Calculator for tint_cross_section
-  type, extends(cross_section_t) ::cross_section_tint_t
+  type, extends(cross_section_t) :: cross_section_tint_t
   contains
     !> Calculate the cross section
     procedure :: calculate => run

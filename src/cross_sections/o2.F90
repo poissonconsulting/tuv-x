@@ -13,7 +13,7 @@ module tuvx_cross_section_o2
   implicit none
 
   private
-  public ::cross_section_o2_t
+  public :: cross_section_o2_t
 
   !> Calculator for o2_cross_section
   type, extends(cross_section_t) :: cross_section_o2_t

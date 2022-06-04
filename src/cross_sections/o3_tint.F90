@@ -8,7 +8,7 @@
 module tuvx_cross_section_o3_tint
 
   use musica_constants,                only : dk => musica_dk
-  use tuvx_cross_section_tint,         only :cross_section_tint_t
+  use tuvx_cross_section_tint,         only : cross_section_tint_t
 
   implicit none
 

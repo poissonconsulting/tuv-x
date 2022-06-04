@@ -1,8 +1,11 @@
 ################################################################################
 # Radiator transfer source
 
-set(RADIATOR_SRC radiators/aerosol.F90
-                 radiators/base.F90
-                 PARENT_SCOPE)
+set(SRC aerosol.F90
+        base.F90
+        )
+
+list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+set(RADIATOR_SRC ${SRC} PARENT_SCOPE)
 
 ################################################################################

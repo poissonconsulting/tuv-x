@@ -100,7 +100,7 @@ contains
                                                            profile_warehouse )
       case( 'CH3COCH2(ONO2)+hv->CH3COCH2(O.)+NO2 cross section' )
         new_cross_section => cross_section_nitroxy_acetone_t( config,         &
-                    grid_warehouse, profile_warehouse, at_mid_point = .true. )
+                                           grid_warehouse, profile_warehouse )
       case( 'CH3COCH3+hv->CH3CO+CH3 cross section' )
         new_cross_section => cross_section_ch3coch3_ch3co_ch3_t( config,      &
                                            grid_warehouse, profile_warehouse )
@@ -121,19 +121,19 @@ contains
                                            grid_warehouse, profile_warehouse )
       case( 'HCFC+hv->Products cross section' )
         new_cross_section => cross_section_hcfc_t( config, grid_warehouse,    &
-                                    profile_warehouse, at_mid_point = .true. )
+                                                           profile_warehouse )
       case( 'HNO3+hv->OH+NO2 cross section' )
         new_cross_section => cross_section_hno3_oh_no2_t( config,             &
-                    grid_warehouse, profile_warehouse, at_mid_point = .true. )
+                                           grid_warehouse, profile_warehouse )
       case( 'HOBr+hv->OH+Br cross section' )
         new_cross_section => cross_section_hobr_oh_br_t( config,              &
-                    grid_warehouse, profile_warehouse, at_mid_point = .true. )
+                                           grid_warehouse, profile_warehouse )
       case( 'N2O+hv->N2+O(1D) cross section' )
         new_cross_section => cross_section_n2o_n2_o1d_t( config,              &
-                    grid_warehouse, profile_warehouse, at_mid_point = .true. )
+                                           grid_warehouse, profile_warehouse )
       case( 'N2O5+hv->NO2+NO3 cross section' )
         new_cross_section => cross_section_n2o5_no2_no3_t( config,            &
-                    grid_warehouse, profile_warehouse, at_mid_point = .true. )
+                                           grid_warehouse, profile_warehouse )
       case( 'NO2 tint cross section' )
         new_cross_section => cross_section_no2_tint_t( config, grid_warehouse,&
                                     profile_warehouse, at_mid_point = .true. )

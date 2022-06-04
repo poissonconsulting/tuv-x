@@ -7,8 +7,7 @@
 !> The rayliegh_cross_section type and related functions
 module tuvx_cross_section_rayliegh
 
-  use musica_constants, only : musica_dk, musica_ik, lk => musica_lk
-  use tuvx_cross_section, only : cross_section_t, base_constructor
+  use tuvx_cross_section,              only : cross_section_t
 
   implicit none
 
@@ -20,8 +19,6 @@ module tuvx_cross_section_rayliegh
   contains
     !> Calculate the cross section
     procedure :: calculate => run
-    !> clean up
-    final     :: finalize
   end type cross_section_rayliegh_t
 
   !> Constructor
@@ -31,48 +28,63 @@ module tuvx_cross_section_rayliegh
 
 contains
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   !> Initialize the cross section
-  function constructor( config, grid_warehouse, profile_warehouse, at_mid_point ) result ( this )
+  function constructor( config, grid_warehouse, profile_warehouse )           &
+      result ( this )
 
-    use musica_config,    only : config_t
-    use musica_constants, only : lk => musica_lk
-    use tuvx_grid_warehouse,    only : grid_warehouse_t
-    use tuvx_profile_warehouse, only : profile_warehouse_t
+    use musica_config,                 only : config_t
+    use tuvx_cross_section,            only : base_constructor
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
+    class(cross_section_t),    pointer       :: this
+    type(config_t),            intent(inout) :: config
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse
 
-    !> Cross section calculator
-    logical(lk), optional, intent(in)          :: at_mid_point
-    class(cross_section_t), pointer  :: this
-    type(config_t), intent(inout)              :: config
-    type(grid_warehouse_t), intent(inout)      :: grid_warehouse
-    type(profile_warehouse_t), intent(inout)   :: profile_warehouse
-
-    allocate (cross_section_rayliegh_t :: this )
+    allocate( cross_section_rayliegh_t :: this )
     call base_constructor( this, config, grid_warehouse, profile_warehouse )
+
   end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Calculate the photorate cross section for a given set of environmental conditions
-  function run( this, grid_warehouse, profile_warehouse, at_mid_point ) result( cross_section )
+  !> Calculate the cross section for a given set of environmental conditions
+  !!
+  !! Rayleigh scattering cross section from WMO 1985 (originally from
+  !! Nicolet, M., On the molecular scattering in the terrestrial atmosphere:
+  !! An empirical formula for its calculation in the homoshpere, Planet.
+  !! Space Sci., 32, 1467-1468, 1984.
+  function run( this, grid_warehouse, profile_warehouse, at_mid_point )       &
+      result( cross_section )
 
-    use tuvx_grid_warehouse,         only : grid_warehouse_t
-    use tuvx_grid,                only : abs_1d_grid_t
-    use tuvx_profile_warehouse,      only : profile_warehouse_t
-    use musica_string,               only : string_t
+    use musica_constants,              only : musica_dk
+    use musica_string,                 only : string_t
+    use tuvx_grid,                     only : abs_1d_grid_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    !> rayliegh cross section
-    class(cross_section_rayliegh_t), intent(in)    :: this
-    logical(lk), optional, intent(in)              :: at_mid_point
-    !> The warehouses
-    type(grid_warehouse_t), intent(inout)          :: grid_warehouse
-    type(profile_warehouse_t), intent(inout)       :: profile_warehouse
     !> Calculated cross section
     real(kind=musica_dk), allocatable              :: cross_section(:,:)
+    !> Rayliegh cross section
+    class(cross_section_rayliegh_t), intent(in)    :: this
+    !> Grid warehouse
+    type(grid_warehouse_t),          intent(inout) :: grid_warehouse
+    !> Profile warehouse
+    type(profile_warehouse_t),       intent(inout) :: profile_warehouse
+    !> Flag indicating whether cross-section data should be at mid-points on
+    !! the wavelength grid.
+    !!
+    !! If this is false or omitted, cross-section data are calculated at
+    !! interfaces on the wavelength grid.
+    logical, optional,               intent(in)    :: at_mid_point
 
-    !> Local variables
+    ! Local variables
     integer :: colndx, nzdim
-    character(len=*), parameter :: Iam = 'radXfer rayliegh cross section calculate: '
+    character(len=*), parameter :: Iam =                                      &
+        'radXfer rayliegh cross section calculate'
     class(abs_1d_grid_t), pointer :: zGrid
     class(abs_1d_grid_t), pointer :: lambdaGrid
     type(string_t)                :: Handle
@@ -80,53 +92,38 @@ contains
     real(musica_dk), allocatable  :: pwr(:), wrk(:)
     real(musica_dk), allocatable  :: wrkCrossSection(:,:)
 
-    write(*,*) Iam,'entering'
-
     Handle = 'Vertical Z'
     zGrid => grid_warehouse%get_grid( Handle )
     Handle = 'Photolysis, wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
 
     nzdim = zGrid%ncells_ + 1
-    if( present(at_mid_point) ) then
+    if( present( at_mid_point ) ) then
       if( at_mid_point ) then
         nzdim = nzdim - 1
       endif
     endif
 
-    allocate( wrkCrossSection(lambdaGrid%ncells_,nzdim) )
+    allocate( wrkCrossSection( lambdaGrid%ncells_,nzdim ) )
 
-!> Rayleigh scattering cross section from WMO 1985 (originally from
-!> Nicolet, M., On the molecular scattering in the terrestrial atmosphere:
-!> An empirical formula for its calculation in the homoshpere, Planet.
-!> Space Sci., 32, 1467-1468, 1984.
-    allocate( pwr(lambdaGrid%ncells_) )
+    allocate( pwr( lambdaGrid%ncells_ ) )
     wrk = 1.e-3_musica_dk * lambdaGrid%mid_
     where( wrk <= 0.55_musica_dk )
-      pwr = 3.6772_musica_dk + 0.389_musica_dk*wrk + 0.09426_musica_dk/wrk
+      pwr = 3.6772_musica_dk + 0.389_musica_dk * wrk + 0.09426_musica_dk / wrk
     elsewhere
       pwr = 4.04_musica_dk
     endwhere
 
-    wrkCrossSection(:,1) = 4.02e-28_musica_dk/(wrk)**pwr
+    wrkCrossSection(:,1) = 4.02e-28_musica_dk / ( wrk )**pwr
 
-    do colndx = 2,nzdim
-      wrkCrossSection(:,colndx) = wrkCrossSection(:,1)
+    do colndx = 2, nzdim
+      wrkCrossSection( :, colndx ) = wrkCrossSection(:,1)
     enddo
 
     cross_section = transpose( wrkCrossSection )
 
-    write(*,*) Iam,'exiting'
-
   end function run
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!> finalize the cross section type
-   subroutine finalize( this )
-
-   type(cross_section_rayliegh_t), intent(inout) :: this
-
-   end subroutine finalize
 
 end module tuvx_cross_section_rayliegh

@@ -28,8 +28,8 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Initialize cross_section_bro_br_o_t object
-  function constructor( config, grid_warehouse, profile_warehouse,            &
-      at_mid_point ) result( this )
+  function constructor( config, grid_warehouse, profile_warehouse )           &
+      result( this )
 
     use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
@@ -49,12 +49,6 @@ contains
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse
     !> Profile warehouse
     type(profile_warehouse_t), intent(inout) :: profile_warehouse
-    !> Flag indicating whether cross-section data should be at mid-points on
-    !! the wavelength grid.
-    !!
-    !! If this is false or omitted, cross-section data are calculated at
-    !! interfaces on the wavelength grid.
-    logical, optional,         intent(in)    :: at_mid_point
 
     ! Local variables
     character(len=*), parameter :: Iam = 'bro->br+o cross section initialize: '

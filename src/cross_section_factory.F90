@@ -76,13 +76,13 @@ contains
     select case( cross_section_type%to_char() )
       case( 'Air cross section' )
         new_cross_section => cross_section_rayliegh_t( config, grid_warehouse,&
-                                    profile_warehouse, at_mid_point = .true. )
+                                                           profile_warehouse )
       case( 'base cross section' )
         new_cross_section => cross_section_t( config, grid_warehouse,         &
-                                              profile_warehouse )
+                                                           profile_warehouse )
       case( 'BrO+hv->Br+O cross section' )
         new_cross_section => cross_section_bro_br_o_t( config, grid_warehouse,&
-                                    profile_warehouse, at_mid_point = .true. )
+                                                           profile_warehouse )
       case( 'CCl4+hv->Products cross section' )
         new_cross_section => cross_section_ccl4_t( config, grid_warehouse,    &
                                                            profile_warehouse )
@@ -94,7 +94,7 @@ contains
                                                            profile_warehouse )
       case( 'CH2(OH)CH2(ONO2)+hv->CH2(OH)CH2(O.)+NO2 cross section' )
         new_cross_section => cross_section_nitroxy_ethanol_t( config,         &
-                    grid_warehouse, profile_warehouse, at_mid_point = .true. )
+                                           grid_warehouse, profile_warehouse )
       case( 'CH2O cross section' )
         new_cross_section => cross_section_ch2o_t( config, grid_warehouse,    &
                                                            profile_warehouse )
@@ -136,25 +136,25 @@ contains
                                            grid_warehouse, profile_warehouse )
       case( 'NO2 tint cross section' )
         new_cross_section => cross_section_no2_tint_t( config, grid_warehouse,&
-                                    profile_warehouse, at_mid_point = .true. )
+                                                           profile_warehouse )
       case( 'O3 cross section' )
         new_cross_section => cross_section_o3_tint_t( config, grid_warehouse, &
-                                    profile_warehouse, at_mid_point = .true. )
+                                                           profile_warehouse )
       case( 'OClO+hv->Products cross section' )
         new_cross_section => cross_section_oclo_t( config, grid_warehouse,    &
-                                    profile_warehouse, at_mid_point = .true. )
+                                                           profile_warehouse )
       case( 'RONO2 cross section' )
         new_cross_section => cross_section_rono2_t( config, grid_warehouse,   &
-                                    profile_warehouse, at_mid_point = .true. )
+                                                           profile_warehouse )
       case( 'SO2 cross section' )
         new_cross_section => cross_section_t( config, grid_warehouse,         &
                                                            profile_warehouse )
       case( 't_butyl_nitrate+hv->Products cross section' )
         new_cross_section => cross_section_t_butyl_nitrate_t ( config,        &
-                    grid_warehouse, profile_warehouse, at_mid_point = .true. )
+                                           grid_warehouse, profile_warehouse )
       case( 'tint cross section' )
         new_cross_section => cross_section_tint_t( config, grid_warehouse,    &
-                                    profile_warehouse, at_mid_point = .true. )
+                                                           profile_warehouse )
       case default
         call die_msg( 450768214, "Invalid cross section type: '"//            &
                                  cross_section_type%to_char( )//"'" )

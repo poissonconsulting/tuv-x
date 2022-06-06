@@ -13,8 +13,8 @@ module radXfer_core
   use tuvx_grid,    only : abs_1d_grid_t
   use tuvx_profile_warehouse, only : Profile_warehouse_t
   use tuvx_profile,           only : abs_Profile_t
-  use tuvx_cross_section_warehouse, only : radXfer_xsect_warehouse_t
-  use tuvx_cross_section, only : base_cross_section_t
+  use tuvx_cross_section_warehouse, only : cross_section_warehouse_t
+  use tuvx_cross_section, only : cross_section_t
 
   implicit none
 
@@ -24,7 +24,7 @@ module radXfer_core
   type :: radXfer_core_t
     type(grid_warehouse_t), pointer          :: theGridWarehouse_
     type(Profile_warehouse_t), pointer       :: theProfileWarehouse_
-    type(radXfer_xsect_warehouse_t), pointer :: theradXferXsectWarehouse_
+    type(cross_section_warehouse_t), pointer :: theradXferXsectWarehouse_
   contains
     procedure :: test => run
     final     :: finalize
@@ -64,7 +64,7 @@ contains
     radXfer_core_obj%theProfileWarehouse_ => Profile_warehouse_t( tst_config, radXfer_core_obj%theGridWareHouse_ )
 
     !> Initialize radXfer xsect warehouse
-    radXfer_core_obj%theradXferXsectWarehouse_ => radXfer_xsect_warehouse_t( &
+    radXfer_core_obj%theradXferXsectWarehouse_ => cross_section_warehouse_t( &
                                                   tst_config, &
                                                   radXfer_core_obj%theGridWareHouse_, &
                                                   radXfer_core_obj%theProfileWarehouse_ )
@@ -90,7 +90,7 @@ contains
 
   class(abs_1d_grid_t), pointer       :: zGrid, lambdaGrid
   class(abs_Profile_t), pointer  :: AirProfile, TemperatureProfile
-  class(base_cross_section_t), pointer :: RaylieghCrossSection
+  class(cross_section_t), pointer :: RaylieghCrossSection
   type(string_t)                      :: Handle
 
     write(*,*) Iam // 'entering'
@@ -129,7 +129,7 @@ contains
 
     !> Get copy of the rayliegh cross section
     Handle = 'Air'
-    RaylieghCrossSection => this%theradXferXsectWareHouse_%get_radXfer_cross_section( Handle )
+    RaylieghCrossSection => this%theradXferXsectWareHouse_%get( Handle )
     aCrossSection = RaylieghCrossSection%calculate( this%theGridWareHouse_, this%theProfileWareHouse_ )
     call assert( 412238776, all( aCrossSection >= 0._dk ) )
     call assert( 412238776, all( aCrossSection < 1._dk ) )

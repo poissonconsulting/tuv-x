@@ -67,7 +67,7 @@ interface
 
     use tuvx_profile_warehouse,        only : Profile_warehouse_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_cross_section_warehouse,  only : radXfer_xsect_warehouse_t
+    use tuvx_cross_section_warehouse,  only : cross_section_warehouse_t
     use musica_constants,              only : musica_dk
 
     import abs_radiator_t
@@ -76,7 +76,7 @@ interface
     class(abs_radiator_t), intent(inout)           :: this
     type(grid_warehouse_t), intent(inout)          :: gridWareHouse
     type(Profile_warehouse_t), intent(inout)       :: ProfileWareHouse
-    type(radXfer_xsect_warehouse_t), intent(inout) :: radXferXsectWareHouse
+    type(cross_section_warehouse_t), intent(inout) :: radXferXsectWareHouse
     !> Radiator state
   end subroutine upDateState
 

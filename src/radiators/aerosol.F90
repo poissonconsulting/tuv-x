@@ -193,7 +193,7 @@ contains
     use tuvx_profile,                  only : abs_Profile_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_grid,                  only : abs_1d_grid_t
-    use tuvx_cross_section_warehouse,  only : radXfer_xsect_warehouse_t
+    use tuvx_cross_section_warehouse,  only : cross_section_warehouse_t
 
     !> Arguments
     !> radiator obj
@@ -203,7 +203,7 @@ contains
     !> Profile warehouse
     type(Profile_warehouse_t), intent(inout) :: ProfileWareHouse
     !> RadXfer cross section warehouse
-    type(radXfer_xsect_warehouse_t), intent(inout) :: radXferXsectWareHouse
+    type(cross_section_warehouse_t), intent(inout) :: radXferXsectWareHouse
 
     !> Local variables
     integer(ik) :: wNdx

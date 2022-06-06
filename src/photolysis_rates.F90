@@ -10,7 +10,7 @@ module tuvx_photolysis_rates
   use musica_assert,                   only : die_msg
   use musica_constants,                only : dk => musica_dk
   use musica_string,                   only : string_t
-  use tuvx_cross_section,              only : base_cross_section_ptr
+  use tuvx_cross_section,              only : cross_section_ptr
   use tuvx_grid,                       only : abs_1d_grid_t
   use tuvx_grid_warehouse,             only : grid_warehouse_t
   use tuvx_profile,                    only : abs_profile_t
@@ -25,7 +25,7 @@ module tuvx_photolysis_rates
   !> Photolysis rate constant calculator
   type :: photolysis_rates_t
     !> Absorption cross-sections
-    type(base_cross_section_ptr), allocatable :: cross_sections_(:)
+    type(cross_section_ptr), allocatable :: cross_sections_(:)
     !> Quantum yields
     type(quantum_yield_ptr), allocatable :: quantum_yields_(:)
     !> Scaling factor for final rate constant
@@ -75,7 +75,7 @@ contains
     type(config_t) :: reaction_config
     type(config_t) :: cross_section_config, quantum_yield_config
     class(iterator_t), pointer :: iter
-    type(base_cross_section_ptr) :: cross_section_ptr
+    type(cross_section_ptr) :: cross_section_ptr
     type(quantum_yield_ptr) :: quantum_yield_ptr
     character(len=64)           :: keychar
     type(string_t)              :: netcdfFile, Object

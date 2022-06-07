@@ -8,7 +8,7 @@
 module tuvx_quantum_yield_no2_tint
 
   use musica_constants,                only : dk => musica_dk
-  use tuvx_quantum_yield,              only : quantum_yield_t
+  use tuvx_quantum_yield,              only : quantum_yield_t, base_constructor
 
   implicit none
 
@@ -25,25 +25,25 @@ module tuvx_quantum_yield_no2_tint
   type, extends(quantum_yield_t) :: quantum_yield_no2_tint_t
     type(quantum_yield_data_t), allocatable :: quantum_yield(:)
   contains
-    !> Initialize the quantum yield
-    procedure :: initialize
     !> Calculate the quantum yield
     procedure :: calculate => run
     !> clean up
     final     :: finalize
   end type quantum_yield_no2_tint_t
 
+  !> Constructor
+  interface quantum_yield_no2_tint_t
+    module procedure constructor
+  end interface quantum_yield_no2_tint_t
+
 contains
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  !> Initialize no2 tint quantum yield_t object
-  subroutine initialize( this, config, grid_warehouse, profile_warehouse )
+function constructor( config, grid_warehouse, profile_warehouse ) result( this )
 
     use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
-    use tuvx_grid,                     only : abs_1d_grid_t
+    use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_netcdf_util,              only : netcdf_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
@@ -51,7 +51,7 @@ contains
 
     !> quantum yield configuration data
     type(config_t),                  intent(inout) :: config
-    class(quantum_yield_no2_tint_t), intent(inout) :: this
+    type(quantum_yield_no2_tint_t),  pointer :: this
     type(grid_warehouse_t),          intent(inout) :: grid_warehouse
     type(profile_warehouse_t),       intent(inout) :: profile_warehouse
 
@@ -73,7 +73,9 @@ contains
     type(string_t)                :: Handle
     type(netcdf_t), allocatable   :: netcdf_obj
     type(string_t), allocatable   :: netcdfFiles(:)
-    class(abs_1d_grid_t), pointer :: lambdaGrid
+    class(grid_t), pointer :: lambdaGrid
+
+    allocate( this )
 
     !> Get model wavelength grid
     Handle = 'Photolysis, wavelength'
@@ -169,7 +171,7 @@ file_loop: &
       call die_msg( 553399160, msg )
     endif has_netcdf_file
 
-  end subroutine initialize
+  end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -178,9 +180,9 @@ file_loop: &
       result( quantum_yield )
 
     use musica_string,                 only : string_t
-    use tuvx_grid,                     only : abs_1d_grid_t
+    use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_profile,                  only : abs_profile_t
+    use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     class(quantum_yield_no2_tint_t), intent(in)    :: this
@@ -196,9 +198,9 @@ file_loop: &
     real(dk)    :: Tadj, Tstar
     real(dk), allocatable :: WrkQuantumYield(:,:)
     type(string_t)                :: Handle
-    class(abs_1d_grid_t), pointer :: zGrid
-    class(abs_1d_grid_t), pointer :: lambdaGrid
-    class(abs_profile_t), pointer :: mdlTemperature
+    class(grid_t), pointer :: zGrid
+    class(grid_t), pointer :: lambdaGrid
+    class(profile_t), pointer :: mdlTemperature
 
     Handle = 'Vertical Z'
     zGrid => grid_warehouse%get_grid( Handle )

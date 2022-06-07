@@ -36,7 +36,7 @@ contains
     use musica_constants,              only : dk => musica_dk
     use musica_string,                 only : string_t
     use tuvx_netcdf_util,              only : netcdf_t
-    use tuvx_grid,                     only : abs_1d_grid_t
+    use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_util,                     only : inter4
@@ -63,8 +63,8 @@ contains
     type(netcdf_t), allocatable :: netcdf_obj
     type(string_t)              :: Handle
     type(string_t), allocatable :: netcdfFiles(:)
-    class(abs_1d_grid_t), pointer :: lambdaGrid
-    class(abs_1d_grid_t), pointer :: zGrid
+    class(grid_t), pointer :: lambdaGrid
+    class(grid_t), pointer :: zGrid
 
     allocate( this )
 

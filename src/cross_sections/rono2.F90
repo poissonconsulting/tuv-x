@@ -38,7 +38,7 @@ contains
     use musica_config,                 only : config_t
     use musica_constants,              only : dk => musica_dk
     use musica_string,                 only : string_t
-    use tuvx_grid,                     only : abs_1d_grid_t
+    use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_netcdf_util,              only : netcdf_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
@@ -67,7 +67,7 @@ contains
     type(config_t)              :: tmp_config
     type(string_t)              :: addpntVal
     type(string_t)              :: Handle
-    class(abs_1d_grid_t), pointer :: lambdaGrid
+    class(grid_t), pointer :: lambdaGrid
 
     allocate( this )
 
@@ -144,9 +144,9 @@ file_loop:                                                                    &
 
     use musica_constants,              only : dk => musica_dk
     use musica_string,                 only : string_t
-    use tuvx_grid,                     only : abs_1d_grid_t
+    use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_profile,                  only : abs_profile_t
+    use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     !> Calculated cross section
@@ -174,8 +174,8 @@ file_loop:                                                                    &
     real(dk), parameter :: T0 = 298._dk
     real(dk) :: Temp
     real(dk), allocatable :: modelTemp(:)
-    class(abs_1d_grid_t), pointer :: zGrid, lambdaGrid
-    class(abs_profile_t), pointer :: mdlTemperature
+    class(grid_t), pointer :: zGrid, lambdaGrid
+    class(profile_t), pointer :: mdlTemperature
     type(string_t)                :: Handle
 
     Handle = 'Photolysis, wavelength'

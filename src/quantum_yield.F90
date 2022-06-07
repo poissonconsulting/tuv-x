@@ -12,7 +12,7 @@ module tuvx_quantum_yield
   implicit none
 
   private
-  public :: quantum_yield_t, quantum_yield_ptr
+  public :: quantum_yield_t, quantum_yield_ptr, base_constructor
 
   type quantum_yield_parms_t
     real(dk), allocatable :: temperature(:)
@@ -23,7 +23,6 @@ module tuvx_quantum_yield
   type :: quantum_yield_t
     type(quantum_yield_parms_t), allocatable :: quantum_yield_parms(:)
   contains
-    procedure :: initialize
     procedure :: calculate => run
     procedure :: add_points
     final     :: finalize
@@ -39,12 +38,12 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Initialize base quantum yield_t object
-  subroutine initialize( this, config, grid_warehouse, profile_warehouse )
+  subroutine base_constructor( this, config, grid_warehouse, profile_warehouse )
 
     use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
-    use tuvx_grid,                     only : abs_1d_grid_t
+    use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_netcdf_util,              only : netcdf_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
@@ -73,7 +72,7 @@ contains
     type(netcdf_t), allocatable   :: netcdf_obj
     type(string_t)                :: Handle
     type(string_t), allocatable   :: netcdfFiles(:)
-    class(abs_1d_grid_t), pointer :: lambdaGrid
+    class(grid_t), pointer :: lambdaGrid
 
     ! Get model wavelength grid
     Handle = 'Photolysis, wavelength'
@@ -132,7 +131,7 @@ file_loop: &
       endif
     endif has_netcdf_file
 
-  end subroutine initialize
+  end subroutine base_constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -141,7 +140,7 @@ file_loop: &
       result( quantum_yield )
 
     use musica_string,                 only : string_t
-    use tuvx_grid,                     only : abs_1d_grid_t
+    use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
@@ -154,7 +153,7 @@ file_loop: &
     ! Local variables
     character(len=*), parameter :: Iam = 'base quantum yield calculate'
     integer                 :: vertNdx
-    class(abs_1d_grid_t), pointer :: zGrid
+    class(grid_t), pointer :: zGrid
     type(string_t)              :: Handle
     real(dk), allocatable       :: wrkQuantumYield(:,:)
 
@@ -240,24 +239,21 @@ file_loop: &
 
   !> finalize the quantum yield object
   subroutine finalize( this )
+    type(quantum_yield_t), intent(inout) :: this
 
-  type(quantum_yield_t), intent(inout) :: this
+    integer :: ndx
 
-  integer :: ndx
-
-  if( allocated( this%quantum_yield_parms ) ) then
-    do ndx = 1, size( this%quantum_yield_parms )
-      if( allocated( this%quantum_yield_parms( ndx )%array ) ) then
-        deallocate( this%quantum_yield_parms( ndx )%array )
-      endif
-      if( allocated( this%quantum_yield_parms( ndx )%temperature ) ) then
-        deallocate( this%quantum_yield_parms( ndx )%temperature )
-      endif
-    enddo
-    deallocate( this%quantum_yield_parms )
-  endif
-
-
+    if( allocated( this%quantum_yield_parms ) ) then
+      do ndx = 1, size( this%quantum_yield_parms )
+        if( allocated( this%quantum_yield_parms( ndx )%array ) ) then
+          deallocate( this%quantum_yield_parms( ndx )%array )
+        endif
+        if( allocated( this%quantum_yield_parms( ndx )%temperature ) ) then
+          deallocate( this%quantum_yield_parms( ndx )%temperature )
+        endif
+      enddo
+      deallocate( this%quantum_yield_parms )
+    endif
   end subroutine finalize
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

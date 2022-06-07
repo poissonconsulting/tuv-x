@@ -5,13 +5,13 @@
 module micm_from_csv_file_Profile
 
   use musica_constants,  only : dk => musica_dk, ik => musica_ik, lk => musica_lk
-  use micm_Profile, only : abs_Profile_t
+  use micm_Profile, only : base_profile_t
 
   implicit none
 
   public :: fromCsvFile_t
 
-  type, extends(abs_Profile_t) :: fromCsvFile_t
+  type, extends(base_profile_t) :: fromCsvFile_t
   contains
     !> Initialize grid
     procedure :: initialize
@@ -25,7 +25,7 @@ contains
     use musica_config, only : config_t
     use musica_string, only : string_t
     use musica_assert, only : die_msg
-    use micm_1d_grid,  only : abs_1d_grid_t
+    use micm_1d_grid,  only : base_grid_t
     use micm_grid_warehouse,  only : grid_warehouse_t
     use interpolation
 
@@ -40,7 +40,7 @@ contains
     integer(ik), parameter :: Ok = 0_ik
     integer(ik), parameter :: inUnit = 20_ik
     real(dk), parameter    :: km2cm = 1.e5_dk
-    class(abs_1d_grid_t), pointer :: zGrid
+    class(base_grid_t), pointer :: zGrid
  
     integer(ik) :: istat
     real(dk)    :: zd, Value

@@ -7,7 +7,7 @@
 !> The ch2chcho+hv->prodcuts quantum yield type and related functions
 module tuvx_quantum_yield_ch2chcho
 
-  use tuvx_quantum_yield,    only : quantum_yield_t
+  use tuvx_quantum_yield,    only : quantum_yield_t, base_constructor
 
   implicit none
 
@@ -21,7 +21,35 @@ module tuvx_quantum_yield_ch2chcho
     procedure :: calculate => run
   end type quantum_yield_ch2chcho_t
 
+  !> Constructor
+  interface quantum_yield_ch2chcho_t
+    module procedure constructor
+  end interface quantum_yield_ch2chcho_t
+
 contains
+
+function constructor( config, grid_warehouse, profile_warehouse ) result( this )
+
+    use musica_assert,                 only : die_msg
+    use musica_config,                 only : config_t
+    use musica_string,                 only : string_t
+    use tuvx_grid,                     only : grid_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_netcdf_util,              only : netcdf_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
+    use tuvx_util,                     only : inter2
+
+    class(quantum_yield_t),    pointer :: this
+    !> quantum yield configuration data
+    type(config_t),            intent(inout) :: config
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse
+
+    allocate ( quantum_yield_ch2chcho_t :: this )
+
+    call base_constructor( this, config, grid_warehouse, profile_warehouse )
+
+  end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -32,9 +60,9 @@ contains
 
     use musica_constants,              only : dk => musica_dk, ik => musica_ik
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_grid,                     only : abs_1d_grid_t
+    use tuvx_grid,                     only : grid_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
-    use tuvx_profile,                  only : abs_profile_t
+    use tuvx_profile,                  only : profile_t
     use musica_string,                 only : string_t
 
     !> Arguments
@@ -57,9 +85,9 @@ contains
     real(dk)              :: M
     real(dk), allocatable :: phi0(:)
     real(dk), allocatable :: modelDens(:)
-    class(abs_1d_grid_t), pointer :: zGrid
-    class(abs_1d_grid_t), pointer :: lambdaGrid
-    class(abs_profile_t), pointer :: mdlDensity
+    class(grid_t), pointer :: zGrid
+    class(grid_t), pointer :: lambdaGrid
+    class(profile_t), pointer :: mdlDensity
     type(string_t)                :: Handle
 
     Handle = 'Vertical Z'

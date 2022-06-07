@@ -64,9 +64,9 @@ contains
 
     use musica_constants,              only : dk => musica_dk
     use musica_string,                 only : string_t
-    use tuvx_grid,                     only : abs_1d_grid_t
+    use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_profile,                  only : abs_profile_t
+    use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     !> Calculated cross section
@@ -93,9 +93,9 @@ contains
     integer                   :: lambdaNdx, polyNdx
     real(dk)                      :: Tadj, sigma, uLambda
     real(dk), allocatable         :: modelTemp(:)
-    class(abs_1d_grid_t), pointer :: zGrid
-    class(abs_1d_grid_t), pointer :: lambdaGrid
-    class(abs_profile_t), pointer :: mdlTemperature
+    class(grid_t), pointer :: zGrid
+    class(grid_t), pointer :: lambdaGrid
+    class(profile_t), pointer :: mdlTemperature
     type(string_t)                :: Handle
 
     Handle = 'Vertical Z'

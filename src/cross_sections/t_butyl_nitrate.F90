@@ -56,9 +56,9 @@ contains
   function run( this, grid_warehouse, profile_warehouse, at_mid_point )       &
       result( cross_section )
 
-    use musica_constants,              only : dk => musica_dk
+    use musica_constants,              only : dk => musica_dk, ik => musica_ik
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_grid,                     only : abs_1d_grid_t
+    use tuvx_grid,                     only : grid_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use musica_string,                 only : string_t
 
@@ -84,9 +84,9 @@ contains
     real(dk), parameter :: a = -0.993E-3_dk
     real(dk), parameter :: b = 0.5307_dk
     real(dk), parameter :: c = -115.5_dk
-    integer           :: nzdim, vertNdx
-    class(abs_1d_grid_t), pointer :: zGrid
-    class(abs_1d_grid_t), pointer :: lambdaGrid
+    integer(ik)           :: nzdim, vertNdx
+    class(grid_t), pointer :: zGrid
+    class(grid_t), pointer :: lambdaGrid
     type(string_t) :: Handle
 
     Handle = 'Vertical Z'

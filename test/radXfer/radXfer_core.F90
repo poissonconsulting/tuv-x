@@ -10,9 +10,9 @@ module radXfer_core
   use musica_assert,    only : assert
   use musica_constants, only : ik => musica_ik, dk => musica_dk
   use tuvx_grid_warehouse, only : grid_warehouse_t
-  use tuvx_grid,    only : abs_1d_grid_t
+  use tuvx_grid,    only : grid_t
   use tuvx_profile_warehouse, only : Profile_warehouse_t
-  use tuvx_profile,           only : abs_Profile_t
+  use tuvx_profile,           only : profile_t
   use tuvx_cross_section_warehouse, only : cross_section_warehouse_t
   use tuvx_cross_section, only : cross_section_t
 
@@ -88,8 +88,8 @@ contains
   real(dk)                    :: tstCrossSection
   real(dk), allocatable       :: aCrossSection(:,:)
 
-  class(abs_1d_grid_t), pointer       :: zGrid, lambdaGrid
-  class(abs_Profile_t), pointer  :: AirProfile, TemperatureProfile
+  class(grid_t), pointer       :: zGrid, lambdaGrid
+  class(profile_t), pointer  :: AirProfile, TemperatureProfile
   class(cross_section_t), pointer :: RaylieghCrossSection
   type(string_t)                      :: Handle
 

@@ -10,7 +10,7 @@ module tuvx_radiator_aerosol
 
   use musica_constants,       only : dk => musica_dk, ik => musica_ik
   use musica_string,          only : string_t
-  use tuvx_radiator, only : abs_radiator_t
+  use tuvx_radiator, only : base_radiator_t
 
   implicit none
 
@@ -18,32 +18,36 @@ module tuvx_radiator_aerosol
   public :: aerosol_radiator_t
 
   !> aerosol radiator type
-  type, extends(abs_radiator_t) :: aerosol_radiator_t
+  type, extends(base_radiator_t) :: aerosol_radiator_t
   contains
     !> Initialize radiator
-    procedure :: initialize
     !> Update radiator for new environmental conditions
     procedure :: upDateState
   end type aerosol_radiator_t
+
+  !> Constructor
+  interface aerosol_radiator_t
+    module procedure constructor
+  end interface aerosol_radiator_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Initialize radiator_t object
-  subroutine initialize( this, radiator_config, gridWareHouse )
+  function constructor( radiator_config, gridWareHouse ) result( this )
 
     use musica_assert,        only : die_msg
     use musica_config,        only : config_t
     use tuvx_grid_warehouse,  only : grid_warehouse_t
-    use tuvx_grid,         only : abs_1d_grid_t
+    use tuvx_grid,         only : grid_t
     use tuvx_interpolate
     use tuvx_constants,           only : nzero, pzero
     use tuvx_diagnostic_util,                only : diagout
 
     !> Arguments
     !> Radiator object
-    class(aerosol_radiator_t), intent(inout) :: this
+    type(aerosol_radiator_t), pointer :: this
     !> Radiator configuration object
     type(config_t), intent(inout)         :: radiator_config
     !> Grid warehouse
@@ -63,11 +67,13 @@ contains
     real(dk), allocatable         :: winput_SSA(:), winput_G(:)
     type(string_t)                :: Handle
     type(config_t)                :: Aerosol_config
-    class(abs_1d_grid_t), pointer :: zGrid, lambdaGrid
+    class(grid_t), pointer :: zGrid, lambdaGrid
     class(abs_interpolator_t), pointer :: theInterpolator
 
     write(*,*) ' '
     write(*,*) Iam,'entering'
+
+    allocate( this )
 
     Handle = 'Vertical Z' ; zGrid => gridWareHouse%get_grid( Handle )
     Handle = 'Photolysis, wavelength' ; lambdaGrid => gridWareHouse%get_grid( Handle )
@@ -181,7 +187,7 @@ contains
 
 !   stop 'Debugging'
 
-  end subroutine initialize
+  end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -190,9 +196,9 @@ contains
 
     use musica_assert,                 only : die_msg
     use tuvx_profile_warehouse,        only : Profile_warehouse_t
-    use tuvx_profile,                  only : abs_Profile_t
+    use tuvx_profile,                  only : profile_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_grid,                  only : abs_1d_grid_t
+    use tuvx_grid,                  only : grid_t
     use tuvx_cross_section_warehouse,  only : cross_section_warehouse_t
 
     !> Arguments
@@ -209,8 +215,8 @@ contains
     integer(ik) :: wNdx
     character(len=*), parameter :: Iam = 'Aerosol radiator upDateState: '
     type(string_t)                :: Handle
-    class(abs_1d_grid_t), pointer :: zGrid
-    class(abs_1d_grid_t), pointer :: lambdaGrid
+    class(grid_t), pointer :: zGrid
+    class(grid_t), pointer :: lambdaGrid
 
     write(*,*) ' '
     write(*,*) Iam,'entering'

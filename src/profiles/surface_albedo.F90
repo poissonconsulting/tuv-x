@@ -5,31 +5,34 @@
 module tuvx_profile_surface_albedo
 
   use musica_constants, only : dk => musica_dk, ik => musica_ik, lk => musica_lk
-  use tuvx_profile,     only : abs_profile_t
+  use tuvx_profile,     only : profile_t
 
   implicit none
 
   private
   public :: srfAlbedofromConfig_t
 
-  type, extends(abs_profile_t) :: srfAlbedofromConfig_t
+  type, extends(profile_t) :: srfAlbedofromConfig_t
   contains
-    !> Initialize grid
-    procedure :: initialize
   end type srfAlbedofromConfig_t
+
+  !> Constructor
+  interface srfAlbedofromConfig_t
+    module procedure constructor
+  end interface srfAlbedofromConfig_t
 
 contains
   !> Initialize grid
-  subroutine initialize( this, profile_config, gridWareHouse )
+  function constructor( profile_config, gridWareHouse ) result( this )
       
     use musica_config, only : config_t
     use musica_string, only : string_t
     use musica_assert, only : die_msg
-    use tuvx_grid,  only : abs_1d_grid_t
+    use tuvx_grid,  only : grid_t
     use tuvx_grid_warehouse,  only : grid_warehouse_t
 
     !> Arguments
-    class(srfAlbedofromConfig_t), intent(inout) :: this
+    type(srfAlbedofromConfig_t), pointer :: this
     type(config_t), intent(inout)               :: profile_config
     type(grid_warehouse_t), intent(inout)       :: gridWareHouse
 
@@ -37,8 +40,10 @@ contains
     character(len=*), parameter :: Iam = 'From config profile initialize: '
     integer(ik)                   :: ndx
     real(dk)                      :: uniformValue
-    class(abs_1d_grid_t), pointer :: lambdaGrid
+    class(grid_t), pointer :: lambdaGrid
     type(string_t)                :: Handle
+
+    allocate( this )
  
     !> Get the handle
     call profile_config%get( 'Handle', this%handle_, Iam, default = 'None' )
@@ -55,6 +60,6 @@ contains
                    *(this%edge_val_(1_ik:this%ncells_) + this%edge_val_(2_ik:this%ncells_+1_ik))
     this%delta_val_ = (this%edge_val_(2_ik:this%ncells_+1_ik) - this%edge_val_(1_ik:this%ncells_))
 
-  end subroutine initialize
+  end function constructor
 
 end module tuvx_profile_surface_albedo

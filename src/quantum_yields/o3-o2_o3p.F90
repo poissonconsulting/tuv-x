@@ -7,7 +7,7 @@
 !> The o3+hv->o2+o3p quantum yield type and related functions
 module tuvx_quantum_yield_o3_o2_o3p
 
-  use tuvx_quantum_yield,              only : quantum_yield_t
+  use tuvx_quantum_yield,              only : quantum_yield_t, base_constructor
 
   implicit none
 
@@ -21,7 +21,35 @@ module tuvx_quantum_yield_o3_o2_o3p
     procedure :: calculate => run
   end type quantum_yield_o3_o2_o3p_t
 
+  !> Constructor
+  interface quantum_yield_o3_o2_o3p_t
+    module procedure constructor
+  end interface quantum_yield_o3_o2_o3p_t
+
 contains
+
+function constructor( config, grid_warehouse, profile_warehouse ) result( this )
+
+    use musica_assert,                 only : die_msg
+    use musica_config,                 only : config_t
+    use musica_string,                 only : string_t
+    use tuvx_grid,                     only : grid_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_netcdf_util,              only : netcdf_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
+    use tuvx_util,                     only : inter2
+
+    class(quantum_yield_t),    pointer :: this
+    !> quantum yield configuration data
+    type(config_t),            intent(inout) :: config
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse
+
+    allocate ( quantum_yield_o3_o2_o3p_t :: this )
+
+    call base_constructor( this, config, grid_warehouse, profile_warehouse )
+
+  end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -38,9 +66,9 @@ contains
 
     use musica_constants,              only : dk => musica_dk
     use musica_string,                 only : string_t
-    use tuvx_grid,                     only : abs_1d_grid_t
+    use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_profile,                  only : abs_profile_t
+    use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     class(quantum_yield_o3_o2_o3p_t), intent(in) :: this
@@ -62,8 +90,8 @@ contains
     real(dk)    :: kt, q1, q2, T300, lambda
     real(dk)    :: qfac1, qfac2
     type(string_t)                :: Handle
-    class(abs_1d_grid_t), pointer :: lambdaGrid, zGrid
-    class(abs_profile_t), pointer :: Temperature
+    class(grid_t), pointer :: lambdaGrid, zGrid
+    class(profile_t), pointer :: Temperature
 
     Handle = 'Photolysis, wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )

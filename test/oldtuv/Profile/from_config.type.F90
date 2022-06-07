@@ -5,14 +5,14 @@
 module micm_Profile_from_config
 
   use musica_constants, only : dk => musica_dk, ik => musica_ik, lk => musica_lk
-  use micm_Profile,     only : abs_Profile_t
+  use micm_Profile,     only : base_profile_t
 
   implicit none
 
   private
   public :: fromConfig_t
 
-  type, extends(abs_Profile_t) :: fromConfig_t
+  type, extends(base_profile_t) :: fromConfig_t
   contains
     !> Initialize grid
     procedure :: initialize
@@ -25,7 +25,7 @@ contains
     use musica_config, only : config_t
     use musica_string, only : string_t
     use musica_assert, only : die_msg
-    use micm_1d_grid,  only : abs_1d_grid_t
+    use micm_1d_grid,  only : base_grid_t
     use micm_grid_warehouse,  only : grid_warehouse_t
 
     !> Arguments
@@ -39,7 +39,7 @@ contains
     real(dk)                    :: uniformValue
     logical(lk)                 :: found
     type(string_t)              :: gridHandle
-    class(abs_1d_grid_t), pointer :: theGrid
+    class(base_grid_t), pointer :: theGrid
  
     !> Get the handle
     call Profile_config%get( 'Handle', this%handle_, Iam, default = 'None' )

@@ -10,10 +10,10 @@ module tuvx_photolysis_rates
   use musica_assert,                   only : die_msg
   use musica_constants,                only : dk => musica_dk
   use musica_string,                   only : string_t
+  use tuvx_grid,                       only : grid_t
   use tuvx_cross_section,              only : cross_section_ptr
-  use tuvx_grid,                       only : abs_1d_grid_t
   use tuvx_grid_warehouse,             only : grid_warehouse_t
-  use tuvx_profile,                    only : abs_profile_t
+  use tuvx_profile,                    only : profile_t
   use tuvx_profile_warehouse,          only : profile_warehouse_t
   use tuvx_quantum_yield,              only : quantum_yield_ptr
 
@@ -170,10 +170,10 @@ contains
     type(string_t)        :: Handle, annotatedRate
     character(len=64)     :: jlabel
     character(len=64), allocatable :: annotatedjlabel(:)
-    class(abs_1d_grid_t), pointer :: zGrid => null()
-    class(abs_1d_grid_t), pointer :: lambdaGrid => null()
-    class(abs_profile_t), pointer :: airProfile => null()
-    class(abs_profile_t), pointer :: etfl => null()
+    class(grid_t), pointer :: zGrid => null()
+    class(grid_t), pointer :: lambdaGrid => null()
+    class(profile_t), pointer :: airProfile => null()
+    class(profile_t), pointer :: etfl => null()
 
     Handle = 'Vertical Z'
     zGrid => grid_warehouse%get_grid( Handle )

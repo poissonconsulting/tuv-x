@@ -4,35 +4,38 @@
 module tuvx_profile_extraterrestrial_flux
 
   use musica_constants,  only : dk => musica_dk, ik => musica_ik, lk => musica_lk
-  use tuvx_Profile,      only : abs_Profile_t
+  use tuvx_Profile,      only : profile_t
 
   implicit none
 
   public :: etflfromCsvFile_t
 
-  type, extends(abs_Profile_t) :: etflfromCsvFile_t
+  type, extends(profile_t) :: etflfromCsvFile_t
   contains
-    !> Initialize grid
-    procedure :: initialize
     final     :: finalize
   end type etflfromCsvFile_t
 
+  !> Constructor
+  interface etflfromCsvFile_t
+    module procedure constructor
+  end interface etflfromCsvFile_t
+
 contains
   !> Initialize grid
-  subroutine initialize( this, profile_config, gridWareHouse )
+  function constructor( profile_config, gridWareHouse ) result ( this )
       
     use musica_config, only : config_t
     use musica_string, only : string_t
     use musica_assert, only : die_msg
     use tuvx_util,   only : addpnt
     use tuvx_constants,    only : hc, deltax
-    use tuvx_grid,  only : abs_1d_grid_t
+    use tuvx_grid,  only : grid_t
     use tuvx_grid_warehouse,  only : grid_warehouse_t
     use tuvx_diagnostic_util,         only : diagout
     use tuvx_interpolate
 
     !> arguments
-    class(etflfromCsvFile_t), intent(inout) :: this
+    type(etflfromCsvFile_t), pointer :: this
     type(config_t),           intent(inout) :: profile_config
     type(grid_warehouse_t),   intent(inout) :: gridWareHouse
 
@@ -45,7 +48,7 @@ contains
     integer(dk), parameter :: rONE  = 1.0_dk
     real(dk),    parameter :: bin_edge(0:4) = (/ rZERO,150.01_dk,200.07_dk,1000.99_dk,real(huge(rZERO),dk) /)
     character(len=*), parameter :: comment = '#!$%*'
-    class(abs_1d_grid_t), pointer :: lambdaGrid
+    class(grid_t), pointer :: lambdaGrid
  
     integer(ik) :: istat
     integer(ik) :: fileNdx, nFiles, ndx, nBins, nLines, Line
@@ -61,6 +64,8 @@ contains
     class(abs_interpolator_t), pointer :: theInterpolator
 
     write(*,*) Iam // 'entering'
+
+    allocate( this )
 
     defaultInterpolator = 'interp2'
 
@@ -235,7 +240,7 @@ file_loop: &
 
     write(*,*) Iam // 'exiting'
 
-  end subroutine initialize
+  end function constructor
 
   subroutine finalize( this )
 

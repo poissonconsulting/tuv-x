@@ -35,6 +35,7 @@ module tuvx_profile
   end type profile_t
 
   !> Pointer type for building sets of spectral wght objects
+  !! \todo this should be renamed to `profile_ptr`
   type :: grid_ptr
     class(profile_t), pointer :: ptr_ => null( )
   end type grid_ptr

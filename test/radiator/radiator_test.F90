@@ -21,7 +21,7 @@ program radiator_test
   !> Get the model configuration file and options from the command line
 ! if( command_argument_count( ) /= 1 ) call fail_run( )
 ! call get_command_argument( command_argument_count( ), argument )
-  argument = 'data/radiator.tst.config.json'
+  argument = 'test/data/radiator.tst.config.json'
 
   configFileSpec = argument
 
@@ -39,7 +39,7 @@ program radiator_test
   subroutine fail_run( )
 
     write(*,*) "Usage: ./radiator_test configuration_file.json"
-    stop 'Improper arguments'
+    stop 3
 
   end subroutine fail_run
 

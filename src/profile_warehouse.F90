@@ -158,6 +158,11 @@ contains
     write(*,*) Iam,'entering'
 
     if( allocated( this%profile_objs_ ) ) then
+      do ndx = 1, size( this%profile_objs_ )
+        if( associated( this%profile_objs_( ndx )%ptr_ ) ) then
+          deallocate( this%profile_objs_( ndx )%ptr_ )
+        end if
+      end do
       deallocate( this%profile_objs_ )
     endif
 

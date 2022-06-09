@@ -197,8 +197,6 @@ contains
     write(*,*) ' '
     write(*,*) Iam,'exiting'
 
-!   stop 'Debugging'
-
   end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

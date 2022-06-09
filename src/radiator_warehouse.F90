@@ -229,8 +229,6 @@ contains
     write(*,*) ' '
     write(*,*) Iam,'exiting'
 
-!   stop 'debugging'
-
   end function get_radiator_from_iterator
 
   !> Is a radiator in the warehouse?

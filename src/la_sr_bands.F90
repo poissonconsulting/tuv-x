@@ -269,11 +269,12 @@ has_la_srb: &
           dto2(:,iw) = dto2k(:,iw-this%isrb+iONE)
         enddo
       endif
-    endif has_la_srb
 
-    deallocate( zGrid )
-    deallocate( lambdaGrid )
-    deallocate( temperature )
+      deallocate( zGrid )
+      deallocate( lambdaGrid )
+      deallocate( temperature )
+
+    endif has_la_srb
 
     write(*,*) ' '
     write(*,*) Iam // 'exiting'
@@ -400,6 +401,11 @@ has_la_srb: &
           o2xs(:,iw) = o2xsk(:,iw-this%isrb+iONE)
         enddo
       endif
+
+      deallocate( zGrid )
+      deallocate( lambdaGrid )
+      deallocate( temperature )
+
     endif has_la_srb
 
     write(*,*) ' '

@@ -12,7 +12,7 @@ exec_newtuv() {
   valgrind --error-exitcode=1 --trace-children=yes --leak-check=full ./tuv-x test/data/photorates.test.config.json
 }
 exec_analysis() {
-  python3 test/regression/photolysis_rate/xsqy.compare.py test/regression/photolysis_rate OUTPUTS
+  python3 test/regression/photolysis_rates/xsqy.compare.py test/regression/photolysis_rates OUTPUTS
 }
 
 if ! exec_oldtuv; then

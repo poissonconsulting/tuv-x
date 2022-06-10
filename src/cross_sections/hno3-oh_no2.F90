@@ -63,12 +63,12 @@ contains
     logical :: found
     character(len=:), allocatable :: msg
     character(len=:), allocatable :: addpntKey
-    type(netcdf_t), allocatable :: netcdf_obj
-    type(string_t), allocatable :: netcdfFiles(:)
-    type(config_t)              :: tmp_config
-    type(string_t)              :: addpntVal
-    type(string_t)              :: Handle
-    class(grid_t), pointer :: lambdaGrid
+    type(netcdf_t),   allocatable :: netcdf_obj
+    type(string_t),   allocatable :: netcdfFiles(:)
+    type(config_t)                :: tmp_config
+    type(string_t)                :: addpntVal
+    type(string_t)                :: Handle
+    class(grid_t),    pointer     :: lambdaGrid => null( )
     type(string_t) :: required_keys(2), optional_keys(3)
 
     required_keys(1) = "type"
@@ -144,6 +144,8 @@ file_loop: &
         deallocate( netcdf_obj )
       enddo file_loop
     endif has_netcdf_file
+
+    deallocate( lambdaGrid )
 
   end function constructor
 

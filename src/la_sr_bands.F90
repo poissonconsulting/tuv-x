@@ -141,6 +141,8 @@ has_la_srb: &
         endif
       endif has_la_srb
 
+      deallocate( lambdaGrid )
+
       write(*,*) ' '
       write(*,*) Iam // 'exiting'
 
@@ -196,9 +198,9 @@ has_la_srb: &
     integer(ik) :: nz, nzm1, nw, i, iz, iw
     real(dk)    :: secchi(size(Airscol))
     real(dk)    :: o2scol(size(Airscol))
-    class(grid_t), pointer :: zGrid
-    class(grid_t), pointer :: lambdaGrid
-    class(profile_t), pointer :: temperature
+    class(grid_t),    pointer :: zGrid => null( )
+    class(grid_t),    pointer :: lambdaGrid => null( )
+    class(profile_t), pointer :: temperature => null( )
     type(string_t) :: Handle
 
 !----------------------------------------------------------------------
@@ -268,6 +270,10 @@ has_la_srb: &
         enddo
       endif
     endif has_la_srb
+
+    deallocate( zGrid )
+    deallocate( lambdaGrid )
+    deallocate( temperature )
 
     write(*,*) ' '
     write(*,*) Iam // 'exiting'

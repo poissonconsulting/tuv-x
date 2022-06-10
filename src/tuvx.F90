@@ -32,7 +32,9 @@ program tuvx
   !> run photolysis
   call photolysis_core%run()
 
-  contains
+  deallocate( photolysis_core )
+
+contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -43,5 +45,7 @@ program tuvx
     stop 3
 
   end subroutine fail_run
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 end program tuvx

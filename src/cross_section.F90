@@ -212,9 +212,9 @@ file_loop: &
     integer :: nzdim
     character(len=*), parameter :: Iam =                                      &
         'radXfer base cross section calculate: '
-    class(grid_t), pointer :: zGrid
-    type(string_t)                :: Handle
-    real(dk), allocatable         :: wrkCrossSection(:,:)
+    class(grid_t), pointer     :: zGrid => null( )
+    type(string_t)             :: Handle
+    real(dk),      allocatable :: wrkCrossSection(:,:)
 
     Handle = 'Vertical Z'
     zGrid => grid_warehouse%get_grid( Handle )
@@ -235,6 +235,8 @@ file_loop: &
     enddo
 
     cross_section = transpose( wrkCrossSection )
+
+    deallocate( zGrid )
 
   end function run
 

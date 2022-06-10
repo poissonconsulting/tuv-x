@@ -197,7 +197,6 @@ file_loop: &
 
     !> interpolate from source to model wavelength grid
       interpolatedEtfl = theInterpolator%interpolate( lambdaGrid%edge_, inputGrid, inputData, FoldIn=0 )
-      deallocate( theInterpolator )
       if( .not. allocated( this%mid_val_ ) ) then
         allocate( this%mid_val_,mold=interpolatedEtfl )
         this%mid_val_ = rZERO
@@ -232,6 +231,7 @@ file_loop: &
       endif
 
       deallocate( inputGrid,inputData )
+      deallocate( theInterpolator )
 
     enddo file_loop
 

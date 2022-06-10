@@ -180,11 +180,11 @@ file_loop: &
         'hno3->oh+no2 cross section calculate'
     real(dk), parameter         :: T0 = 298._dk
     integer           :: vertNdx
-    real(dk), allocatable :: Temp(:)
+    real(dk),         allocatable :: Temp(:)
     type(string_t)                :: Handle
-    class(grid_t), pointer :: lambdaGrid
-    class(grid_t), pointer :: zGrid
-    class(profile_t), pointer :: temperature
+    class(grid_t),    pointer     :: lambdaGrid => null( )
+    class(grid_t),    pointer     :: zGrid => null( )
+    class(profile_t), pointer     :: temperature => null( )
 
     write(*,*) Iam,'entering'
 
@@ -205,6 +205,10 @@ file_loop: &
     enddo
 
     cross_section = transpose( cross_section )
+
+    deallocate( zGrid )
+    deallocate( lambdaGrid )
+    deallocate( temperature )
 
   end function run
 

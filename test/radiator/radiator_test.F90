@@ -31,6 +31,8 @@ program radiator_test
   !> set radiator cross sections
   call radiator_core%test()
 
+  deallocate( radiator_core )
+
   contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

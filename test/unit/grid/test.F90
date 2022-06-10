@@ -184,6 +184,7 @@ contains
     call test_grid_t(aGrid, config_grid_cells, config_edges, config_midpoints, config_deltas)
     deallocate( aGrid )
 
+    deallocate( thewarehouse )
 
   end subroutine test_grids
 

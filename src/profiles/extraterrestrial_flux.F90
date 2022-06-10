@@ -235,6 +235,8 @@ file_loop: &
 
     enddo file_loop
 
+    deallocate( lambdaGrid )
+
     !> test diagnostics
     call diagout( 'etfl.new', this%mid_val_ )
 

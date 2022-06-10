@@ -131,6 +131,9 @@ contains
 
     cross_section = transpose( wrkCrossSection )
 
+    deallocate( zGrid )
+    deallocate( lambdaGrid )
+
   end function run
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

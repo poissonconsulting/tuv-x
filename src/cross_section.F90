@@ -179,6 +179,8 @@ file_loop: &
       enddo file_loop
     endif has_netcdf_file
 
+    deallocate( lambdaGrid )
+
   end subroutine base_constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

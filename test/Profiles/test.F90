@@ -120,6 +120,10 @@ contains
 !   aProfile => theProfileWarehouse%get_Profile( Handle )
 !   write(*,*) Iam // 'Handle = ',aProfile%handle_
 
+    deallocate( zGrid )
+    deallocate( lambdaGrid )
+    deallocate( AirProfile )
+    deallocate( TemperatureProfile )
     deallocate( theGridWarehouse )
     deallocate( theProfileWarehouse )
     write(*,*) Iam // 'leaving'

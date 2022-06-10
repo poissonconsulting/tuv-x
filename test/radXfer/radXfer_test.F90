@@ -31,6 +31,8 @@ program radXfer_test
   !> set radXfer cross sections
   call radXfer_core%test()
 
+  deallocate( radXfer_core )
+
   contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -1,7 +1,7 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 !
-!profile type
+!> Profile type
 module tuvx_profile
 
   use musica_constants, only : musica_dk, musica_ik
@@ -10,7 +10,7 @@ module tuvx_profile
   implicit none
 
   private
-  public :: profile_t, grid_ptr
+  public :: profile_t, profile_ptr
 
   type, abstract ::  profile_t
     !> grid handle
@@ -35,26 +35,29 @@ module tuvx_profile
   end type profile_t
 
   !> Pointer type for building sets of spectral wght objects
-  !! \todo this should be renamed to `profile_ptr`
-  type :: grid_ptr
+  type :: profile_ptr
     class(profile_t), pointer :: val_ => null( )
-  end type grid_ptr
+  end type profile_ptr
 
 interface
 
-    !> Initialize grid
-    subroutine base_constructor( this, profile_config, gridWareHouse )
-      
-      use musica_config, only : config_t
-      use musica_constants, only : musica_dk
-      use tuvx_grid_warehouse,  only : grid_warehouse_t
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      import profile_t
-      class(profile_t), intent(inout)      :: this
-      type(config_t), intent(inout)            :: profile_config
-      type(grid_warehouse_t), intent(inout)    :: gridWareHouse
-    end subroutine base_constructor
+  !> Initialize grid
+  subroutine base_constructor( this, profile_config, grid_warehouse )
+
+    use musica_config, only : config_t
+    use musica_constants, only : musica_dk
+    use tuvx_grid_warehouse,  only : grid_warehouse_t
+
+    import profile_t
+    class(profile_t), intent(inout)      :: this
+    type(config_t), intent(inout)            :: profile_config
+    type(grid_warehouse_t), intent(inout)    :: grid_warehouse
+  end subroutine base_constructor
 
 end interface
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 end module tuvx_profile

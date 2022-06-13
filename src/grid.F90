@@ -37,7 +37,7 @@ interface
 
     !> construct the grid
     subroutine base_constructor( this, grid_config )
-      
+
       use musica_config, only : config_t
 
       import grid_t

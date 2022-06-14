@@ -7,7 +7,7 @@
 !> Build radiator objects
 module tuvx_radiator_factory
 
-  use tuvx_radiator,       only : base_radiator_t, base_constructor
+  use tuvx_radiator,       only : radiator_t
   use tuvx_radiator_aerosol,    only : aerosol_radiator_t
 
   implicit none
@@ -19,7 +19,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function radiator_builder( config, gridWareHouse ) result( new_radiator_t )
+  function radiator_builder( config, gridWareHouse ) result( new_radiator )
 
     use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
@@ -32,22 +32,21 @@ contains
     type(grid_warehouse_t), intent(inout) :: gridWareHouse
 
     !> New radiator object
-    class(base_radiator_t), pointer :: new_radiator_t
+    class(radiator_t), pointer :: new_radiator
 
     !> Local variables
     type(string_t) :: radiator_type
     character(len=*), parameter :: Iam = 'Radiator builder: '
 
     write(*,*) Iam,'entering'
-    new_radiator_t => null()
+    new_radiator => null()
     call config%get( 'type', radiator_type, Iam )
 
     select case( radiator_type%to_char() )
       case( 'base' )
-        allocate( new_radiator_t )
-        call base_constructor( new_radiator_t, config, gridWareHouse )
+        new_radiator => radiator_t( config, gridWareHouse )
       case( 'aerosol' )
-        new_radiator_t => aerosol_radiator_t( config, gridWareHouse )
+        new_radiator => aerosol_radiator_t( config, gridWareHouse )
       case default
         call die_msg( 460768245, "Invalid radiator type: '" // radiator_type%to_char()//"'" )
     end select

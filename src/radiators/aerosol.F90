@@ -10,7 +10,7 @@ module tuvx_radiator_aerosol
 
   use musica_constants,       only : dk => musica_dk, ik => musica_ik
   use musica_string,          only : string_t
-  use tuvx_radiator, only : base_radiator_t
+  use tuvx_radiator, only : radiator_t
 
   implicit none
 
@@ -18,11 +18,11 @@ module tuvx_radiator_aerosol
   public :: aerosol_radiator_t
 
   !> aerosol radiator type
-  type, extends(base_radiator_t) :: aerosol_radiator_t
+  type, extends(radiator_t) :: aerosol_radiator_t
   contains
     !> Initialize radiator
     !> Update radiator for new environmental conditions
-    procedure :: upDateState
+    procedure :: update_state
   end type aerosol_radiator_t
 
   !> Constructor
@@ -35,7 +35,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Initialize radiator_t object
-  function constructor( radiator_config, gridWareHouse ) result( this )
+  function constructor( radiator_config, grid_warehouse ) result( this )
 
     use musica_assert,        only : assert_msg, die_msg
     use musica_config,        only : config_t
@@ -51,7 +51,7 @@ contains
     !> Radiator configuration object
     type(config_t), intent(inout)         :: radiator_config
     !> Grid warehouse
-    type(grid_warehouse_t), intent(inout) :: gridWareHouse
+    type(grid_warehouse_t), intent(inout) :: grid_warehouse
 
     !> Local variables
     character(len=*), parameter   :: Iam = "Aerosol radiator initialize: "
@@ -87,8 +87,8 @@ contains
 
     allocate( this )
 
-    Handle = 'Vertical Z' ; zGrid => gridWareHouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength' ; lambdaGrid => gridWareHouse%get_grid( Handle )
+    Handle = 'Vertical Z' ; zGrid => grid_warehouse%get_grid( Handle )
+    Handle = 'Photolysis, wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
 
 !-----------------------------------------------------------------------------
 !> Get radiator "Handle"
@@ -206,7 +206,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Update radiator state
-  subroutine upDateState( this, gridWareHouse, ProfileWareHouse, radXferXsectWareHouse )
+  subroutine update_state( this, grid_warehouse, profile_warehouse, cross_section_warehouse )
 
     use musica_assert,                 only : die_msg
     use tuvx_profile_warehouse,        only : Profile_warehouse_t
@@ -219,11 +219,11 @@ contains
     !> radiator obj
     class(aerosol_radiator_t), intent(inout) :: this
     !> Grid warehouse
-    type(grid_warehouse_t), intent(inout)    :: gridWareHouse
+    type(grid_warehouse_t), intent(inout)    :: grid_warehouse
     !> Profile warehouse
-    type(Profile_warehouse_t), intent(inout) :: ProfileWareHouse
+    type(Profile_warehouse_t), intent(inout) :: profile_warehouse
     !> RadXfer cross section warehouse
-    type(cross_section_warehouse_t), intent(inout) :: radXferXsectWareHouse
+    type(cross_section_warehouse_t), intent(inout) :: cross_section_warehouse
 
     !> Local variables
     integer(ik) :: wNdx
@@ -239,8 +239,8 @@ contains
 !-----------------------------------------------------------------------------
 !> get specific grids and profiles
 !-----------------------------------------------------------------------------
-    Handle = 'Vertical Z' ; zGrid => gridWareHouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength' ; lambdaGrid => gridWareHouse%get_grid( Handle )
+    Handle = 'Vertical Z' ; zGrid => grid_warehouse%get_grid( Handle )
+    Handle = 'Photolysis, wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
     write(*,*) Iam // 'nlyr,nbins = ',zGrid%ncells_,lambdaGrid%ncells_
 
     !> check that radiator state is allocated
@@ -254,6 +254,6 @@ contains
     write(*,*) ' '
     write(*,*) Iam,'exiting'
 
-  end subroutine upDateState
+  end subroutine update_state
 
 end module tuvx_radiator_aerosol

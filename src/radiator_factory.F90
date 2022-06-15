@@ -8,7 +8,7 @@
 module tuvx_radiator_factory
 
   use tuvx_radiator,       only : radiator_t
-  use tuvx_radiator_aerosol,    only : aerosol_radiator_t
+  use tuvx_radiator_aerosol,    only : radiator_aerosol_t
 
   implicit none
 
@@ -46,7 +46,7 @@ contains
       case( 'base' )
         new_radiator => radiator_t( config, gridWareHouse )
       case( 'aerosol' )
-        new_radiator => aerosol_radiator_t( config, gridWareHouse )
+        new_radiator => radiator_aerosol_t( config, gridWareHouse )
       case default
         call die_msg( 460768245, "Invalid radiator type: '" // radiator_type%to_char()//"'" )
     end select

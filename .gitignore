@@ -4,8 +4,7 @@
 build/
 CMakeCache.txt
 CMakeFiles/
-doc/build/
-doc/latex/
+docs/_build/
 .vscode
 
 # Prerequisites

@@ -83,19 +83,17 @@ contains
     ! local variables
     character(len=*), parameter :: Iam = "Radiator warehouse constructor: "
     integer                     :: ndx
-    type(config_t)              :: radiator_config_set, radiator_config
+    type(config_t)              :: radiator_config
     class(iterator_t), pointer  :: iter
     type(radiator_ptr)          :: aRadiator
-
-    call config%get( 'radiators', radiator_config_set, Iam )
 
     allocate( radiator_warehouse )
     allocate( radiator_warehouse%radiators_(0) )
     allocate( radiator_warehouse%handle_(0) )
 
-    iter => radiator_config_set%get_iterator( )
-    do while( iter%next( ) )
-      call radiator_config_set%get( iter, radiator_config, Iam )
+    iter => config%get_iterator()
+    do while( iter%next() )
+      call config%get( iter, radiator_config, Iam )
 
       ! build and store the radiator
       aRadiator%val_ => radiator_builder( radiator_config, grid_warehouse )

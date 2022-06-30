@@ -1,0 +1,11 @@
+RB Meter, model 501
+Eppley UV Photometer
+UV-A, 315-400 nm
+UV-B, 280-315 nm
+UV-B*, 280-320 nm
+vis+, > 400 nm
+Gaussian, 305 nm, 10 nm FWHM
+Gaussian, 320 nm, 10 nm FWHM
+Gaussian, 340 nm, 10 nm FWHM
+Gaussian, 380 nm, 10 nm FWHM
+SCUP-human (de Gruij and van der Leun, 1994)

@@ -16,6 +16,7 @@ module tuvx_core
   use tuvx_la_sr_bands,              only : la_srb_t
   use tuvx_radiative_transfer,   only : radXfer_component_core_t
   use tuvx_photolysis_rates,           only : photolysis_rates_t
+  use tuvx_dose_rates,                 only : dose_rates_t
 
   implicit none
 
@@ -30,6 +31,7 @@ module tuvx_core
     type(string_t), allocatable         :: diagnostics_(:)
     type(radXfer_component_core_t), pointer    :: radXfer_component_ => null()
     type(photolysis_rates_t), pointer :: photorates_component_ => null()
+    type(dose_rates_t),       pointer :: doserates_component_ => null()
   contains
     procedure :: run
     final     :: finalize
@@ -134,7 +136,14 @@ contains
         call components_config%get( iter, component_config, Iam )
         photolysis_core_obj%photorates_component_ => &
                photolysis_rates_t( component_config, photolysis_core_obj%GridWareHouse_, &
-                                            photolysis_core_obj%ProfileWareHouse_ )
+                                   photolysis_core_obj%ProfileWareHouse_ )
+      elseif( keyChar == 'Dose rate constants' ) then
+        write(*,*) ' '
+        write(*,*) Iam,'key = ',trim(keyChar)
+        call components_config%get( iter, component_config, Iam )
+        photolysis_core_obj%doserates_component_ => &
+               dose_rates_t( component_config, photolysis_core_obj%GridWareHouse_, &
+                             photolysis_core_obj%ProfileWareHouse_ )
       endif
     enddo
     deallocate( iter )
@@ -154,9 +163,9 @@ contains
 
   use tuvx_profile,                 only : profile_t
   use tuvx_radiator_warehouse,      only : radiator_warehouse_t
-  use tuvx_radiator,       only : base_radiator_t
-  use tuvx_radiative_transfer_solver,        only : radField_t
-  use tuvx_diagnostic_util,                        only : diagout
+  use tuvx_radiator,                only : base_radiator_t
+  use tuvx_radiative_transfer_solver, only : radField_t
+  use tuvx_diagnostic_util,           only : diagout
 
   !> Arguments
   class(photolysis_core_t), intent(inout)  :: this
@@ -166,6 +175,7 @@ contains
 
   integer(ik)                     :: i_ndx, i_diag
   real(dk), allocatable           :: photoRates(:,:)
+  real(dk), allocatable           :: doseRates(:,:)
   character(len=2)                :: number
   class(profile_t),       pointer :: SZAngles => null( )
   class(base_radiator_t), pointer :: aRadiator => null()
@@ -196,6 +206,12 @@ sza_loop: &
       call this%photorates_component_%get( this%la_srb_, this%sphericalGeom_, &
                                               this%GridWareHouse_, this%ProfileWareHouse_, &
                                               radiationFld, photoRates, number )
+    elseif( associated(this%doserates_component_) ) then
+      if( allocated(doseRates) ) then
+        deallocate(doseRates)
+      endif
+      call this%doserates_component_%get( this%GridWareHouse_, this%ProfileWareHouse_, &
+                                          radiationFld, doseRates, number )
     endif
     deallocate( radiationFld )
   enddo sza_loop
@@ -254,6 +270,10 @@ sza_loop: &
 
     if( associated( this%photorates_component_ ) ) then
       deallocate( this%photorates_component_ )
+    end if
+
+    if( associated( this%doserates_component_ ) ) then
+      deallocate( this%doserates_component_ )
     end if
 
   end subroutine finalize

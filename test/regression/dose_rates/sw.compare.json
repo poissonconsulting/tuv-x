@@ -1,0 +1,46 @@
+{
+  "RB Meter, model 501" : {
+    "RMS difference" : 1.0e-6,
+    "maximum difference" : 1.0e-5
+  },
+  "Eppley UV Photometer" : {
+    "RMS difference" : 1.0e-6,
+    "maximum difference" : 1.0e-5
+  },
+  "UV-A, 315-400 nm" : {
+    "RMS difference" : 1.0e-6,
+    "maximum difference" : 1.0e-5
+  },
+  "UV-B, 280-315 nm" : {
+    "RMS difference" : 1.0e-6,
+    "maximum difference" : 1.0e-5
+  },
+  "UV-B*, 280-320 nm" : {
+    "RMS difference" : 1.0e-6,
+    "maximum difference" : 1.0e-5
+  },
+  "vis+, > 400 nm" : {
+    "RMS difference" : 1.0e-6,
+    "maximum difference" : 1.0e-5
+  },
+  "Gaussian, 305 nm, 10 nm FWHM" : {
+    "RMS difference" : 1.0e-6,
+    "maximum difference" : 1.0e-5
+  },
+  "Gaussian, 320 nm, 10 nm FWHM" : {
+    "RMS difference" : 1.0e-6,
+    "maximum difference" : 1.0e-5
+  },
+  "Gaussian, 340 nm, 10 nm FWHM" : {
+    "RMS difference" : 1.0e-6,
+    "maximum difference" : 1.0e-5
+  },
+  "Gaussian, 380 nm, 10 nm FWHM" : {
+    "RMS difference" : 1.0e-6,
+    "maximum difference" : 1.0e-5
+  },
+  "SCUP-human (de Gruijl and van der Leun, 1994)" : {
+    "RMS difference" : 1.0e-6,
+    "maximum difference" : 1.0e-5
+  }
+}

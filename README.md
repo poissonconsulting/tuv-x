@@ -1,7 +1,7 @@
-PhotoDecomp
+TUV-x
 ===========
 
-PhotoDecomp: A photolysis rate constant calculator.
+TUV-x: A photolysis rate constant calculator.
 
 [![License](https://img.shields.io/github/license/NCAR/photo-decomp.svg)](https://github.com/NCAR/photo-decomp/blob/main/LICENSE)
 [![CI Status](https://github.com/NCAR/photo-decomp/actions/workflows/test.yml/badge.svg)](https://github.com/NCAR/photo-decomp/actions/workflows/test.yml)
@@ -11,30 +11,30 @@ Copyright (C) 2020 National Center for Atmospheric Research
 
 # Build and run (Docker version)
 
-To build and run the stand-alone version of PhotoDecomp, you must have [Docker Desktop](https://www.docker.com/get-started) installed and running. With Docker Desktop running, open a terminal window, navigate to a folder where you would like the PhotoDecomp files to exist, and run the following commands:
+To build and run the stand-alone version of TUV-x, you must have [Docker Desktop](https://www.docker.com/get-started) installed and running. With Docker Desktop running, open a terminal window and run the following command to start the TUV-x container:
 
 ```
-git clone --recurse-submodules https://github.com/NCAR/photo-decomp.git
-cd photo-decomp
-docker build -t photo-test .
-docker run -it photo-test bash
+docker run -it ghcr.io/NCAR/photo-decomp:main bash
 ```
-Then, from inside the Docker container run PhotoDecomp with:
+
+Inside the container, you can run the TUV-x tests from the `/build/` folder:
 
 ```
-cd build
-./photo
+cd build/
+make test
 ```
 
 # Build and run (local build version)
 
-To build and run PhotoDecomp locally, you must have the following libraries available:
+To build and run TUV-x locally, you must have the following libraries available:
 
 - [json-fortran](https://github.com/jacobwilliams/json-fortran)
 - [NetCDF](https://www.unidata.ucar.edu/software/netcdf/) (both C and Fortran libraries)
 - [nc4fortran](https://github.com/geospace-code/nc4fortran)
 
-You must also have CMake installed on your machine. To build and run PhotoDecomp locally,open a terminal window, navigate to a folder where you would like the PhotoDecomp files to exist, and run the following commands:
+You must also have CMake installed on your machine. To build and run TUV-x locally,
+open a terminal window, navigate to a folder where you would like the TUV-x files to exist,
+and run the following commands:
 
 ```
 git clone --recurse-submodules https://github.com/NCAR/photo-decomp.git

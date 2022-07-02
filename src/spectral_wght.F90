@@ -85,7 +85,7 @@ contains
     use musica_string,                   only : string_t
     use tuvx_netcdf_util,                only : netcdf_t
     use tuvx_util,                       only : inter2
-    use musica_assert,                   only : die_msg
+    use musica_assert,                   only : assert_msg
     use tuvx_grid,                       only : grid_t
     use tuvx_profile,                    only : profile_t
 
@@ -111,7 +111,6 @@ contains
     real(dk), allocatable :: data_lambda(:)
     real(dk), allocatable :: data_parameter(:)
     logical(lk) :: found
-    character(len=:), allocatable :: msg
     type(netcdf_t), allocatable :: netcdf_obj
     type(string_t), allocatable :: netcdfFiles(:)
     type(string_t)              :: Handle
@@ -132,10 +131,9 @@ file_loop: &
         !> Read netcdf spectral wght parameters
         call netcdf_obj%read_netcdf_file( filespec=netcdfFiles(fileNdx)%to_char(), Hdr=Hdr )
         nParms = size(netcdf_obj%parameters,dim=2)
-        if( nParms < 1 ) then
-          write(msg,*) Iam//'File: ',trim(netcdfFiles(fileNdx)%to_char()),'  parameters array has < 1 column'
-          call die_msg( 400000002, msg )
-        endif
+        call assert_msg( 400000002, nParms > 0, Iam//'File: ' //             &
+                         trim(netcdfFiles(fileNdx)%to_char()) //             &
+                         '  parameters array has < 1 column' )
 
         !> Interpolate from data to model wavelength grid
         if( allocated(netcdf_obj%wavelength) ) then

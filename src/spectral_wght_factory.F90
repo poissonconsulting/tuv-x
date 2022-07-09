@@ -57,6 +57,8 @@ contains
     select case( spectral_wght_type%to_char() )
       case( 'base' )
         new_spectral_wght_t => spectral_wght_t( config, grid_warehouse, profile_warehouse )
+      case( 'Notch Filter' )
+        new_spectral_wght_t => spectral_wght_notch_filter_t( config, grid_warehouse, profile_warehouse )
       case( 'Gaussian' )
         new_spectral_wght_t => spectral_wght_gaussian_t( config, grid_warehouse, profile_warehouse )
       case( 'Eppley UV Photometer' )

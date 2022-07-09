@@ -16,6 +16,7 @@ module tuvx_core
   use tuvx_la_sr_bands,              only : la_srb_t
   use tuvx_radiative_transfer,   only : radXfer_component_core_t
   use tuvx_photolysis_rates,           only : photolysis_rates_t
+  use tuvx_dose_rates,                 only : dose_rates_t
 
   implicit none
 
@@ -30,6 +31,7 @@ module tuvx_core
     type(string_t), allocatable         :: diagnostics_(:)
     type(radXfer_component_core_t), pointer    :: radXfer_component_ => null()
     type(photolysis_rates_t), pointer :: photorates_component_ => null()
+    type(dose_rates_t),       pointer :: doserates_component_ => null()
   contains
     procedure :: run
     final     :: finalize
@@ -66,7 +68,7 @@ contains
     type(string_t)              :: Handle
     class(iterator_t), pointer  :: iter
     class(profile_t),  pointer  :: aProfile
-    type(string_t)              :: required_keys(3), optional_keys(1)
+    type(string_t)              :: required_keys(3), optional_keys(2)
 
     call core_config%from_file( config_flsp%to_char() )
 
@@ -75,6 +77,7 @@ contains
     required_keys(2) = "grids"
     required_keys(3) = "profiles"
     optional_keys(1) = "photolysis reactions"
+    optional_keys(2) = "dose rates"
     call assert_msg( 255400232,                                               &
                      core_config%validate( required_keys, optional_keys ),    &
                      "Bad configuration data format for tuv-x core." )
@@ -118,7 +121,7 @@ contains
                            Iam, found = found )
     if( .not. found ) allocate( photolysis_core_obj%diagnostics_( 0 ) )
 
-    ! photo and dose rate components
+    ! photolysis rate constants
     call core_config%get( "photolysis reactions", child_config, Iam,          &
                           found = found )
     if( found ) then
@@ -126,6 +129,14 @@ contains
           photolysis_rates_t( child_config,                                   &
                               photolysis_core_obj%GridWareHouse_,             &
                               photolysis_core_obj%ProfileWareHouse_ )
+    end if
+
+    ! dose rates
+    call core_config%get( "dose rates", child_config, Iam, found = found )
+    if( found ) then
+      photolysis_core_obj%doserates_component_ => &
+          dose_rates_t( child_config, photolysis_core_obj%GridWareHouse_,     &
+                        photolysis_core_obj%ProfileWareHouse_ )
     end if
 
     !> instantiate and initialize spherical geometry type
@@ -139,11 +150,11 @@ contains
 
   subroutine run( this )
 
-  use tuvx_profile,                 only : profile_t
-  use tuvx_radiator_warehouse,      only : radiator_warehouse_t
-  use tuvx_radiator,                only : radiator_t
-  use tuvx_radiative_transfer_solver,        only : radField_t
-  use tuvx_diagnostic_util,                        only : diagout
+  use tuvx_profile,                    only : profile_t
+  use tuvx_radiator_warehouse,         only : radiator_warehouse_t
+  use tuvx_radiator,                   only : radiator_t
+  use tuvx_radiative_transfer_solver,  only : radField_t
+  use tuvx_diagnostic_util,            only : diagout
 
   !> Arguments
   class(photolysis_core_t), intent(inout)  :: this
@@ -153,6 +164,7 @@ contains
 
   integer(ik)                     :: i_ndx, i_diag
   real(dk), allocatable           :: photoRates(:,:)
+  real(dk), allocatable           :: doseRates(:,:)
   character(len=2)                :: number
   class(profile_t),       pointer :: SZAngles => null( )
   class(radiator_t),      pointer :: aRadiator => null()
@@ -183,6 +195,12 @@ sza_loop: &
       call this%photorates_component_%get( this%la_srb_, this%sphericalGeom_, &
                                               this%GridWareHouse_, this%ProfileWareHouse_, &
                                               radiationFld, photoRates, number )
+    elseif( associated(this%doserates_component_) ) then
+      if( allocated(doseRates) ) then
+        deallocate(doseRates)
+      endif
+      call this%doserates_component_%get( this%GridWareHouse_, this%ProfileWareHouse_, &
+                                          radiationFld, doseRates, number )
     endif
     deallocate( radiationFld )
   enddo sza_loop
@@ -241,6 +259,10 @@ sza_loop: &
 
     if( associated( this%photorates_component_ ) ) then
       deallocate( this%photorates_component_ )
+    end if
+
+    if( associated( this%doserates_component_ ) ) then
+      deallocate( this%doserates_component_ )
     end if
 
   end subroutine finalize

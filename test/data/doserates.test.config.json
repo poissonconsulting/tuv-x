@@ -1,0 +1,287 @@
+{
+   "grids": {
+      "Vertical Z": {
+         "Grid type": "Equal interval",
+         "Grid begins at" : 0.0,
+         "Grid ends at" : 120.0,
+         "Grid cell delta" : 1.0
+      },
+      "Photolysis, wavelength": {
+         "Grid type": "From csv file",
+         "Filespec": "data/DATAE1/GRIDS/combined.grid"
+      },
+      "Time, hrs": {
+         "Grid type": "From config file",
+         "Values": [ 12.0, 14.0, 16.0, 18.0, 20.0 ]
+      }
+   },
+   "profiles": {
+      "O3": {
+         "Profile type": "O3 from csv file",
+         "Filespec": "data/DATAE1/ATM/ussa.ozone"
+      },
+      "Air": {
+         "Profile type": "Air from csv file",
+         "Filespec": "data/DATAE1/ATM/ussa.dens"
+      },
+      "O2": {
+         "Profile type": "O2 from csv file",
+         "Filespec": "data/DATAE1/ATM/ussa.dens"
+      },
+      "Temperature": {
+         "Profile type": "From csv file",
+         "Filespec": "data/DATAE1/ATM/ussa.temp"
+      },
+      "Sza": {
+         "Profile type": "Sza from time"
+      },
+      "Earth sun AU": {
+         "Profile type": "Earth sun distance"
+      },
+      "Surface albedo": {
+         "Profile type": "From config file",
+         "Uniform value": 0.10,
+         "Grid": "Photolysis, wavelength"
+      },
+      "Etfl": {
+         "Profile type": "Etfl from csv file",
+         "Filespec": ["data/DATAE1/SUNNEW/susim_hi.flx",
+                      "data/DATAE1/SUNNEW/atlas3_1994_317_a.dat",
+                      "data/DATAE1/SUNNEW/sao2010.solref.converted",
+                      "data/DATAE1/SUNNEW/neckel.flx"],
+         "Interpolator": ["","","","interp4"]
+      }
+   },
+   "radiative transfer": {
+      "cross sections": [
+         {
+            "name": "air",
+            "type": "air"
+         },
+         {
+            "name": "O3",
+            "netcdf files": ["data/XSQY/O3_cross_section_1.nc","data/XSQY/O3_cross_section_2.nc","data/XSQY/O3_cross_section_3.nc","data/XSQY/O3_cross_section_4.nc"],
+            "type": "O3"
+         },
+         {
+            "name": "O2",
+            "netcdf files": ["data/XSQY/O2_cross_section_1.nc"],
+            "type": "base",
+            "lower extrapolation": { "type": "boundary" }
+         }
+      ],
+      "radiators": [
+         {
+            "name": "air",
+            "type": "base",
+            "cross section": "air",
+            "vertical profile": "Air"
+         },
+         {
+            "name": "O2",
+            "type": "base",
+            "cross section": "O2",
+            "vertical profile": "O2"
+         },
+         {
+            "name": "O3",
+            "type": "base",
+            "cross section": "O3",
+            "vertical profile": "O3"
+         },
+         {
+            "name": "aerosols",
+            "type": "aerosol",
+            "optical depths": [2.40e-01, 1.06e-01, 4.56e-02, 1.91e-02, 1.01e-02, 7.63e-03,
+                               5.38e-03, 5.00e-03, 5.15e-03, 4.94e-03, 4.82e-03, 4.51e-03,
+                               4.74e-03, 4.37e-03, 4.28e-03, 4.03e-03, 3.83e-03, 3.78e-03,
+                               3.88e-03, 3.08e-03, 2.26e-03, 1.64e-03, 1.23e-03, 9.45e-04,
+                               7.49e-04, 6.30e-04, 5.50e-04, 4.21e-04, 3.22e-04, 2.48e-04,
+                               1.90e-04, 1.45e-04, 1.11e-04, 8.51e-05, 6.52e-05, 5.00e-05,
+                               3.83e-05, 2.93e-05, 2.25e-05, 1.72e-05, 1.32e-05, 1.01e-05,
+                               7.72e-06, 5.91e-06, 4.53e-06, 3.46e-06, 2.66e-06, 2.04e-06,
+                               1.56e-06, 1.19e-06, 9.14e-07],
+            "single scattering albedo": 0.99,
+            "asymmetry factor": 0.61,
+            "550 nm optical depth": 0.235
+         }
+      ],
+      "Diagnostics" : [ "air", "aerosols", "O2", "O3" ]
+   },
+   "dose rates": {
+      "RB Meter, model 501": {
+         "weights": {
+            "netcdf files": ["data/SW/RB-Meter,model_501_spectral_wght_1.nc"],
+            "type": "base",
+            "lower extrapolation": { "type": "boundary" }
+         }
+      },
+      "Eppley UV Photometer": {
+         "weights": {
+            "netcdf files": ["data/SW/Eppley-UV-Photometer_spectral_wght_1.nc"],
+            "type": "Eppley UV Photometer",
+            "lower extrapolation": { "type": "boundary" }
+         }
+      },
+      "UV-A, 315-400 nm": {
+         "weights": {
+            "type": "Notch Filter",
+            "notch filter begin": 315.0,
+            "notch filter end": 400.0
+         }
+      },
+      "UV-B, 280-315 nm": {
+         "weights": {
+            "type": "Notch Filter",
+            "notch filter begin": 280.0,
+            "notch filter end": 315.0
+         }
+      },
+      "UV-B*, 280-320 nm": {
+         "weights": {
+            "type": "Notch Filter",
+            "notch filter begin": 280.0,
+            "notch filter end": 320.0
+         }
+      },
+      "vis+, > 400 nm": {
+         "weights": {
+            "type": "Notch Filter",
+            "notch filter begin": 400.0,
+            "notch filter end": 700.0
+         }
+      },
+      "Gaussian, 305 nm, 10 nm FWHM": {
+         "weights": {
+            "type": "Gaussian",
+            "centroid": 305.0
+         }
+      },
+      "Gaussian, 320 nm, 10 nm FWHM": {
+         "weights": {
+            "type": "Gaussian",
+            "centroid": 320.0
+         }
+      },
+      "Gaussian, 340 nm, 10 nm FWHM": {
+         "weights": {
+            "type": "Gaussian",
+            "centroid": 340.0
+         }
+      },
+      "Gaussian, 380 nm, 10 nm FWHM": {
+         "weights": {
+            "type": "Gaussian",
+            "centroid": 380.0
+         }
+      },
+      "SCUP-human (de Gruijl and van der Leun, 1994)": {
+         "weights": {
+            "netcdf files": ["data/SW/SCUP-human(de Gruijl and van der Leun,1994)_spectral_wght_1.nc"],
+            "type": "base",
+            "lower extrapolation": { "type": "boundary" }
+         }
+      },
+      "PAR, 400-700 nm, umol m-2 s-1": {
+         "weights": {
+            "type": "PAR, 400-700 nm, umol m-2 s-1"
+         }
+      }, 
+      "Exponential decay, 14 nm/10": {
+         "weights": {
+            "type": "Exponential decay, 14 nm/10"
+         }
+      }, 
+      "SCUP-mice (de Gruijl et al., 1993)": {
+         "weights": {
+            "type": "SCUP-mice (de Gruijl et al., 1993)"
+         }
+      }, 
+      "Standard human erythema (Webb et al., 2011)": {
+         "weights": {
+            "type": "Standard human erythema (Webb et al., 2011)"
+         }
+      }, 
+      "UV index (WMO, 1994; Webb et al., 2011)": {
+         "weights": {
+            "type": "UV index (WMO, 1994; Webb et al., 2011)"
+         }
+      }, 
+      "Phytoplankton (Boucher et al., 1994)": {
+         "weights": {
+            "type": "Phytoplankton (Boucher et al., 1994)"
+         }
+      }, 
+      "Plant damage (Caldwell, 1971)": {
+         "weights": {
+            "type": "Plant damage (Caldwell, 1971)"
+         }
+      }, 
+      "Plant damage,Flint&Caldwell,2003,orig.": {
+         "weights": {
+            "type": "Plant damage,Flint&Caldwell,2003,orig."
+         }
+      }, 
+      "Plant damage,Flint&Caldwell,2003,ext390": {
+         "weights": {
+            "type": "Plant damage,Flint&Caldwell,2003,ext390"
+         }
+      }, 
+      "Occupational TLV (ACGIH, 1992)": {
+         "weights": {
+            "netcdf files": ["data/SW/Occupational TLV (ACGIH,1992)_spectral_wght_1.nc"],
+            "type": "base",
+            "lower extrapolation": { "type": "boundary" }
+         }
+      },
+      "Phytoplankton, phaeo (Cullen et al., 1992)": {
+         "weights": {
+            "netcdf files": ["data/SW/Phytoplankton, phaeo(Cullen et al. 1992)_spectral_wght_1.nc"],
+            "type": "base",
+            "lower extrapolation": { "type": "boundary" }
+         }
+      },
+      "Phytoplankton, proro (Cullen et al., 1992)": {
+         "weights": {
+            "netcdf files": ["data/SW/Phytoplankton, proro(Cullen et al. 1992)_spectral_wght_1.nc"],
+            "type": "base",
+            "lower extrapolation": { "type": "boundary" }
+         }
+      },
+      "Cataract, pig (Oriowo et al., 2001)": {
+         "weights": {
+            "netcdf files": ["data/SW/Cataract, pig(Oriowo et al.,2001)_spectral_wght_1.nc"],
+            "type": "base",
+            "lower extrapolation": { "type": "boundary" }
+         }
+      },
+      "Previtamin-D3 (CIE 2006)": {
+         "weights": {
+            "netcdf files": ["data/SW/Previtamin-D3 (CIE 2006)_spectral_wght_1.nc"],
+            "type": "base",
+            "lower extrapolation": { "type": "boundary" }
+         }
+      },
+      "NMSC (CIE 2006)": {
+         "weights": {
+            "netcdf files": ["data/SW/NMSC (CIE 2006)_spectral_wght_1.nc"],
+            "type": "base",
+            "lower extrapolation": { "type": "boundary" }
+         }
+      },
+      "DNA damage, in vitro (Setlow, 1974)": {
+         "weights": {
+            "netcdf files": ["data/SW/DNA_damage_in_vitro(Setlow,1974)_spectral_wght_1.nc"],
+            "type": "base",
+            "lower extrapolation": { "type": "boundary" }
+         }
+      }, 
+      "Erythema, humans (Anders et al., 1995)": {
+         "weights": {
+            "netcdf files": ["data/SW/Erythema,humans(Anders et al.,1995)_spectral_wght_1.nc"],
+            "type": "base",
+            "lower extrapolation": { "type": "boundary" }
+         }
+      } 
+   }
+}

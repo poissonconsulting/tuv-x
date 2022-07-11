@@ -23,7 +23,7 @@ module tuvx_diagnostic_util
 
    integer :: ios
 
-   write(*,*) 'diagnostic_1d: entering'
+!  write(*,*) 'diagnostic_1d: entering'
 
    open(unit=44,file='OUTPUTS/'//filename,form='unformatted',iostat=ios)
    if( ios /= 0 ) then
@@ -38,7 +38,7 @@ module tuvx_diagnostic_util
 
    close(unit=44)
 
-   write(*,*) 'diagnostic_1d: exiting'
+!  write(*,*) 'diagnostic_1d: exiting'
 
    end subroutine diagnostic_1d
 
@@ -52,7 +52,7 @@ module tuvx_diagnostic_util
    integer :: ios
    character(len=256) :: iomsg
 
-   write(*,*) Iam // 'entering'
+!  write(*,*) Iam // 'entering'
 
    open(unit=44,file='OUTPUTS/'//filename,form='unformatted',iostat=ios,iomsg=iomsg)
    if( ios /= 0 ) then
@@ -69,7 +69,7 @@ module tuvx_diagnostic_util
 
    close(unit=44)
 
-   write(*,*) Iam // 'exiting'
+!  write(*,*) Iam // 'exiting'
 
    end subroutine diagnostic_1d_dk
 

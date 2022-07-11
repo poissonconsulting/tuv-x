@@ -683,6 +683,12 @@
 
       CALL swphys(nw,wl,wc, ns,sw,slabel)
       CALL swbiol(nw,wl,wc, ns,sw,slabel)
+      OPEN(unit=33,file='OUTPUTS/annotatedslabels.old',form='formatted')
+      DO IS = 1,NS
+        WRITE(33,'(a)') trim(slabel(is))
+      ENDDO
+      CLOSE(unit=33)
+
       IF( .not. Obj_photo_rates ) THEN
         CALL swchem(nw,wl,nz,tlev,aircon, nj,sj,jlabel,tpflag)
       ENDIF
@@ -936,6 +942,11 @@ C      CALL setany(nz,z,nw,wl,aircol, dt_any,om_any, g_any)
          write(unit=33) 
      $     reshape( sj(1:nj,1:nz,1:nbins),(/nz,nbins,nj/),
      $              order=(/3,1,2/) )
+         CLOSE(unit=33)
+* Output spectral wgths for regression testing
+         OPEN(unit=33,
+     $        file='OUTPUTS/sw.'//number//'.old',form='unformatted')
+         write(unit=33) transpose( sw(1:ns,1:nbins) )
          CLOSE(unit=33)
 
          if( .not. do_rayleigh ) dtrl = rZERO

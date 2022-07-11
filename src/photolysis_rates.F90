@@ -35,6 +35,10 @@ module tuvx_photolysis_rates
   contains
     !> Returns the photolysis rate constants for a given set of conditions
     procedure :: get
+    !> Returns the names of each photolysis reaction
+    procedure :: labels
+    !> Outputs photolysis rate constants to a NetCDF file
+    procedure :: output
     !> Finalize the object
     final :: finalize
   end type photolysis_rates_t
@@ -262,6 +266,51 @@ rate_loop:                                                                    &
     deallocate( etfl )
 
   end subroutine get
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !> Returns the names of each photolysis reaction
+  function labels( this )
+
+    !> Photolysis reaction names
+    type(string_t), allocatable :: labels(:)
+    !> Photolysis rate calculator
+    class(photolysis_rates_t), intent(in) :: this
+
+    labels = this%handles_
+
+  end function labels
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !> Outputs photolysis rate constants to a NetCDF file
+  subroutine output( this, rate_constants, file_path )
+
+    use musica_assert,                 only : assert_msg
+    use nc4fortran,                    only : netcdf_file
+
+    !> Photolysis rate calculator
+    class(photolysis_rates_t), intent(in) :: this
+    !> Photolysis rate constants to output (vertical level, photo reaction)
+    real(dk),                  intent(in) :: rate_constants(:,:)
+    !> File path to output to
+    character(len=*),          intent(in) :: file_path
+
+    type(netcdf_file) :: output_file
+    integer :: i_rxn
+
+    call assert_msg( 329279063,                                               &
+                     size( this%handles_ ) .eq. size( rate_constants, 2 ),    &
+                     "Size mismatch in outputting photolysis rate constants" )
+    call output_file%open( file_path, action='w' )
+    do i_rxn = 1, size( this%handles_ )
+      call output_file%write( this%handles_( i_rxn )%val_,                    &
+                              rate_constants( :, i_rxn ),                     &
+                              (/ "vertical_level" /) )
+    end do
+    call output_file%close( )
+
+  end subroutine output
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

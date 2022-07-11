@@ -15,16 +15,6 @@ Stand-alone TUV-x can be run from the command-line as:
 The ``configuration_file.json`` contains the TUV-x configuration information described in
 :doc:`configuration`.
 
-TUV-x will generate a number of output files in a folder named ``OUTPUT/``. These fall
-into several general catagories summaraized here.
-
-+--------------------+-------------------------------------------------------+
-| File name pattern  | Description                                           |
-+====================+=======================================================+
-| ``*->*.qyld.new``  | Quantum yield for a photolysis reaction               |
-+--------------------+-------------------------------------------------------+
-| ``*->*.xsect.new`` | Cross section for a photolyzing species               |
-+--------------------+-------------------------------------------------------+
-| ``*->*.xsqy.new``  | Product of cross-section and quantum yield for a      |
-|                    | photolysis reaction                                   |
-+--------------------+-------------------------------------------------------+
+TUV-x will output a file named ``photolysis_rate_constants.nc`` in the working directory. This
+file will contain the photolysis rate constants for each reaction at each vertical level
+for every time specified in the configuration file.

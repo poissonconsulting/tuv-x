@@ -108,11 +108,8 @@ contains
     class(profile_t), pointer     :: mdlTemperature => null( )
     type(string_t)                :: Handle
 
-    Handle = 'height'
     zGrid => grid_warehouse%get_grid( "height", "km" )
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    Handle = 'temperature'
     mdlTemperature => profile_warehouse%get_profile( "temperature", "K" )
 
     nzdim = zGrid%ncells_ + 1

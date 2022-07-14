@@ -128,7 +128,6 @@ contains
     class(grid_t), pointer :: lambdaGrid
 
     !> Get model wavelength grids
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     !> get cross section netcdf filespec
@@ -215,7 +214,6 @@ file_loop: &
     type(string_t)             :: Handle
     real(dk),      allocatable :: wrkCrossSection(:,:)
 
-    Handle = 'height'
     zGrid => grid_warehouse%get_grid( "height", "km" )
 
     nzdim = zGrid%ncells_ + 1

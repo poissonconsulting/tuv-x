@@ -86,9 +86,7 @@ contains
     type(string_t) :: Handle
 
     ! Get model wavelength grid
-    Handle = 'height'
     zGrid => grid_warehouse%get_grid( "height", "km" )
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     allocate( wrkQuantumYield( lambdaGrid%ncells_) )

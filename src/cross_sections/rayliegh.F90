@@ -101,9 +101,7 @@ contains
     real(musica_dk), allocatable  :: pwr(:), wrk(:)
     real(musica_dk), allocatable  :: wrkCrossSection(:,:)
 
-    Handle = 'height'
     zGrid => grid_warehouse%get_grid( "height", "km" )
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     nzdim = zGrid%ncells_ + 1

@@ -81,7 +81,6 @@ contains
     allocate( this )
 
     !> Get model wavelength grid
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     ! get quantum yield netcdf filespec
@@ -207,11 +206,8 @@ file_loop: &
     class(grid_t),    pointer     :: lambdaGrid => null( )
     class(profile_t), pointer     :: mdlTemperature => null( )
 
-    Handle = 'height'
     zGrid => grid_warehouse%get_grid( "height", "km" )
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    Handle = 'temperature'
     mdlTemperature => profile_warehouse%get_profile( "temperature", "K" )
 
     allocate( wrkQuantumYield( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )

@@ -93,11 +93,8 @@ contains
     class(profile_t), pointer     :: mdlDensity => null( )
     type(string_t)                :: Handle
 
-    Handle = 'height'
     zGrid => grid_warehouse%get_grid( "height", "km" )
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    Handle = 'air'
     mdlDensity => profile_warehouse%get_profile( "air", "molecule cm-3" )
 
     nzdim = zGrid%ncells_ + iONE

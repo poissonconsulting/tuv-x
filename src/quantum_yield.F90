@@ -94,7 +94,6 @@ contains
     class(grid_t),  pointer       :: lambdaGrid => null( )
 
     ! Get model wavelength grid
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     ! get quantum yield netcdf filespec
@@ -185,7 +184,6 @@ file_loop: &
     type(string_t)              :: Handle
     real(dk),       allocatable :: wrkQuantumYield(:,:)
 
-    Handle = 'height'
     zGrid => grid_warehouse%get_grid( "height", "km" )
 
     allocate( wrkQuantumYield(                                                &

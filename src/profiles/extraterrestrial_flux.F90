@@ -84,7 +84,6 @@ contains
       Interpolator = defaultInterpolator
     endif
 
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
     nBins = lambdaGrid%ncells_
 

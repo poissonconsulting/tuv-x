@@ -82,9 +82,7 @@ contains
 
     allocate( this )
 
-    Handle = 'height'
     zGrid => grid_warehouse%get_grid( "height", "km" )
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     ! Get radiator "Handle"

@@ -83,9 +83,7 @@ contains
     class(grid_t), pointer :: lambdaGrid => null( )
     type(string_t)         :: Handle
 
-    Handle = 'height'
     zGrid => grid_warehouse%get_grid( "height", "km" )
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     nzdim = zGrid%ncells_ + 1

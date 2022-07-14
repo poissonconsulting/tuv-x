@@ -84,8 +84,7 @@ contains
     type(string_t)         :: Handle
     real(dk), allocatable  :: wrkQuantumYield(:)
 
-    Handle = 'height' ; zGrid => grid_warehouse%get_grid( "height", "km" )
-    Handle = 'wavelength'
+    zGrid => grid_warehouse%get_grid( "height", "km" )
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     allocate( wrkQuantumYield( lambdaGrid%ncells_ ) )

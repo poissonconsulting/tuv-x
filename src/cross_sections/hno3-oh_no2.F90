@@ -80,7 +80,6 @@ contains
                      "Bad configuration data format for "//                   &
                      "HNO3 cross section." )
 
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     ! get cross section netcdf filespec

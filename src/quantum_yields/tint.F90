@@ -81,7 +81,6 @@ contains
     allocate( this )
 
     ! Get model wavelength grid
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     ! get quantum yield netcdf filespec

@@ -1,0 +1,6 @@
+{
+   "Temperature": {
+      "Profile type": "From csv file",
+      "Filespec": "data/DATAE1/ATM/ussa.temp"
+   }
+}

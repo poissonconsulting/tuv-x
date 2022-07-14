@@ -34,6 +34,7 @@ module tuvx_core
     type(dose_rates_t),       pointer :: doserates_component_ => null()
   contains
     procedure :: run
+    procedure :: output
     final     :: finalize
   end type photolysis_core_t
 
@@ -163,6 +164,8 @@ contains
   character(len=*), parameter :: Iam = 'Photolysis core run: '
 
   integer(ik)                     :: i_ndx, i_diag
+  ! photolysis rate constants (time, vertical level, reaction)
+  real(dk), allocatable           :: all_photo_rates(:,:,:)
   real(dk), allocatable           :: photoRates(:,:)
   real(dk), allocatable           :: doseRates(:,:)
   character(len=2)                :: number
@@ -195,6 +198,12 @@ sza_loop: &
       call this%photorates_component_%get( this%la_srb_, this%sphericalGeom_, &
                                               this%GridWareHouse_, this%ProfileWareHouse_, &
                                               radiationFld, photoRates, number )
+      if( .not. allocated( all_photo_rates ) ) then
+        allocate( all_photo_rates( size( SZAngles%edge_val_ ),                &
+                                   size( photoRates, 1 ),                     &
+                                   size( photoRates, 2 ) ) )
+      end if
+      all_photo_rates( i_ndx, :, : ) = photoRates(:,:)
     elseif( associated(this%doserates_component_) ) then
       if( allocated(doseRates) ) then
         deallocate(doseRates)
@@ -204,6 +213,11 @@ sza_loop: &
     endif
     deallocate( radiationFld )
   enddo sza_loop
+
+  ! output photolysis rate constants
+  if( associated( this%photorates_component_ ) ) then
+    call this%output( all_photo_rates, "photolysis_rate_constants.nc" )
+  end if
 
   ! diagnostic output
   do i_diag = 1, size( this%diagnostics_ )
@@ -228,6 +242,63 @@ sza_loop: &
   write(*,*) Iam // 'exiting'
 
   end subroutine run
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !> Outputs calculated photolysis rate constants
+  subroutine output( this, values, file_path )
+
+    use musica_assert,                 only : assert
+    use nc4fortran,                    only : netcdf_file
+    use tuvx_grid,                     only : grid_t
+    use tuvx_profile,                  only : profile_t
+
+    !> TUV-x core
+    class(photolysis_core_t), intent(in) :: this
+    !> Photolysis rate constants (time, vertical level, reaction)
+    real(dk),                 intent(in) :: values(:,:,:)
+    !> File path to output to
+    character(len=*),         intent(in) :: file_path
+
+    type(netcdf_file) :: output_file
+    integer           :: i_rxn
+    type(string_t)    :: key
+    type(string_t), allocatable :: rxn_names(:)
+    class(profile_t),   pointer :: sza
+    class(grid_t),      pointer :: time, vertical
+
+    call assert( 337750978, associated( this%photorates_component_ ) )
+    key = "Sza"; sza => this%ProfileWarehouse_%get_profile( key )
+    key = "Time, hrs"; time => this%GridWareHouse_%get_grid( key )
+    key = "Vertical Z"; vertical => this%GridWareHouse_%get_grid( key )
+    rxn_names = this%photorates_component_%labels( )
+    call assert( 182934700,                                                   &
+                 size( sza%edge_val_ ) .eq. size( time%edge_ ) )
+    call assert( 394136298,                                                   &
+                 size( values, 1 ) .eq. size( time%edge_ ) )
+    call assert( 664629694,                                                   &
+                 size( values, 2 ) .eq. size( vertical%edge_ ) )
+    call assert( 266929622,                                                   &
+                 size( values, 3 ) .eq. size( rxn_names ) )
+    call output_file%open( file_path, action='w' )
+    call output_file%write( "altitude", vertical%edge_,                       &
+                            (/ "vertical_level" /) )
+    call output_file%write_attribute( "altitude", "units", "km" )
+    call output_file%write( "time", time%edge_, (/ "time" /) )
+    call output_file%write_attribute( "time", "units", "hr" )
+    call output_file%write( "solar zenith angle", sza%edge_val_, (/ "time" /) )
+    call output_file%write_attribute( "solar zenith angle", "units",          &
+                                      "degrees" )
+    do i_rxn = 1, size( rxn_names )
+      call output_file%write( rxn_names( i_rxn )%val_, values( :, :, i_rxn ), &
+                              (/ "time          ", "vertical_level" /) )
+    end do
+    call output_file%close( )
+    deallocate( sza )
+    deallocate( time )
+    deallocate( vertical )
+
+  end subroutine output
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

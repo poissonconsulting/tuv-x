@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'Photo-decomp'
+project = 'TUV-x'
 copyright = '2022, NCAR/UCAR'
 author = 'NCAR/UCAR'
 

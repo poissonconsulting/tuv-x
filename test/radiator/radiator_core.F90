@@ -111,19 +111,19 @@ contains
     write(*,*) Iam // 'entering'
 
     !> Get copy of grid
-    Handle = 'Vertical Z'
+    Handle = 'vertical'
     zGrid => this%theGridWarehouse_%get_grid( Handle )
     call assert( 412238768, zGrid%ncells_ .eq. 120_ik )
     call assert( 412238769, all( zGrid%delta_ .eq. 1._dk ) )
 
     !> Get copy of wavelength grid
-    Handle = 'Photolysis, wavelength'
+    Handle = 'wavelength'
     lambdaGrid => this%theGridWarehouse_%get_grid( Handle )
     call assert( 412238766, all( lambdaGrid%edge_ > 0._dk ) )
     call assert( 412238767, all( lambdaGrid%delta_ > 0._dk ) )
 
     !> Get copy of the Air Profile
-    Handle = 'Air'
+    Handle = 'air'
     AirProfile => this%theProfileWarehouse_%get_Profile( Handle )
     call assert( 412238771, all( AirProfile%delta_val_ < 0._dk ) )
     call assert( 412238771, all( AirProfile%layer_dens_ > 0._dk ) )
@@ -136,7 +136,7 @@ contains
     write(*,'(1p10g15.7)') AirProfile%burden_dens_
 
     !> Get copy of the temperature Profile
-    Handle = 'Temperature'
+    Handle = 'temperature'
     TemperatureProfile => this%theProfileWarehouse_%get_Profile( Handle )
     call assert( 412238772, all( TemperatureProfile%edge_val_ < 400._dk ) )
     call assert( 412238772, all( TemperatureProfile%edge_val_ > 150._dk ) )

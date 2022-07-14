@@ -109,7 +109,7 @@ contains
 
     close(unit=inUnit)
 
-    Handle = 'Vertical Z'
+    Handle = 'vertical'
     zGrid => grid_warehouse%get_grid( Handle )
     this%ncells_ = zGrid%ncells_
 

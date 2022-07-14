@@ -108,9 +108,9 @@ module tuvx_delta_eddington
 
     allocate( radField )
 
-    Handle = 'Vertical Z' ; zGrid => GridWareHouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength' ; lambdaGrid => GridWareHouse%get_grid( Handle )
-    Handle = 'Surface albedo' ; surfaceAlbedo => ProfileWareHouse%get_Profile( Handle )
+    Handle = 'vertical' ; zGrid => GridWareHouse%get_grid( Handle )
+    Handle = 'wavelength' ; lambdaGrid => GridWareHouse%get_grid( Handle )
+    Handle = 'surface albedo' ; surfaceAlbedo => ProfileWareHouse%get_Profile( Handle )
 
     nlambda = lambdaGrid%ncells_
     allocate( dscat(nlyr,nlambda) )

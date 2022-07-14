@@ -15,7 +15,7 @@ module tuvx_quantum_yield
   public :: quantum_yield_t, quantum_yield_ptr, base_constructor
 
   type quantum_yield_parms_t
-    !> Temperature \todo include units - what is this used for?
+    !> temperature \todo include units - what is this used for?
     real(dk), allocatable :: temperature(:)
     !> Parameters for calculating quantum yields (wavelength, parameter)
     real(dk), allocatable :: array(:,:)
@@ -94,7 +94,7 @@ contains
     class(grid_t),  pointer       :: lambdaGrid => null( )
 
     ! Get model wavelength grid
-    Handle = 'Photolysis, wavelength'
+    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
 
     ! get quantum yield netcdf filespec
@@ -185,7 +185,7 @@ file_loop: &
     type(string_t)              :: Handle
     real(dk),       allocatable :: wrkQuantumYield(:,:)
 
-    Handle = 'Vertical Z'
+    Handle = 'vertical'
     zGrid => grid_warehouse%get_grid( Handle )
 
     allocate( wrkQuantumYield(                                                &

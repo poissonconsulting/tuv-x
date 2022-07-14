@@ -83,7 +83,7 @@ contains
       Interpolator = defaultInterpolator
     endif
 
-    Handle = 'Photolysis, wavelength'
+    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
     nBins = lambdaGrid%ncells_
 

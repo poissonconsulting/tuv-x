@@ -82,9 +82,9 @@ contains
 
     allocate( this )
 
-    Handle = 'Vertical Z'
+    Handle = 'vertical'
     zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength'
+    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
 
     ! Get radiator "Handle"

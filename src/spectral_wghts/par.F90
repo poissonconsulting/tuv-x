@@ -88,7 +88,7 @@ contains
     type(string_t)              :: Handle
     class(grid_t), pointer      :: lambdaGrid => null()
 
-    Handle = 'Photolysis, wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
+    Handle = 'wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
 
     allocate( spectral_wght(lambdaGrid%ncells_) )
 

@@ -96,26 +96,26 @@ contains
     real(dk),         allocatable :: modelTemp(:)
     class(grid_t),    pointer     :: lambdaGrid
     class(grid_t),    pointer     :: zGrid
-    class(profile_t), pointer     :: Temperature
+    class(profile_t), pointer     :: temperature
     type(string_t)                :: Handle
 
-    Handle = 'Photolysis, wavelength'
+    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Vertical Z'
+    Handle = 'vertical'
     zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Temperature'
-    Temperature => profile_warehouse%get_Profile( Handle )
+    Handle = 'temperature'
+    temperature => profile_warehouse%get_Profile( Handle )
 
     nzdim = zGrid%ncells_ + 1
     if( present( at_mid_point ) ) then
       if( at_mid_point ) then
         nzdim = nzdim - 1
-        modelTemp = Temperature%mid_val_
+        modelTemp = temperature%mid_val_
       else
-        modelTemp = Temperature%edge_val_
+        modelTemp = temperature%edge_val_
       endif
     else
-      modelTemp = Temperature%edge_val_
+      modelTemp = temperature%edge_val_
     endif
 
     allocate( cross_section( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )
@@ -141,7 +141,7 @@ contains
 
     deallocate( zGrid )
     deallocate( lambdaGrid )
-    deallocate( Temperature )
+    deallocate( temperature )
 
   end function run
 

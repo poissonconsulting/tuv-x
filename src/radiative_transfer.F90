@@ -186,7 +186,7 @@ contains
     radNdx = this%RadiatorWareHouse_%get_radiator_ndx_from_handle( Handle )
     if( radNdx > 0 ) then
       aRadiator => this%RadiatorWareHouse_%get_radiator( Handle )
-      Handle = 'Air'
+      Handle = 'air'
       airProfile => ProfileWareHouse%get_Profile( Handle )
       allocate( airVcol(airProfile%ncells_),airScol(airProfile%ncells_+1_ik) )
       call SphericalGeom%airmas( airProfile%exo_layer_dens_, airVcol, airScol )

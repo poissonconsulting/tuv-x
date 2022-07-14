@@ -1,12 +1,12 @@
 {
    "grids": {
-      "Vertical Z": {
+      "vertical": {
          "type": "equal interval",
          "begins at" : 0.0,
          "ends at" : 120.0,
          "cell delta" : 1.0
       },
-      "Photolysis, wavelength": {
+      "wavelength": {
          "type": "from csv file",
          "file path": "data/DATAE1/GRIDS/combined.grid"
       }
@@ -16,7 +16,7 @@
          "type": "from csv file",
          "file path": "data/DATAE1/ATM/ussa.ozone"
       },
-      "Air": {
+      "air": {
          "type": "from csv file",
          "file path": "data/DATAE1/ATM/ussa.dens"
       },
@@ -24,7 +24,7 @@
          "type": "O2",
          "file path": "data/DATAE1/ATM/ussa.dens"
       },
-      "Temperature": {
+      "temperature": {
          "type": "from csv file",
          "file path": "data/DATAE1/ATM/ussa.temp"
       },
@@ -32,7 +32,7 @@
          "type": "from csv file",
          "file path": "test/data/test.ozone"
       },
-      "Etfl": {
+      "extraterrestrial flux": {
          "type": "extraterrestrial flux",
          "file path": ["data/DATAE1/SUNNEW/susim_hi.flx",
                       "data/DATAE1/SUNNEW/atlas3_1994_317_a.dat",

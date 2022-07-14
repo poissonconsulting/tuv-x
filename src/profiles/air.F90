@@ -1,7 +1,7 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 !
-!> Air profile type
+!> air profile type
 module tuvx_profile_air
 
   use musica_constants, only : &
@@ -110,7 +110,7 @@ contains
 
     close(unit=inUnit)
 
-    Handle = 'Vertical Z'
+    Handle = 'vertical'
     zGrid => gridWareHouse%get_grid( Handle )
     this%ncells_ = zGrid%ncells_
 

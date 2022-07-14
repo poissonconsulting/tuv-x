@@ -96,11 +96,11 @@ contains
         profile_warehouse_t( child_config, photolysis_core_obj%GridWareHouse_ )
 
     !> Diagnostics for testing
-    Handle = 'Temperature' ; aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( Handle )
+    Handle = 'temperature' ; aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( Handle )
     call diagout( 'vptmp.new', aProfile%edge_val_ )
     deallocate( aProfile )
 
-    Handle = 'Air' ; aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( Handle )
+    Handle = 'air' ; aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( Handle )
     call diagout( 'vpair.new', aProfile%edge_val_ )
     deallocate( aProfile )
 
@@ -178,7 +178,7 @@ contains
   write(*,*) Iam // 'entering'
 
   ! get the solar zenith angles
-  Handle = 'Sza' ; SZAngles => this%ProfileWareHouse_%get_Profile( Handle )
+  Handle = 'solar zenith angle' ; SZAngles => this%ProfileWareHouse_%get_Profile( Handle )
 
   ! calculate the radiation field
 sza_loop: &
@@ -268,9 +268,9 @@ sza_loop: &
     class(grid_t),      pointer :: time, vertical
 
     call assert( 337750978, associated( this%photorates_component_ ) )
-    key = "Sza"; sza => this%ProfileWarehouse_%get_profile( key )
+    key = "solar zenith angle"; sza => this%ProfileWarehouse_%get_profile( key )
     key = "Time, hrs"; time => this%GridWareHouse_%get_grid( key )
-    key = "Vertical Z"; vertical => this%GridWareHouse_%get_grid( key )
+    key = "vertical"; vertical => this%GridWareHouse_%get_grid( key )
     rxn_names = this%photorates_component_%labels( )
     call assert( 182934700,                                                   &
                  size( sza%edge_val_ ) .eq. size( time%edge_ ) )

@@ -91,7 +91,7 @@ contains
     allocate( this )
 
     ! Get model wavelength grids
-    Handle = 'Photolysis, wavelength'
+    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
 
     ! get cross section netcdf filespec
@@ -230,11 +230,11 @@ file_loop: &
     class(profile_t), pointer     :: mdlTemperature => null( )
     type(string_t)                :: Handle
 
-    Handle = 'Vertical Z'
+    Handle = 'vertical'
     zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength'
+    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Temperature'
+    Handle = 'temperature'
     mdlTemperature => profile_warehouse%get_Profile( Handle )
 
     ! temperature at model cell midpoint or edge
@@ -309,7 +309,7 @@ lambda_loop:                                                                  &
 
     !> O3 tint cross section
     class(cross_section_o3_tint_t), intent(in) :: this
-    !> Air density [molec cm-3]
+    !> air density [molec cm-3]
     real(dk),                       intent(in) :: atmDensity
     !> Vacuum wavelength [nm]
     real(dk),                       intent(in) :: wavelength(:)

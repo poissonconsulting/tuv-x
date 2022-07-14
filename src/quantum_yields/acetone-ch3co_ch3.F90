@@ -106,13 +106,13 @@ contains
     real(dk)    :: dumexp
     real(dk)    :: fco, fac
 
-    Handle = 'Vertical Z'
+    Handle = 'vertical'
     zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength'
+    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Temperature'
+    Handle = 'temperature'
     mdlTemperature => profile_warehouse%get_profile( Handle )
-    Handle = 'Air'
+    Handle = 'air'
     mdlDensity => profile_warehouse%get_profile( Handle )
 
     nzdim = zGrid%ncells_ + 1

@@ -1,6 +1,6 @@
 {
    "grids": {
-      "Vertical Z": {
+      "vertical": {
          "type": "equal interval",
          "begins at" : 0.0,
          "ends at" : 120.0,

@@ -83,7 +83,7 @@ module tuvx_la_sr_bands
 
       allocate( la_srb_component )
 
-      Handle = 'Photolysis, wavelength' ; lambdaGrid => gridWareHouse%get_grid( Handle )
+      Handle = 'wavelength' ; lambdaGrid => gridWareHouse%get_grid( Handle )
 
       !> Are la and srb grids fully "inside" the model grid?
       la_srb_component%has_la  = lambdaGrid%edge_(iONE) <= wlla(iONE) .and. lambdaGrid%edge_(lambdaGrid%ncells_+iONE) >= wlla(kla)
@@ -223,12 +223,12 @@ has_la_srb: &
 !-----------------------------------------------------------------------------
 !> get specific grids and vertical profiles
 !-----------------------------------------------------------------------------
-      Handle = 'Vertical Z'
+      Handle = 'vertical'
       zGrid => gridWareHouse%get_grid( Handle )
-      Handle = 'Photolysis, wavelength'
+      Handle = 'wavelength'
       lambdaGrid => gridWareHouse%get_grid( Handle )
 
-      Handle = 'Temperature'
+      Handle = 'temperature'
       temperature => ProfileWareHouse%get_Profile( Handle )
 
       nw   = lambdaGrid%ncells_ + iONE
@@ -356,12 +356,12 @@ has_la_srb: &
 !-----------------------------------------------------------------------------
 !> get specific grids and vertical profiles
 !-----------------------------------------------------------------------------
-      Handle = 'Vertical Z'
+      Handle = 'vertical'
       zGrid => gridWareHouse%get_grid( Handle )
-      Handle = 'Photolysis, wavelength'
+      Handle = 'wavelength'
       lambdaGrid => gridWareHouse%get_grid( Handle )
 
-      Handle = 'Temperature'
+      Handle = 'temperature'
       temperature => ProfileWareHouse%get_Profile( Handle )
 
       nzm1 = zGrid%ncells_

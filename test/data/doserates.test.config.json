@@ -1,12 +1,12 @@
 {
    "grids": {
-      "Vertical Z": {
+      "vertical": {
          "type": "equal interval",
          "begins at" : 0.0,
          "ends at" : 120.0,
          "cell delta" : 1.0
       },
-      "Photolysis, wavelength": {
+      "wavelength": {
          "type": "from csv file",
          "file path": "data/DATAE1/GRIDS/combined.grid"
       },
@@ -20,7 +20,7 @@
          "type": "O3",
          "file path": "data/DATAE1/ATM/ussa.ozone"
       },
-      "Air": {
+      "air": {
          "type": "air",
          "file path": "data/DATAE1/ATM/ussa.dens"
       },
@@ -28,28 +28,28 @@
          "type": "O2",
          "file path": "data/DATAE1/ATM/ussa.dens"
       },
-      "Temperature": {
+      "temperature": {
          "type": "from csv file",
          "file path": "data/DATAE1/ATM/ussa.temp"
       },
-      "Sza": {
+      "solar zenith angle": {
          "type": "solar zenith angle",
          "year" : 2002,
          "month": 3,
          "day": 21
       },
-      "Earth sun AU": {
+      "Earth-Sun distance": {
          "type": "Earth-Sun distance",
          "year" : 2002,
          "month": 3,
          "day": 21
       },
-      "Surface albedo": {
+      "surface albedo": {
          "type": "from config file",
          "uniform value": 0.10,
-         "grid": "Photolysis, wavelength"
+         "grid": "wavelength"
       },
-      "Etfl": {
+      "extraterrestrial flux": {
          "type": "extraterrestrial flux",
          "file path": ["data/DATAE1/SUNNEW/susim_hi.flx",
                       "data/DATAE1/SUNNEW/atlas3_1994_317_a.dat",
@@ -81,7 +81,7 @@
             "name": "air",
             "type": "base",
             "cross section": "air",
-            "vertical profile": "Air"
+            "vertical profile": "air"
          },
          {
             "name": "O2",

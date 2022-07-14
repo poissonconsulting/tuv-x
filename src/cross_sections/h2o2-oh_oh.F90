@@ -120,11 +120,11 @@ contains
 
     write(*,*) Iam,'entering'
 
-    Handle = 'Vertical Z'
+    Handle = 'vertical'
     zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength'
+    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Temperature'
+    Handle = 'temperature'
     temperature => profile_warehouse%get_Profile( Handle )
 
     allocate( cross_section( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )

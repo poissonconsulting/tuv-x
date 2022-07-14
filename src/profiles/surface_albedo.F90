@@ -1,7 +1,7 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 !
-!> Surface albedo profile type
+!> surface albedo profile type
 module tuvx_profile_surface_albedo
 
   use musica_constants, only : &
@@ -51,7 +51,7 @@ contains
     ! Get the handle
     call profile_config%get( 'name', this%handle_, Iam, default = 'none' )
 
-    Handle = 'Photolysis, wavelength'
+    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
 
     ! Get values from config file

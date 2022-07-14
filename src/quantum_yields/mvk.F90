@@ -86,11 +86,11 @@ contains
     class(profile_t), pointer     :: mdlDensity => null( )
     type(string_t)                :: Handle
 
-    Handle = 'Vertical Z'
+    Handle = 'vertical'
     zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength'
+    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Air'
+    Handle = 'air'
     mdlDensity => profile_warehouse%get_profile( Handle )
 
     nzdim = zGrid%ncells_ + 1

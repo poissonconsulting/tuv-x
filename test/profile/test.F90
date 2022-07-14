@@ -62,13 +62,13 @@ contains
     theGridWarehouse => grid_warehouse_t( child_config )
 
     !> Get copy of grid
-    Handle = 'Vertical Z'
+    Handle = 'vertical'
     zGrid => theGridWarehouse%get_grid( Handle )
     call assert( 412238768, zGrid%ncells_ .eq. 120_ik )
     call assert( 412238769, all( zGrid%delta_ .eq. 1._dk ) )
 
     !> Get copy of wavelength grid
-    Handle = 'Photolysis, wavelength'
+    Handle = 'wavelength'
     lambdaGrid => theGridWarehouse%get_grid( Handle )
 
     !> Initialize profile warehouse
@@ -77,12 +77,12 @@ contains
         Profile_warehouse_t( child_config, theGridWareHouse )
 
     !> Get copy of the Air Profile
-    Handle = 'Air'
+    Handle = 'air'
     AirProfile => theProfileWarehouse%get_Profile( Handle )
     call assert( 412238771, all( AirProfile%delta_val_ < 0._dk ) )
 
     !> Get copy of the temperature Profile
-    Handle = 'Temperature'
+    Handle = 'temperature'
     TemperatureProfile => theProfileWarehouse%get_Profile( Handle )
     call assert( 412238772, all( TemperatureProfile%edge_val_ < 400._dk ) )
     call assert( 412238772, all( TemperatureProfile%edge_val_ > 150._dk ) )
@@ -114,11 +114,6 @@ contains
     write(*,'(1p10g15.7)') O3Profile%edge_val_
 
     deallocate( O3Profile )
-
-    !> Get copy of etfl profile
-    Handle = 'Etfl'
-!   aProfile => theProfileWarehouse%get_Profile( Handle )
-!   write(*,*) Iam // 'Handle = ',aProfile%handle_
 
     deallocate( zGrid )
     deallocate( lambdaGrid )

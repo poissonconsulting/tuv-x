@@ -1,11 +1,11 @@
 {
-   "Vertical Z": {
+   "vertical": {
       "type": "equal interval",
       "begins at" : 0.0,
       "ends at" : 5.0,
       "cell delta" : 1.0
    },
-   "Photolysis, wavelength": {
+   "wavelength": {
       "type": "from csv file",
       "file path": "test/data/grid.photo.simple.csv"
    },

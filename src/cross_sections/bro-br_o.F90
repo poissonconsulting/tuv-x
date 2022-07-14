@@ -78,9 +78,9 @@ contains
     allocate( this )
 
     ! Get model wavelength grids
-    Handle = 'Photolysis, wavelength'
+    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Vertical Z'
+    Handle = 'vertical'
     zGrid => grid_warehouse%get_grid( Handle )
 
     ! Get cross section netcdf filespec

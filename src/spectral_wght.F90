@@ -117,7 +117,7 @@ contains
     class(grid_t), pointer      :: lambdaGrid => null()
 
     !> Get model wavelength grid
-    Handle = 'Photolysis, wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
+    Handle = 'wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
 
     !> Get spectral wght netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found=found )

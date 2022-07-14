@@ -90,7 +90,7 @@ contains
     type(string_t)              :: Handle
     class(grid_t), pointer      :: lambdaGrid => null()
 
-    Handle = 'Photolysis, wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
+    Handle = 'wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
 
     spectral_wght = exp( a0*exp( -exp(a1*(lambdaGrid%mid_ - w1)/1.15_dk) ) &
                          + ((w2 - lambdaGrid%mid_)/121.7557_dk - 4.183832_dk) )

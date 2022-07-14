@@ -84,7 +84,7 @@ contains
     allocate ( this )
 
     ! Get model wavelength grids
-    Handle = 'Photolysis, wavelength'
+    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
 
     ! Get cross section netcdf filespec
@@ -226,11 +226,11 @@ file_loop:                                                                    &
     class(profile_t), pointer     :: mdlTemperature => null( )
     type(string_t)                :: Handle
 
-    Handle = 'Vertical Z'
+    Handle = 'vertical'
     zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength'
+    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Temperature'
+    Handle = 'temperature'
     mdlTemperature => profile_warehouse%get_Profile( Handle )
 
     nzdim = zGrid%ncells_ + 1

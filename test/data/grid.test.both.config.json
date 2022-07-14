@@ -2,16 +2,19 @@
    "grids": {
       "height": {
          "type": "equal interval",
+         "units": "km",
          "begins at" : 0.0,
          "ends at" : 120.0,
          "cell delta" : 1.0
       },
       "wavelength": {
          "type": "from csv file",
+         "units": "nm",
          "file path": "../data/DATAE1/GRIDS/combined.grid"
       },
-      "Time, hrs": {
+      "time": {
          "type": "from config file",
+         "units": "hours",
          "values": [ 12.0, 14.0, 16.0,
                      18.0, 20.0 ]
       }

@@ -82,7 +82,7 @@ contains
 
     ! Get model wavelength grid
     Handle = 'wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     ! get quantum yield netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
@@ -210,9 +210,9 @@ file_loop: &
     real(dk), parameter :: rONE    = 1.0_dk
 
     Handle = 'wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
     Handle = 'height'
-    zGrid => grid_warehouse%get_grid( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
     Handle = 'temperature'
     temperature => profile_warehouse%get_profile( Handle )
 

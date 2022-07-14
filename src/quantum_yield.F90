@@ -95,7 +95,7 @@ contains
 
     ! Get model wavelength grid
     Handle = 'wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     ! get quantum yield netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
@@ -186,7 +186,7 @@ file_loop: &
     real(dk),       allocatable :: wrkQuantumYield(:,:)
 
     Handle = 'height'
-    zGrid => grid_warehouse%get_grid( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
 
     allocate( wrkQuantumYield(                                                &
       size( this%quantum_yield_parms(1)%array, dim = 1 ), zGrid%ncells_ + 1 ) )

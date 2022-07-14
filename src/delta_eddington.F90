@@ -108,8 +108,8 @@ module tuvx_delta_eddington
 
     allocate( radField )
 
-    Handle = 'height' ; zGrid => GridWareHouse%get_grid( Handle )
-    Handle = 'wavelength' ; lambdaGrid => GridWareHouse%get_grid( Handle )
+    zGrid => GridWareHouse%get_grid( "height", "km" )
+    lambdaGrid => GridWareHouse%get_grid( "wavelength", "nm" )
     Handle = 'surface albedo' ; surfaceAlbedo => ProfileWareHouse%get_Profile( Handle )
 
     nlambda = lambdaGrid%ncells_

@@ -87,9 +87,9 @@ contains
 
     ! Get model wavelength grid
     Handle = 'height'
-    zGrid => grid_warehouse%get_grid( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
     Handle = 'wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     allocate( wrkQuantumYield( lambdaGrid%ncells_) )
     allocate( quantum_yield( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )

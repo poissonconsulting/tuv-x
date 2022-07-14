@@ -42,7 +42,7 @@ contains
     allocate( this )
  
     call grid_config%get( 'name', this%handle_, Iam, default = 'none' )
-
+    call grid_config%get( 'units', this%units_, Iam )
     call grid_config%get( "values", this%edge_, Iam )
 
     this%ncells_ = size(this%edge_) - 1_ik

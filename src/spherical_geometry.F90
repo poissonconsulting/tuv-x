@@ -53,8 +53,7 @@ module tuvx_spherical_geometry
 
           allocate( this )
 
-          Handle = "height"
-          zGrid => gridWareHouse%get_grid( Handle )
+          zGrid => gridWareHouse%get_grid( "height", "km" )
 
           allocate( this%nid_(0:zGrid%ncells_) )
           allocate( this%dsdh_(0:zGrid%ncells_,zGrid%ncells_) )
@@ -132,8 +131,7 @@ module tuvx_spherical_geometry
 
       zenrad = zen*d2r
 
-      Handle = "height"
-      zGrid => gridWareHouse%get_grid( Handle )
+      zGrid => gridWareHouse%get_grid( "height", "km" )
 
       nlayer = zGrid%ncells_
       nz     = nlayer + iONE

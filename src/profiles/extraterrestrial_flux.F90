@@ -84,7 +84,7 @@ contains
     endif
 
     Handle = 'wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
     nBins = lambdaGrid%ncells_
 
     file_loop: &

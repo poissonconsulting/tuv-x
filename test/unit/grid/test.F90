@@ -168,18 +168,15 @@ contains
     call grid_tst_config%from_file( config_flsp )
     thewarehouse => grid_warehouse_t( grid_tst_config )
 
-    Handle = 'height'
-    aGrid => thewarehouse%get_grid( Handle )
+    aGrid => thewarehouse%get_grid( "height", "km" )
     call test_grid_t(aGrid, eq_area_grid_cells, eq_area_edges, eq_area_midpoints, eq_area_deltas)
     deallocate( aGrid )
 
-    Handle = 'wavelength'
-    aGrid => thewarehouse%get_grid( Handle )
+    aGrid => thewarehouse%get_grid( "wavelength", "nm" )
     call test_grid_t(aGrid, csv_grid_cells, csv_edges, csv_midpoints, csv_deltas)
     deallocate( aGrid )
 
-    Handle = 'time (hours)'
-    aGrid => thewarehouse%get_grid( Handle )
+    aGrid => thewarehouse%get_grid( "time", "hours" )
 
     call test_grid_t(aGrid, config_grid_cells, config_edges, config_midpoints, config_deltas)
     deallocate( aGrid )

@@ -100,9 +100,9 @@ contains
     type(string_t)                :: Handle
 
     Handle = 'wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
     Handle = 'height'
-    zGrid => grid_warehouse%get_grid( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
     Handle = 'temperature'
     temperature => profile_warehouse%get_Profile( Handle )
 

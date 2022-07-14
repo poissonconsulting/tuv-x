@@ -82,7 +82,7 @@ contains
     type(string_t)              :: Handle
     class(grid_t), pointer      :: lambdaGrid => null()
 
-    Handle = 'wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
+    Handle = 'wavelength' ; lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     spectral_wght = this%spectral_wght_parms(1)%array(:,1)
     accum = dot_product( spectral_wght,lambdaGrid%delta_ )

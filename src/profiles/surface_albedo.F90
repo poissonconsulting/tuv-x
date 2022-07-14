@@ -52,7 +52,7 @@ contains
     call profile_config%get( 'name', this%handle_, Iam, default = 'none' )
 
     Handle = 'wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     ! Get values from config file
     call profile_config%get( "uniform Value", uniformValue, Iam )

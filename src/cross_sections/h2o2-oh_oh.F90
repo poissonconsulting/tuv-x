@@ -121,9 +121,9 @@ contains
     write(*,*) Iam,'entering'
 
     Handle = 'height'
-    zGrid => grid_warehouse%get_grid( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
     Handle = 'wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
     Handle = 'temperature'
     temperature => profile_warehouse%get_Profile( Handle )
 

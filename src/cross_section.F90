@@ -129,7 +129,7 @@ contains
 
     !> Get model wavelength grids
     Handle = 'wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     !> get cross section netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
@@ -217,7 +217,7 @@ file_loop: &
     real(dk),      allocatable :: wrkCrossSection(:,:)
 
     Handle = 'height'
-    zGrid => grid_warehouse%get_grid( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
 
     nzdim = zGrid%ncells_ + 1
     if( present( at_mid_point ) ) then

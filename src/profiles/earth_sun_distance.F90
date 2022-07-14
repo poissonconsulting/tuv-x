@@ -55,8 +55,7 @@ contains
 
     allocate ( this )
 
-    Handle = 'Time, hrs'
-    timeGrid => grid_warehouse%get_grid( Handle )
+    timeGrid => grid_warehouse%get_grid( "time", "hours" )
     this%ncells_ = timeGrid%ncells_
 
     call profile_config%get( 'name', this%handle_, Iam, default='none' )

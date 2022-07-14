@@ -114,7 +114,7 @@ contains
     close(unit=inUnit)
 
     Handle = 'height'
-    zGrid => grid_warehouse%get_grid( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
     this%ncells_ = zGrid%ncells_
 
     ! Set o3 concentration if data ztop < mdl top

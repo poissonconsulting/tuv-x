@@ -52,6 +52,7 @@ contains
 
     call grid_config%get( 'file path', Filespec, Iam )
     call grid_config%get( 'name', this%handle_, Iam, default = 'none' )
+    call grid_config%get( 'units', this%units_, Iam )
 
     inquire( file=Filespec%to_char(), exist=found )
     if( .not. found ) then

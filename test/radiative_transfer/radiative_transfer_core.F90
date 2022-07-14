@@ -22,9 +22,10 @@ module radXfer_core
   public :: radXfer_core_t
 
   type :: radXfer_core_t
-    type(grid_warehouse_t), pointer          :: theGridWarehouse_
-    type(Profile_warehouse_t), pointer       :: theProfileWarehouse_
-    type(cross_section_warehouse_t), pointer :: theradXferXsectWarehouse_
+    type(grid_warehouse_t), pointer          :: theGridWarehouse_ => null( )
+    type(Profile_warehouse_t), pointer       :: theProfileWarehouse_ => null( )
+    type(cross_section_warehouse_t), pointer ::                               &
+        theradXferXsectWarehouse_ => null( )
   contains
     procedure :: test => run
     final     :: finalize
@@ -96,14 +97,12 @@ contains
     write(*,*) Iam // 'entering'
 
     !> Get copy of grid
-    Handle = 'height'
-    zGrid => this%theGridWarehouse_%get_grid( Handle )
+    zGrid => this%theGridWarehouse_%get_grid( "height", "km" )
     call assert( 412238768, zGrid%ncells_ .eq. 120_ik )
     call assert( 412238769, all( zGrid%delta_ .eq. 1._dk ) )
 
     !> Get copy of wavelength grid
-    Handle = 'wavelength'
-    lambdaGrid => this%theGridWarehouse_%get_grid( Handle )
+    lambdaGrid => this%theGridWarehouse_%get_grid( "wavelength", "nm" )
     call assert( 412238766, all( lambdaGrid%edge_ > 0._dk ) )
     call assert( 412238767, all( lambdaGrid%delta_ > 0._dk ) )
 

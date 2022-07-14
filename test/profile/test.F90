@@ -62,14 +62,12 @@ contains
     theGridWarehouse => grid_warehouse_t( child_config )
 
     !> Get copy of grid
-    Handle = 'height'
-    zGrid => theGridWarehouse%get_grid( Handle )
+    zGrid => theGridWarehouse%get_grid( "height", "km" )
     call assert( 412238768, zGrid%ncells_ .eq. 120_ik )
     call assert( 412238769, all( zGrid%delta_ .eq. 1._dk ) )
 
     !> Get copy of wavelength grid
-    Handle = 'wavelength'
-    lambdaGrid => theGridWarehouse%get_grid( Handle )
+    lambdaGrid => theGridWarehouse%get_grid( "wavelength", "nm" )
 
     !> Initialize profile warehouse
     call tst_config%get( "profiles", child_config, Iam )

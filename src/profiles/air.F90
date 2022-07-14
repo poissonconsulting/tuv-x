@@ -110,8 +110,7 @@ contains
 
     close(unit=inUnit)
 
-    Handle = 'height'
-    zGrid => gridWareHouse%get_grid( Handle )
+    zGrid => gridWareHouse%get_grid( "height", "km" )
     this%ncells_ = zGrid%ncells_
 
     ! assign actual interpolator for this profile

@@ -21,7 +21,8 @@ module tuvx_grid_warehouse
     type(grid_ptr), allocatable :: grid_objs_(:)
   contains
     !> get a copy of a grid object
-    procedure :: get_grid
+    procedure, private :: get_grid_char, get_grid_string
+    generic :: get_grid => get_grid_char, get_grid_string
     !> Finalize the object
     final :: finalize
   end type grid_warehouse_t
@@ -81,39 +82,54 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Get copy of a grid object
-  function get_grid( this, grid_handle ) result( grid_ptr )
+  function get_grid_char( this, name, units ) result( grid_ptr )
 
-    use tuvx_grid,         only : grid_t
-    use musica_string,     only : string_t
-    use musica_constants,  only : lk => musica_lk, ik => musica_ik
-    use musica_assert,     only : die_msg
+    use musica_assert,                 only : assert_msg
+    use musica_string,                 only : string_t
+    use tuvx_grid,                     only : grid_t
 
-    !> Arguments
     class(grid_warehouse_t), intent(inout) :: this
-    type(string_t), intent(in)             :: grid_handle
+    character(len=*),        intent(in)    :: name
+    character(len=*),        intent(in)    :: units
+    class(grid_t), pointer                 :: grid_ptr
 
-    class(grid_t), pointer          :: grid_ptr
+    integer :: ndx
+    logical :: found
 
-    !> Local variables
-    integer(ik) :: ndx
-    logical(lk) :: found
-
-    found = .false._lk
-    do ndx = 1,size(this%grid_objs_)
-      if( grid_handle .eq. this%grid_objs_(ndx)%val_%handle_ ) then
-        found = .true._lk
+    found = .false.
+    do ndx = 1, size( this%grid_objs_ )
+      if( name .eq. this%grid_objs_( ndx )%val_%handle_ ) then
+        found = .true.
         exit
       endif
     end do
+    call assert_msg( 345804219, found,                                        &
+                     "Invalid grid name: '"//name//"'" )
+    call assert_msg( 509243577,                                               &
+                     units .eq. this%grid_objs_( ndx )%val_%units( ),         &
+                     "Grid '"//name//"' has units of '"//                     &
+                     this%grid_objs_( ndx )%val_%units( )//"' not '"//        &
+                     units//"' as requested." )
+    allocate( grid_ptr, source = this%grid_objs_( ndx )%val_ )
 
-    if( found ) then
-      allocate( grid_ptr, source = this%grid_objs_(ndx)%val_ )
-    else
-      call die_msg( 460768214, "Invalid grid handle: '"// &
-        grid_handle%to_char()//"'" )
-    endif
+  end function get_grid_char
 
-  end function get_grid
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !> Get a copy of a grid object
+  function get_grid_string( this, name, units ) result( grid_ptr )
+
+    use musica_string,                 only : string_t
+    use tuvx_grid,                     only : grid_t
+
+    class(grid_warehouse_t), intent(inout) :: this
+    type(string_t),          intent(in)    :: name
+    type(string_t),          intent(in)    :: units
+    class(grid_t), pointer                 :: grid_ptr
+
+    grid_ptr => this%get_grid_char( name%to_char( ), units%to_char( ) )
+
+  end function get_grid_string
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

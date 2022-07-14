@@ -179,12 +179,10 @@ contains
     class(profile_t), pointer :: airProfile => null()
     class(profile_t), pointer :: etfl => null()
 
-    Handle = 'height'
     zGrid => grid_warehouse%get_grid( "height", "km" )
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    Handle = 'extraterrestrial flux'
-    etfl  => profile_warehouse%get_profile( Handle )
+    etfl  => profile_warehouse%get_profile( "extraterrestrial flux",          &
+                                            "photon cm-2 s-1" )
 
     nRates = size( this%cross_sections_ )
     if( .not. allocated( photolysis_rates ) ) then
@@ -219,7 +217,7 @@ rate_loop:                                                                    &
 
       ! O2 photolysis can have special la & srb band handling
       if( trim( this%handles_( rateNdx )%to_char( ) ) == 'O2+hv->O+O' ) then
-        Handle = 'air' ; airProfile => profile_warehouse%get_profile( Handle )
+        airProfile => profile_warehouse%get_profile( "air", "molecule cm-3" )
         allocate( airVcol( airProfile%ncells_ ),                              &
                   airScol( airProfile%ncells_ + 1 ) )
         call spherical_geometry%airmas( airProfile%exo_layer_dens_, airVcol,  &

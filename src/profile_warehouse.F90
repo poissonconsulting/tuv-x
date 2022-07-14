@@ -21,7 +21,8 @@ module tuvx_profile_warehouse
     type(profile_ptr), allocatable :: profile_objs_(:)
   contains
     !> get a copy of a profile object
-    procedure :: get_profile
+    procedure, private :: get_profile_char, get_profile_string
+    generic :: get_profile => get_profile_char, get_profile_string
     !> Finalize the object
     final :: finalize
   end type profile_warehouse_t
@@ -84,38 +85,55 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Get copy of a profile object
-  function get_profile( this, profile_handle ) result( profile_ptr )
+  function get_profile_char( this, name, units ) result( profile_ptr )
 
-    use musica_string,     only : string_t
-    use musica_constants,  only : lk => musica_lk, ik => musica_ik
-    use musica_assert,     only : die_msg
+    use musica_assert,     only : assert_msg
     use tuvx_profile,      only : profile_t
 
     class(profile_warehouse_t), intent(inout) :: this
-    type(string_t),             intent(in)    :: profile_handle
+    character(len=*),           intent(in)    :: name
+    character(len=*),           intent(in)    :: units
     class(profile_t),           pointer       :: profile_ptr
 
     ! Local variables
     character(len=*), parameter :: Iam = 'profile warehouse get_profile: '
-    integer(ik) :: ndx
-    logical(lk) :: found
+    integer :: ndx
+    logical :: found
 
-    found = .false._lk
+    found = .false.
     do ndx = 1, size( this%profile_objs_ )
-      if( profile_handle .eq. this%profile_objs_(ndx)%val_%handle_ ) then
-        found = .true._lk
+      if( name .eq. this%profile_objs_( ndx )%val_%handle_ ) then
+        found = .true.
         exit
       endif
     end do
 
-    if( .not. found ) then
-      call die_msg( 460768214, "Invalid profile handle: '"// &
-        profile_handle%to_char()//"'" )
-    endif
+    call assert_msg( 460768214, found, "Invalid profile handle: '"//name//"'" )
+    call assert_msg( 465479557,                                               &
+                     units .eq. this%profile_objs_( ndx )%val_%units( ),      &
+                     "Profile '"//name//"' has units of '"//                  &
+                     this%profile_objs_( ndx )%val_%units( )//"' not '"//     &
+                     units//"' as requested." )
+    allocate( profile_ptr, source = this%profile_objs_( ndx )%val_ )
 
-    allocate( profile_ptr, source = this%profile_objs_(ndx)%val_ )
+  end function get_profile_char
 
-  end function get_profile
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !> Get a copy of a profile object
+  function get_profile_string( this, name, units ) result( profile_ptr )
+
+    use musica_string,                 only : string_t
+    use tuvx_profile,                  only : profile_t
+
+    class(profile_warehouse_t), intent(inout) :: this
+    type(string_t),             intent(in)    :: name
+    type(string_t),             intent(in)    :: units
+    class(profile_t), pointer                 :: profile_ptr
+
+    profile_ptr => this%get_profile_char( name%to_char( ), units%to_char( ) )
+
+  end function get_profile_string
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

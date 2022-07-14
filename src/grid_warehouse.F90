@@ -103,8 +103,7 @@ contains
         exit
       endif
     end do
-    call assert_msg( 345804219, found,                                        &
-                     "Invalid grid name: '"//name//"'" )
+    call assert_msg( 345804219, found, "Invalid grid name: '"//name//"'" )
     call assert_msg( 509243577,                                               &
                      units .eq. this%grid_objs_( ndx )%val_%units( ),         &
                      "Grid '"//name//"' has units of '"//                     &

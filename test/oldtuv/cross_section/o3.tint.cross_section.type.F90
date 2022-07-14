@@ -225,7 +225,7 @@ lambda_loop: &
 
     !> o3 tint cross section
     class(o3_tint_cross_section_t), intent(in) :: this
-    !> input vacuum wavelength, nm and air density, molec cm-3
+    !> input vacuum wavelength, nm and air density, molecule cm-3
     real(musica_dk), intent(in)                :: atmDensity
     real(musica_dk), intent(in)                :: wavelength(:)
 

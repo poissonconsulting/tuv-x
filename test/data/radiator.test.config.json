@@ -16,22 +16,27 @@
    "profiles": {
       "O3": {
          "type": "O3",
+         "units": "molecule cm-3",
          "file path": "data/DATAE1/ATM/ussa.ozone"
       },
       "air": {
          "type": "air",
+         "units": "molecule cm-3",
          "file path": "data/DATAE1/ATM/ussa.dens"
       },
       "O2": {
          "type": "O2",
+         "units": "molecule cm-3",
          "file path": "data/DATAE1/ATM/ussa.dens"
       },
       "temperature": {
          "type": "from csv file",
+         "units": "K",
          "file path": "data/DATAE1/ATM/ussa.temp"
       },
       "UnitTest": {
          "type": "from csv file",
+         "units": "foos",
          "file path": "test/data/test.ozone"
       }
    },
@@ -46,13 +51,15 @@
         "name": "air",
         "type": "base",
         "cross section": "air",
-        "vertical profile": "air"
+        "vertical profile": "air",
+        "vertical profile units": "molecule cm-3"
       },
       {
         "name": "CO2",
         "type": "base",
         "cross section": "CO2",
-        "vertical profile": "CO2"
+        "vertical profile": "CO2",
+        "vertical profile units": "molecule cm-3"
       }
     ]
 }

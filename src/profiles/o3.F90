@@ -66,6 +66,7 @@ contains
     call profile_config%get( 'file path', Filespec, Iam )
     call profile_config%get( 'name', this%handle_, Iam, &
       default = 'none' )
+    call profile_config%get( 'units', this%units_, Iam )
     call profile_config%get( 'interpolator', Interpolator, Iam, &
       default = 'interp1' )
     call profile_config%get( 'scale heigth', this%hscale_, Iam, &

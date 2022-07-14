@@ -212,7 +212,7 @@ file_loop: &
     Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
     Handle = 'temperature'
-    mdlTemperature => profile_warehouse%get_profile( Handle )
+    mdlTemperature => profile_warehouse%get_profile( "temperature", "K" )
 
     allocate( wrkQuantumYield( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )
     wrkQuantumYield = 0.0_dk

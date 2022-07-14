@@ -50,6 +50,7 @@ contains
 
     ! Get the handle
     call profile_config%get( 'name', this%handle_, Iam, default = 'none' )
+    call profile_config%get( 'units', this%units_, Iam )
 
     Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )

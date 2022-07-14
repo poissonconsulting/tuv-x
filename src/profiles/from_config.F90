@@ -52,6 +52,7 @@ contains
 
     ! Get the handle
     call profile_config%get( 'name', this%handle_, Iam, default = 'none' )
+    call profile_config%get( 'units', this%units_, Iam )
 
     ! Get values from config file
     call profile_config%get( "values", this%edge_val_, Iam, found=found )

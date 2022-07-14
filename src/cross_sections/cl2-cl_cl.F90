@@ -99,12 +99,9 @@ contains
     class(profile_t), pointer     :: temperature
     type(string_t)                :: Handle
 
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    Handle = 'height'
     zGrid => grid_warehouse%get_grid( "height", "km" )
-    Handle = 'temperature'
-    temperature => profile_warehouse%get_Profile( Handle )
+    temperature => profile_warehouse%get_profile( "temperature", "K" )
 
     nzdim = zGrid%ncells_ + 1
     if( present( at_mid_point ) ) then

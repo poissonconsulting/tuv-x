@@ -96,15 +96,15 @@ contains
         profile_warehouse_t( child_config, photolysis_core_obj%GridWareHouse_ )
 
     !> Diagnostics for testing
-    Handle = 'temperature' ; aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( Handle )
+    aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( "temperature", "K" )
     call diagout( 'vptmp.new', aProfile%edge_val_ )
     deallocate( aProfile )
 
-    Handle = 'air' ; aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( Handle )
+    aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( "air", "molecule cm-3" )
     call diagout( 'vpair.new', aProfile%edge_val_ )
     deallocate( aProfile )
 
-    Handle = 'O3' ; aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( Handle )
+    aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( "O3", "molecule cm-3" )
     call diagout( 'vpco3.new', aProfile%layer_dens_ )
     deallocate( aProfile )
 
@@ -178,7 +178,7 @@ contains
   write(*,*) Iam // 'entering'
 
   ! get the solar zenith angles
-  Handle = 'solar zenith angle' ; SZAngles => this%ProfileWareHouse_%get_Profile( Handle )
+  SZAngles => this%ProfileWareHouse_%get_Profile( "solar zenith angle", "degrees" )
 
   ! calculate the radiation field
 sza_loop: &
@@ -268,7 +268,8 @@ sza_loop: &
     class(grid_t),      pointer :: time, vertical
 
     call assert( 337750978, associated( this%photorates_component_ ) )
-    key = "solar zenith angle"; sza => this%ProfileWarehouse_%get_profile( key )
+    sza => this%ProfileWarehouse_%get_profile( "solar zenith angle",          &
+                                               "degrees" )
     time => this%GridWareHouse_%get_grid( "time", "hours" )
     vertical => this%GridWareHouse_%get_grid( "height", "km" )
     rxn_names = this%photorates_component_%labels( )

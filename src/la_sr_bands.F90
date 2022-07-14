@@ -226,8 +226,7 @@ has_la_srb: &
       zGrid => gridWareHouse%get_grid( "height", "km" )
       lambdaGrid => gridWareHouse%get_grid( "wavelength", "nm" )
 
-      Handle = 'temperature'
-      temperature => ProfileWareHouse%get_Profile( Handle )
+      temperature => ProfileWareHouse%get_profile( "temperature", "K" )
 
       nw   = lambdaGrid%ncells_ + iONE
       nzm1 = zGrid%ncells_
@@ -357,8 +356,7 @@ has_la_srb: &
       zGrid => gridWareHouse%get_grid( "height", "km" )
       lambdaGrid => gridWareHouse%get_grid( "wavelength", "nm" )
 
-      Handle = 'temperature'
-      temperature => ProfileWareHouse%get_Profile( Handle )
+      temperature => ProfileWareHouse%get_profile( "temperature", "K" )
 
       nzm1 = zGrid%ncells_
       nz   = nzm1 +  iONE

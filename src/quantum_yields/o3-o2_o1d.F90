@@ -97,12 +97,9 @@ contains
     class(grid_t),    pointer :: zGrid => null( )
     class(profile_t), pointer :: temperature => null( )
 
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    Handle = 'height'
     zGrid => grid_warehouse%get_grid( "height", "km" )
-    Handle = 'temperature'
-    temperature => profile_warehouse%get_profile( Handle )
+    temperature => profile_warehouse%get_profile( "temperature", "K" )
 
     allocate( quantum_yield( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )
     quantum_yield = rZERO

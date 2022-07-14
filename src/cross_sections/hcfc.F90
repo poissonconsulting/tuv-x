@@ -116,7 +116,7 @@ contains
     Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
     Handle = 'temperature'
-    mdlTemperature => profile_warehouse%get_Profile( Handle )
+    mdlTemperature => profile_warehouse%get_profile( "temperature", "K" )
 
     nzdim = zGrid%ncells_ + 1
     if( present( at_mid_point ) ) then

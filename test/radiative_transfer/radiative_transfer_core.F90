@@ -107,8 +107,7 @@ contains
     call assert( 412238767, all( lambdaGrid%delta_ > 0._dk ) )
 
     !> Get copy of the Air Profile
-    Handle = 'air'
-    AirProfile => this%theProfileWarehouse_%get_Profile( Handle )
+    AirProfile => this%theProfileWarehouse_%get_profile( "air", "molecule cm-3" )
     call assert( 412238771, all( AirProfile%delta_val_ < 0._dk ) )
     call assert( 412238771, all( AirProfile%layer_dens_ > 0._dk ) )
     write(*,*) ' '
@@ -120,8 +119,7 @@ contains
     write(*,'(1p10g15.7)') AirProfile%burden_dens_
 
     !> Get copy of the temperature Profile
-    Handle = 'temperature'
-    TemperatureProfile => this%theProfileWarehouse_%get_Profile( Handle )
+    TemperatureProfile => this%theProfileWarehouse_%get_profile( "temperature", "K" )
     call assert( 412238772, all( TemperatureProfile%edge_val_ < 400._dk ) )
     call assert( 412238772, all( TemperatureProfile%edge_val_ > 150._dk ) )
     call assert( 412238773, all( abs(TemperatureProfile%delta_val_) < 20._dk ) )

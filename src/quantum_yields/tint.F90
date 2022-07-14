@@ -209,12 +209,9 @@ file_loop: &
     real(dk), parameter :: rZERO   = 0.0_dk
     real(dk), parameter :: rONE    = 1.0_dk
 
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    Handle = 'height'
     zGrid => grid_warehouse%get_grid( "height", "km" )
-    Handle = 'temperature'
-    temperature => profile_warehouse%get_profile( Handle )
+    temperature => profile_warehouse%get_profile( "temperature", "K" )
 
     allocate( quantum_yield(lambdaGrid%ncells_,zGrid%ncells_+1) )
 

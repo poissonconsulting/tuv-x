@@ -110,7 +110,7 @@ module tuvx_delta_eddington
 
     zGrid => GridWareHouse%get_grid( "height", "km" )
     lambdaGrid => GridWareHouse%get_grid( "wavelength", "nm" )
-    Handle = 'surface albedo' ; surfaceAlbedo => ProfileWareHouse%get_Profile( Handle )
+    surfaceAlbedo => ProfileWareHouse%get_profile( "surface albedo", "none" )
 
     nlambda = lambdaGrid%ncells_
     allocate( dscat(nlyr,nlambda) )

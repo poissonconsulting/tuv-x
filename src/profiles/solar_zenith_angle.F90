@@ -58,6 +58,7 @@ contains
     this%ncells_ = timeGrid%ncells_
 
     call profile_config%get( 'name', this%handle_, Iam, default='none' )
+    call profile_config%get( 'units', this%units_, Iam )
 
     allocate( this%edge_val_(0) )
 

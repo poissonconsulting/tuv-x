@@ -135,9 +135,10 @@ contains
     class(grid_t),    pointer :: lambdaGrid => null()
     class(profile_t), pointer :: etfl => null()
 
-    Handle = 'height' ;  zGrid => grid_warehouse%get_grid( "height", "km" )
-    Handle = 'wavelength' ;  lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    Handle = 'extraterrestrial flux' ;  etfl  => profile_warehouse%get_profile( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    etfl => profile_warehouse%get_profile( "extraterrestrial flux",           &
+                                           "photon cm-2 s-1" )
 
     allocate( tmp_spectral_wght(0) )
 

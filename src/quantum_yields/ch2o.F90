@@ -99,9 +99,9 @@ contains
     Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
     Handle = 'temperature'
-    mdlTemperature => profile_warehouse%get_profile( Handle )
+    mdlTemperature => profile_warehouse%get_profile( "temperature", "K" )
     Handle = 'air'
-    mdlDensity => profile_warehouse%get_profile( Handle )
+    mdlDensity => profile_warehouse%get_profile( "air", "molecule cm-3" )
 
     nzdim = zGrid%ncells_ + 1
     modelTemp = mdlTemperature%edge_val_

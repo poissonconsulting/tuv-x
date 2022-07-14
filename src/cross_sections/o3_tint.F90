@@ -235,7 +235,7 @@ file_loop: &
     Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
     Handle = 'temperature'
-    mdlTemperature => profile_warehouse%get_Profile( Handle )
+    mdlTemperature => profile_warehouse%get_profile( "temperature", "K" )
 
     ! temperature at model cell midpoint or edge
     nzdim     = zGrid%ncells_ + 1
@@ -309,7 +309,7 @@ lambda_loop:                                                                  &
 
     !> O3 tint cross section
     class(cross_section_o3_tint_t), intent(in) :: this
-    !> air density [molec cm-3]
+    !> air density [molecule cm-3]
     real(dk),                       intent(in) :: atmDensity
     !> Vacuum wavelength [nm]
     real(dk),                       intent(in) :: wavelength(:)

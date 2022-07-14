@@ -118,14 +118,9 @@ contains
     class(grid_t),    pointer :: lambdaGrid => null( )
     class(profile_t), pointer :: temperature => null( )
 
-    write(*,*) Iam,'entering'
-
-    Handle = 'height'
     zGrid => grid_warehouse%get_grid( "height", "km" )
-    Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    Handle = 'temperature'
-    temperature => profile_warehouse%get_Profile( Handle )
+    temperature => profile_warehouse%get_profile( "temperature", "K" )
 
     allocate( cross_section( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )
 

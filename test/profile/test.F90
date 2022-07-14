@@ -75,20 +75,17 @@ contains
         Profile_warehouse_t( child_config, theGridWareHouse )
 
     !> Get copy of the Air Profile
-    Handle = 'air'
-    AirProfile => theProfileWarehouse%get_Profile( Handle )
+    AirProfile => theProfileWarehouse%get_profile( "air", "molecule cm-3" )
     call assert( 412238771, all( AirProfile%delta_val_ < 0._dk ) )
 
     !> Get copy of the temperature Profile
-    Handle = 'temperature'
-    TemperatureProfile => theProfileWarehouse%get_Profile( Handle )
+    TemperatureProfile => theProfileWarehouse%get_profile( "temperature", "K" )
     call assert( 412238772, all( TemperatureProfile%edge_val_ < 400._dk ) )
     call assert( 412238772, all( TemperatureProfile%edge_val_ > 150._dk ) )
     call assert( 412238773, all( abs(TemperatureProfile%delta_val_) < 20._dk ) )
 
     !> Get copy of the Unit test
-    Handle = 'UnitTest'
-    aProfile => theProfileWarehouse%get_Profile( Handle )
+    aProfile => theProfileWarehouse%get_profile( "UnitTest", "foos" )
     write(*,*) Iam // 'UnitTest'
     write(*,'(1p10g15.7)') aProfile%mid_val_
     call assert( 412238770, all( aProfile%mid_val_ .eq. 7.7e11_dk ) )
@@ -96,14 +93,12 @@ contains
     deallocate( aProfile )
 
     !> Get copy of O2 profile
-    Handle = 'O2'
-    aProfile => theProfileWarehouse%get_Profile( Handle )
+    aProfile => theProfileWarehouse%get_profile( "O2", "molecule cm-3" )
 
     deallocate( aProfile )
 
     !> Get copy of ozone profile
-    Handle = 'O3'
-    O3Profile => theProfileWarehouse%get_Profile( Handle )
+    O3Profile => theProfileWarehouse%get_profile( "O3", "molecule cm-3" )
 
     write(*,*) Iam // 'Handle = ',O3Profile%handle_
     write(*,*) ' '

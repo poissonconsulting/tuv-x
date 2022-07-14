@@ -63,7 +63,7 @@ contains
     use tuvx_grid,    only : grid_t
 
     !> local variables
-    character(len=*), parameter :: config_flsp = 'test/data/grid.tst.config.json'
+    character(len=*), parameter :: config_flsp = 'test/data/grid.test.config.json'
     type(config_t) :: grid_tst_config
     type(grid_warehouse_t), pointer :: thewarehouse
     type(string_t) :: Handle

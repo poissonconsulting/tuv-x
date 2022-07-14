@@ -18,10 +18,7 @@ program test_Profile
   integer :: i_arg
 
   !> Get the model configuration file and options from the command line
-! if( command_argument_count( ) /= 1 ) call fail_run( )
-! call get_command_argument( command_argument_count( ), argument )
-! argument = 'data/Profile.tst.org.config.json'
-  argument = 'test/data/Profile.tst.config.json'
+  argument = 'test/data/profile.test.config.json'
 
   configFileSpec = argument
   call test_Profile_t( configFileSpec )

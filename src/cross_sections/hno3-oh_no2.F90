@@ -182,7 +182,6 @@ file_loop: &
     real(dk), parameter         :: T0 = 298._dk
     integer           :: vertNdx
     real(dk),         allocatable :: Temp(:)
-    type(string_t)                :: Handle
     class(grid_t),    pointer     :: lambdaGrid => null( )
     class(grid_t),    pointer     :: zGrid => null( )
     class(profile_t), pointer     :: temperature => null( )

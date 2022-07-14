@@ -1,0 +1,7 @@
+{
+   "temperature": {
+      "type": "from csv file",
+      "units": "K",
+      "file path": "data/DATAE1/ATM/ussa.temp"
+   }
+}

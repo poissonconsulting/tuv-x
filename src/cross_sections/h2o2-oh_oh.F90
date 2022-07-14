@@ -113,7 +113,6 @@ contains
         'h2o2+hv->oh+oh cross section calculate'
     integer    :: vertNdx, wNdx
     real(dk)       :: lambda, sumA, sumB, t, chi, xs
-    type(string_t) :: Handle
     class(grid_t),    pointer :: zGrid => null( )
     class(grid_t),    pointer :: lambdaGrid => null( )
     class(profile_t), pointer :: temperature => null( )

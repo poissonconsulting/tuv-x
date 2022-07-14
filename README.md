@@ -9,6 +9,9 @@ TUV-x: A photolysis rate constant calculator.
 
 Copyright (C) 2020 National Center for Atmospheric Research
 
+Please see the [TUV-x documentation](https://ncar.github.io/photo-decomp/) for detailed
+installation and usage instructions.
+
 # Build and run (Docker version)
 
 To build and run the stand-alone version of TUV-x, you must have [Docker Desktop](https://www.docker.com/get-started) installed and running. With Docker Desktop running, open a terminal window and run the following command to start the TUV-x container:

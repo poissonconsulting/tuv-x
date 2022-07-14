@@ -1,18 +1,18 @@
 {
    "grids": {
       "Vertical Z": {
-         "Grid type": "Equal interval",
-         "Grid begins at" : 0.0,
-         "Grid ends at" : 120.0,
-         "Grid cell delta" : 1.0
+         "type": "equal interval",
+         "begins at" : 0.0,
+         "ends at" : 120.0,
+         "cell delta" : 1.0
       },
       "Photolysis, wavelength": {
-         "Grid type": "From csv file",
-         "Filespec": "data/DATAE1/GRIDS/combined.grid"
+         "type": "from csv file",
+         "file path": "data/DATAE1/GRIDS/combined.grid"
       },
       "Time, hrs": {
-         "Grid type": "From config file",
-         "Values": [ 12.0, 14.0, 16.0, 18.0, 20.0 ]
+         "type": "from config file",
+         "values": [ 12.0, 14.0, 16.0, 18.0, 20.0 ]
       }
    },
    "profiles": {

@@ -7,7 +7,6 @@
 !> The photolysis_rates_t type and related functions
 module tuvx_photolysis_rates
 
-  use musica_assert,                   only : die_msg
   use musica_constants,                only : dk => musica_dk
   use musica_string,                   only : string_t
   use tuvx_grid,                       only : grid_t
@@ -56,6 +55,7 @@ contains
   function constructor( reaction_set, grid_warehouse, profile_warehouse )     &
       result( photolysis_rates )
 
+    use musica_assert,                 only : assert
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
     use tuvx_cross_section_factory,    only : cross_section_builder
@@ -123,9 +123,9 @@ contains
     end do
     deallocate( iter )
 
-    if( size( rates%cross_sections_ ) /= size( rates%quantum_yields_ ) ) then
-      call die_msg( 131408672, Iam//': # cross sections != # quantum yields' )
-    endif
+    call assert( 613491108,                                                   &
+                 size( rates%cross_sections_ )                                &
+                 == size( rates%quantum_yields_ ) )
 
     end associate
 

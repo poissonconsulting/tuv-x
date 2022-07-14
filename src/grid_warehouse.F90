@@ -68,7 +68,7 @@ contains
       keychar = config%key(iter)
       aswkey  = keychar
       call config%get( iter, grid_config, Iam )
-      call grid_config%add( 'Handle', aswkey, Iam )
+      call grid_config%add( 'name', aswkey, Iam )
 
       ! Build grid objects
       grid_obj%val_ => grid_builder( grid_config )

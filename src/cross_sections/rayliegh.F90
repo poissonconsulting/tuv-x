@@ -101,7 +101,7 @@ contains
     real(musica_dk), allocatable  :: pwr(:), wrk(:)
     real(musica_dk), allocatable  :: wrkCrossSection(:,:)
 
-    Handle = 'vertical'
+    Handle = 'height'
     zGrid => grid_warehouse%get_grid( Handle )
     Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )

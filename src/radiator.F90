@@ -106,7 +106,7 @@ contains
                      "Bad configuration data format for "//                   &
                      "base radiator." )
 
-    handle = 'vertical'
+    handle = 'height'
     z_grid => grid_warehouse%get_grid( handle )
     handle = 'wavelength'
     lambda_grid => grid_warehouse%get_grid( handle )
@@ -161,7 +161,7 @@ contains
     class(cross_section_t), pointer :: radiator_cross_section
 
     ! get specific grids and profiles
-    handle = 'vertical'
+    handle = 'height'
     z_grid => grid_warehouse%get_grid( handle )
     handle = 'wavelength'
     lambda_grid => grid_warehouse%get_grid( handle )

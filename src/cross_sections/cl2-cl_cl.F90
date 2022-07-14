@@ -101,7 +101,7 @@ contains
 
     Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'vertical'
+    Handle = 'height'
     zGrid => grid_warehouse%get_grid( Handle )
     Handle = 'temperature'
     temperature => profile_warehouse%get_Profile( Handle )

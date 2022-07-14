@@ -168,7 +168,7 @@ contains
     call grid_tst_config%from_file( config_flsp )
     thewarehouse => grid_warehouse_t( grid_tst_config )
 
-    Handle = 'vertical'
+    Handle = 'height'
     aGrid => thewarehouse%get_grid( Handle )
     call test_grid_t(aGrid, eq_area_grid_cells, eq_area_edges, eq_area_midpoints, eq_area_deltas)
     deallocate( aGrid )

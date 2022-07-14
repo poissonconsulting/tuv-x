@@ -270,7 +270,7 @@ sza_loop: &
     call assert( 337750978, associated( this%photorates_component_ ) )
     key = "solar zenith angle"; sza => this%ProfileWarehouse_%get_profile( key )
     key = "Time, hrs"; time => this%GridWareHouse_%get_grid( key )
-    key = "vertical"; vertical => this%GridWareHouse_%get_grid( key )
+    key = "height"; vertical => this%GridWareHouse_%get_grid( key )
     rxn_names = this%photorates_component_%labels( )
     call assert( 182934700,                                                   &
                  size( sza%edge_val_ ) .eq. size( time%edge_ ) )

@@ -80,7 +80,7 @@ contains
     ! Get model wavelength grids
     Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'vertical'
+    Handle = 'height'
     zGrid => grid_warehouse%get_grid( Handle )
 
     ! Get cross section netcdf filespec

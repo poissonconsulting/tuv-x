@@ -185,7 +185,7 @@ file_loop: &
     type(string_t)              :: Handle
     real(dk),       allocatable :: wrkQuantumYield(:,:)
 
-    Handle = 'vertical'
+    Handle = 'height'
     zGrid => grid_warehouse%get_grid( Handle )
 
     allocate( wrkQuantumYield(                                                &

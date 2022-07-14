@@ -104,7 +104,7 @@ contains
     class(profile_t), pointer     :: mdlTemperature => null( )
     type(string_t)                :: Handle
 
-    Handle = 'vertical'
+    Handle = 'height'
     zGrid => grid_warehouse%get_grid( Handle )
     Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )

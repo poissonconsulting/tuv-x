@@ -216,7 +216,7 @@ file_loop: &
     type(string_t)             :: Handle
     real(dk),      allocatable :: wrkCrossSection(:,:)
 
-    Handle = 'vertical'
+    Handle = 'height'
     zGrid => grid_warehouse%get_grid( Handle )
 
     nzdim = zGrid%ncells_ + 1

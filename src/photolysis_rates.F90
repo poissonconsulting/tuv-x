@@ -179,7 +179,7 @@ contains
     class(profile_t), pointer :: airProfile => null()
     class(profile_t), pointer :: etfl => null()
 
-    Handle = 'vertical'
+    Handle = 'height'
     zGrid => grid_warehouse%get_grid( Handle )
     Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )

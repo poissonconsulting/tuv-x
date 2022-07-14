@@ -96,7 +96,7 @@ contains
     write(*,*) Iam // 'entering'
 
     !> Get copy of grid
-    Handle = 'vertical'
+    Handle = 'height'
     zGrid => this%theGridWarehouse_%get_grid( Handle )
     call assert( 412238768, zGrid%ncells_ .eq. 120_ik )
     call assert( 412238769, all( zGrid%delta_ .eq. 1._dk ) )

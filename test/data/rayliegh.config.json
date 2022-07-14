@@ -1,6 +1,6 @@
 {
    "grids": {
-      "vertical": {
+      "height": {
          "type": "Equal interval",
          "begins at" : 0.0,
          "ends at" : 120.0,

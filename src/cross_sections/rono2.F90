@@ -193,7 +193,7 @@ file_loop:                                                                    &
 
     Handle = 'wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'vertical'
+    Handle = 'height'
     zGrid => grid_warehouse%get_grid( Handle )
     Handle = 'temperature'
     mdlTemperature => profile_warehouse%get_Profile( Handle )

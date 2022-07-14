@@ -223,7 +223,7 @@ has_la_srb: &
 !-----------------------------------------------------------------------------
 !> get specific grids and vertical profiles
 !-----------------------------------------------------------------------------
-      Handle = 'vertical'
+      Handle = 'height'
       zGrid => gridWareHouse%get_grid( Handle )
       Handle = 'wavelength'
       lambdaGrid => gridWareHouse%get_grid( Handle )
@@ -356,7 +356,7 @@ has_la_srb: &
 !-----------------------------------------------------------------------------
 !> get specific grids and vertical profiles
 !-----------------------------------------------------------------------------
-      Handle = 'vertical'
+      Handle = 'height'
       zGrid => gridWareHouse%get_grid( Handle )
       Handle = 'wavelength'
       lambdaGrid => gridWareHouse%get_grid( Handle )

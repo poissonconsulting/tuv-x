@@ -17,31 +17,37 @@
    },
    "profiles": {
       "O3": {
-         "Profile type": "O3 from csv file",
-         "Filespec": "data/DATAE1/ATM/ussa.ozone"
+         "type": "O3",
+         "file path": "data/DATAE1/ATM/ussa.ozone"
       },
       "Air": {
-         "Profile type": "Air from csv file",
-         "Filespec": "data/DATAE1/ATM/ussa.dens"
+         "type": "air",
+         "file path": "data/DATAE1/ATM/ussa.dens"
       },
       "O2": {
-         "Profile type": "O2 from csv file",
-         "Filespec": "data/DATAE1/ATM/ussa.dens"
+         "type": "O2",
+         "file path": "data/DATAE1/ATM/ussa.dens"
       },
       "Temperature": {
-         "Profile type": "From csv file",
-         "Filespec": "data/DATAE1/ATM/ussa.temp"
+         "type": "from csv file",
+         "file path": "data/DATAE1/ATM/ussa.temp"
       },
       "Sza": {
-         "Profile type": "Sza from time"
+         "type": "solar zenith angle",
+         "year" : 2002,
+         "month": 3,
+         "day": 21
       },
       "Earth sun AU": {
-         "Profile type": "Earth sun distance"
+         "type": "Earth-Sun distance",
+         "year" : 2002,
+         "month": 3,
+         "day": 21
       },
       "Surface albedo": {
-         "Profile type": "From config file",
-         "Uniform value": 0.10,
-         "Grid": "Photolysis, wavelength"
+         "type": "from config file",
+         "uniform value": 0.10,
+         "grid": "Photolysis, wavelength"
       }
    },
    "radiative transfer": {

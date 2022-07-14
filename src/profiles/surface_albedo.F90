@@ -49,13 +49,13 @@ contains
     allocate( this )
 
     ! Get the handle
-    call profile_config%get( 'Handle', this%handle_, Iam, default = 'None' )
+    call profile_config%get( 'name', this%handle_, Iam, default = 'none' )
 
     Handle = 'Photolysis, wavelength'
     lambdaGrid => grid_warehouse%get_grid( Handle )
 
     ! Get values from config file
-    call profile_config%get( "Uniform Value", uniformValue, Iam )
+    call profile_config%get( "uniform Value", uniformValue, Iam )
 
     this%ncells_ = lambdaGrid%ncells_
 

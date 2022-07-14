@@ -61,12 +61,12 @@ contains
     allocate( this )
 
     ! Get the configuration settings
-    call profile_config%get( 'Filespec', Filespec, Iam )
-    call profile_config%get( 'Handle', this%handle_, Iam, &
-      default = 'None' )
-    call profile_config%get( 'Interpolator', Interpolator, Iam, &
+    call profile_config%get( 'file path', Filespec, Iam )
+    call profile_config%get( 'name', this%handle_, Iam, &
+      default = 'none' )
+    call profile_config%get( 'interpolator', Interpolator, Iam, &
       default = 'interp1' )
-    call profile_config%get( 'Scale heigth', this%hscale_, Iam, &
+    call profile_config%get( 'scale heigth', this%hscale_, Iam, &
       default = 0._dk )
 
     ! Does input grid file exist?

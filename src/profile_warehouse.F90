@@ -69,7 +69,7 @@ contains
       keychar = config%key( iter )
       aswkey  = keychar
       call config%get( iter, profile_config, Iam )
-      call profile_config%add( 'Handle', aswkey, Iam )
+      call profile_config%add( 'name', aswkey, Iam )
 
       ! Build profile objects
       profile_obj%val_ => profile_builder( profile_config, grid_warehouse )

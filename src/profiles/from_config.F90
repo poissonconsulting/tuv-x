@@ -50,12 +50,12 @@ contains
     allocate( this )
 
     ! Get the handle
-    call profile_config%get( 'Handle', this%handle_, Iam, default = 'None' )
+    call profile_config%get( 'name', this%handle_, Iam, default = 'none' )
 
     ! Get values from config file
-    call profile_config%get( "Values", this%edge_val_, Iam, found=found )
+    call profile_config%get( "values", this%edge_val_, Iam, found=found )
     if( .not. found ) then
-      call profile_config%get( "Uniform value", &
+      call profile_config%get( "uniform value", &
         uniformValue, Iam, found=found )
 
       if( .not. found ) then
@@ -63,7 +63,7 @@ contains
           "Neither 'Values' or 'Uniform value' keyword specified" )
       endif
 
-      call profile_config%get( "Grid", gridHandle, Iam, found=found )
+      call profile_config%get( "grid", gridHandle, Iam, found=found )
       if( .not. found ) then
         call die_msg( 123456,"Grid " // &
           gridHandle%to_char() // " not in grid warehouse" )

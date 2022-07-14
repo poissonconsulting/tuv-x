@@ -74,9 +74,9 @@ contains
     defaultInterpolator = 'interp2'
 
     ! Get the configuration settings
-    call profile_config%get( 'Filespec', Filespec, Iam )
-    call profile_config%get( 'Handle', this%handle_, Iam, default = 'None' )
-    call profile_config%get( 'Interpolator', Interpolator, Iam, found=found )
+    call profile_config%get( 'file path', Filespec, Iam )
+    call profile_config%get( 'name', this%handle_, Iam, default = 'None' )
+    call profile_config%get( 'interpolator', Interpolator, Iam, found=found )
     nFiles = size(Filespec)
     if( .not. found ) then
       allocate( Interpolator(nFiles) )

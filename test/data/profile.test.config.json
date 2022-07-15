@@ -1,0 +1,52 @@
+{
+   "grids": {
+      "height": {
+         "type": "equal interval",
+         "units": "km",
+         "begins at" : 0.0,
+         "ends at" : 120.0,
+         "cell delta" : 1.0
+      },
+      "wavelength": {
+         "type": "from csv file",
+         "units": "nm",
+         "file path": "data/DATAE1/GRIDS/combined.grid"
+      }
+   },
+   "profiles": {
+      "O3": {
+         "type": "from csv file",
+         "units": "molecule cm-3",
+         "file path": "data/DATAE1/ATM/ussa.ozone"
+      },
+      "air": {
+         "type": "from csv file",
+         "units": "molecule cm-3",
+         "file path": "data/DATAE1/ATM/ussa.dens"
+      },
+      "O2": {
+         "type": "O2",
+         "units": "molecule cm-3",
+         "file path": "data/DATAE1/ATM/ussa.dens"
+      },
+      "temperature": {
+         "type": "from csv file",
+         "units": "K",
+         "file path": "data/DATAE1/ATM/ussa.temp"
+      },
+      "UnitTest": {
+         "type": "from csv file",
+         "units": "foos",
+         "file path": "test/data/test.ozone"
+      },
+      "extraterrestrial flux": {
+         "type": "extraterrestrial flux",
+         "units": "photon cm-2 s-1",
+         "file path": ["data/DATAE1/SUNNEW/susim_hi.flx",
+                      "data/DATAE1/SUNNEW/atlas3_1994_317_a.dat",
+                      "data/DATAE1/SUNNEW/sao2010.solref.converted",
+                      "data/DATAE1/SUNNEW/neckel.flx"],
+         "interpolator": ["","","","interp4"]
+      }
+   }
+}

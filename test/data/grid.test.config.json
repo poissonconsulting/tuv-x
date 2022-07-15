@@ -3,17 +3,18 @@
       "type": "equal interval",
       "units": "km",
       "begins at" : 0.0,
-      "ends at" : 5.0,
+      "ends at" : 120.0,
       "cell delta" : 1.0
    },
    "wavelength": {
       "type": "from csv file",
       "units": "nm",
-      "file path": "test/data/grid.photo.simple.csv"
+      "file path": "data/DATAE1/GRIDS/combined.grid"
    },
    "time": {
       "type": "from config file",
       "units": "hours",
-      "values": [ 5.0, 10.0, 15.0 ]
+      "values": [ 12.0, 14.0, 16.0,
+                  18.0, 20.0 ]
    }
 }

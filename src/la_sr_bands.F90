@@ -75,7 +75,6 @@ module tuvx_la_sr_bands
       character(len=*), parameter :: Iam = 'la_srb initialize: '
 
       integer(ik) :: iw, nw
-      type(string_t)                     :: Handle
       class(grid_t), pointer      :: lambdaGrid
 
       write(*,*) ' '
@@ -83,7 +82,7 @@ module tuvx_la_sr_bands
 
       allocate( la_srb_component )
 
-      Handle = 'Photolysis, wavelength' ; lambdaGrid => gridWareHouse%get_grid( Handle )
+      lambdaGrid => gridWareHouse%get_grid( "wavelength", "nm" )
 
       !> Are la and srb grids fully "inside" the model grid?
       la_srb_component%has_la  = lambdaGrid%edge_(iONE) <= wlla(iONE) .and. lambdaGrid%edge_(lambdaGrid%ncells_+iONE) >= wlla(kla)
@@ -201,7 +200,6 @@ has_la_srb: &
     class(grid_t),    pointer :: zGrid => null( )
     class(grid_t),    pointer :: lambdaGrid => null( )
     class(profile_t), pointer :: temperature => null( )
-    type(string_t) :: Handle
 
 !----------------------------------------------------------------------
 ! Lyman-alpha variables
@@ -223,13 +221,10 @@ has_la_srb: &
 !-----------------------------------------------------------------------------
 !> get specific grids and vertical profiles
 !-----------------------------------------------------------------------------
-      Handle = 'Vertical Z'
-      zGrid => gridWareHouse%get_grid( Handle )
-      Handle = 'Photolysis, wavelength'
-      lambdaGrid => gridWareHouse%get_grid( Handle )
+      zGrid => gridWareHouse%get_grid( "height", "km" )
+      lambdaGrid => gridWareHouse%get_grid( "wavelength", "nm" )
 
-      Handle = 'Temperature'
-      temperature => ProfileWareHouse%get_Profile( Handle )
+      temperature => ProfileWareHouse%get_profile( "temperature", "K" )
 
       nw   = lambdaGrid%ncells_ + iONE
       nzm1 = zGrid%ncells_
@@ -334,7 +329,6 @@ has_la_srb: &
     class(grid_t), pointer :: zGrid
     class(grid_t), pointer :: lambdaGrid
     class(profile_t), pointer :: temperature
-    type(string_t) :: Handle
 
 !----------------------------------------------------------------------
 ! Lyman-alpha variables
@@ -356,13 +350,10 @@ has_la_srb: &
 !-----------------------------------------------------------------------------
 !> get specific grids and vertical profiles
 !-----------------------------------------------------------------------------
-      Handle = 'Vertical Z'
-      zGrid => gridWareHouse%get_grid( Handle )
-      Handle = 'Photolysis, wavelength'
-      lambdaGrid => gridWareHouse%get_grid( Handle )
+      zGrid => gridWareHouse%get_grid( "height", "km" )
+      lambdaGrid => gridWareHouse%get_grid( "wavelength", "nm" )
 
-      Handle = 'Temperature'
-      temperature => ProfileWareHouse%get_Profile( Handle )
+      temperature => ProfileWareHouse%get_profile( "temperature", "K" )
 
       nzm1 = zGrid%ncells_
       nz   = nzm1 +  iONE

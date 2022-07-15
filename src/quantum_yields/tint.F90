@@ -74,15 +74,13 @@ contains
     logical     :: found, monopos
     character(len=:), allocatable :: msg
     type(netcdf_t),   allocatable :: netcdf_obj
-    type(string_t)                :: Handle
     type(string_t),   allocatable :: netcdfFiles(:)
     class(grid_t),    pointer     :: lambdaGrid
 
     allocate( this )
 
     ! Get model wavelength grid
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     ! get quantum yield netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
@@ -202,19 +200,15 @@ file_loop: &
     integer     :: nTemp
     integer     :: fileNdx, tNdx, vertNdx
     real(dk)    :: Tadj, Tstar
-    type(string_t)            :: Handle
     class(grid_t),    pointer :: lambdaGrid => null( )
     class(grid_t),    pointer :: zGrid => null( )
-    class(profile_t), pointer :: Temperature => null( )
+    class(profile_t), pointer :: temperature => null( )
     real(dk), parameter :: rZERO   = 0.0_dk
     real(dk), parameter :: rONE    = 1.0_dk
 
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Vertical Z'
-    zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Temperature'
-    Temperature => profile_warehouse%get_profile( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
+    temperature => profile_warehouse%get_profile( "temperature", "K" )
 
     allocate( quantum_yield(lambdaGrid%ncells_,zGrid%ncells_+1) )
 
@@ -225,7 +219,7 @@ file_loop: &
                  wrkQyield => this%quantum_yield_data( fileNdx ) )
       nTemp = size( Temp )
       do vertNdx = 1, zGrid%ncells_ + 1
-        Tadj = min( max( Temperature%edge_val_( vertNdx ), Temp( 1 ) ),      &
+        Tadj = min( max( temperature%edge_val_( vertNdx ), Temp( 1 ) ),      &
                            Temp( nTemp ) )
         do tNdx = 2, nTemp
           if( Tadj <= Temp( tNdx ) ) then
@@ -246,7 +240,7 @@ file_loop: &
 
     deallocate( zGrid )
     deallocate( lambdaGrid )
-    deallocate( Temperature )
+    deallocate( temperature )
 
   end function run
 

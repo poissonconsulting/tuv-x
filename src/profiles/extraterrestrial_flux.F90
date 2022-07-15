@@ -64,7 +64,6 @@ contains
     logical(lk) :: found
     character(len=132)                 :: InputLine, trimInputLine
     character(len=512)                 :: IoMsg
-    type(string_t)                     :: Handle
     type(string_t)                     :: defaultInterpolator
     type(string_t), allocatable        :: Filespec(:), Interpolator(:)
     class(abs_interpolator_t), pointer :: theInterpolator
@@ -74,17 +73,17 @@ contains
     defaultInterpolator = 'interp2'
 
     ! Get the configuration settings
-    call profile_config%get( 'Filespec', Filespec, Iam )
-    call profile_config%get( 'Handle', this%handle_, Iam, default = 'None' )
-    call profile_config%get( 'Interpolator', Interpolator, Iam, found=found )
+    call profile_config%get( 'file path', Filespec, Iam )
+    call profile_config%get( 'name', this%handle_, Iam, default = 'None' )
+    call profile_config%get( 'units', this%units_, Iam )
+    call profile_config%get( 'interpolator', Interpolator, Iam, found=found )
     nFiles = size(Filespec)
     if( .not. found ) then
       allocate( Interpolator(nFiles) )
       Interpolator = defaultInterpolator
     endif
 
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
     nBins = lambdaGrid%ncells_
 
     file_loop: &

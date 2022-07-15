@@ -64,7 +64,6 @@ contains
     real(dk), allocatable         :: input_zgrid(:)
     real(dk), allocatable         :: winput_SSA(:), winput_G(:)
     type(string_t)                :: required_keys(5), optional_keys(1)
-    type(string_t)                :: Handle
     type(config_t)                :: Aerosol_config
     class(grid_t),             pointer :: zGrid, lambdaGrid
     class(abs_interpolator_t), pointer :: theInterpolator
@@ -82,10 +81,8 @@ contains
 
     allocate( this )
 
-    Handle = 'Vertical Z'
-    zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     ! Get radiator "Handle"
     call config%get( 'name', this%handle_, Iam )

@@ -50,26 +50,25 @@ contains
     real(dk)    :: tmzone, ut, soldst
     real(dk)    :: Lon, Lat
     character(len=*), parameter :: Iam = 'earth sun distance initialize: '
-    type(string_t) :: Handle
     class(grid_t), pointer :: timeGrid
 
     allocate ( this )
 
-    Handle = 'Time, hrs'
-    timeGrid => grid_warehouse%get_grid( Handle )
+    timeGrid => grid_warehouse%get_grid( "time", "hours" )
     this%ncells_ = timeGrid%ncells_
 
-    call profile_config%get( 'Handle', this%handle_, Iam, default='None' )
+    call profile_config%get( 'name', this%handle_, Iam, default='none' )
+    call profile_config%get( 'units', this%units_, Iam )
 
     allocate( this%edge_val_(0) )
 
     !> Map solar zenith angle as function of time
-    call profile_config%get( 'Year', Year, Iam, default=2002 )
-    call profile_config%get( 'Month', Month, Iam, default=3 )
-    call profile_config%get( 'Day', Day, Iam, default=21 )
-    call profile_config%get( 'TimeZone', tmzone, Iam, default=0.0_dk )
-    call profile_config%get( 'Longitude', Lon, Iam, default=0.0_dk )
-    call profile_config%get( 'Latitude', Lat, Iam, default=0.0_dk )
+    call profile_config%get( 'year', Year, Iam )
+    call profile_config%get( 'month', Month, Iam )
+    call profile_config%get( 'day', Day, Iam )
+    call profile_config%get( 'time zone', tmzone, Iam, default=0.0_dk )
+    call profile_config%get( 'longitude', Lon, Iam, default=0.0_dk )
+    call profile_config%get( 'latitude', Lat, Iam, default=0.0_dk )
 
     Jday = julian_day_of_year(Year, Month, Day )
 

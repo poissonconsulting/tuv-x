@@ -92,22 +92,18 @@ contains
     integer     :: wNdx, vertNdx
     real(dk)    :: kt, q1, q2, T300, lambda
     real(dk)    :: qfac1, qfac2
-    type(string_t)            :: Handle
     class(grid_t),    pointer :: lambdaGrid => null( )
     class(grid_t),    pointer :: zGrid => null( )
-    class(profile_t), pointer :: Temperature => null( )
+    class(profile_t), pointer :: temperature => null( )
 
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Vertical Z'
-    zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Temperature'
-    Temperature => profile_warehouse%get_profile( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
+    temperature => profile_warehouse%get_profile( "temperature", "K" )
 
     allocate( quantum_yield( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )
     quantum_yield = rZERO
 
-    associate( w => lambdaGrid%mid_, Temp => Temperature%edge_val_ )
+    associate( w => lambdaGrid%mid_, Temp => temperature%edge_val_ )
 
     do vertNdx = 1, zGrid%ncells_ + 1
       kt = 0.695_dk * Temp( vertNdx )
@@ -140,7 +136,7 @@ contains
 
     deallocate( zGrid )
     deallocate( lambdaGrid )
-    deallocate( Temperature )
+    deallocate( temperature )
 
   end function run
 

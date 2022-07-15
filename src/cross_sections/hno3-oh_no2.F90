@@ -66,7 +66,6 @@ contains
     type(netcdf_t),   allocatable :: netcdf_obj
     type(string_t),   allocatable :: netcdfFiles(:)
     type(config_t)                :: tmp_config, extrap_config
-    type(string_t)                :: Handle
     class(grid_t),    pointer     :: lambdaGrid => null( )
     type(string_t) :: required_keys(2), optional_keys(3)
 
@@ -80,8 +79,7 @@ contains
                      "Bad configuration data format for "//                   &
                      "HNO3 cross section." )
 
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     ! get cross section netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
@@ -182,17 +180,13 @@ file_loop: &
     real(dk), parameter         :: T0 = 298._dk
     integer           :: vertNdx
     real(dk),         allocatable :: Temp(:)
-    type(string_t)                :: Handle
     class(grid_t),    pointer     :: lambdaGrid => null( )
     class(grid_t),    pointer     :: zGrid => null( )
     class(profile_t), pointer     :: temperature => null( )
 
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid  => grid_warehouse%get_grid( Handle )
-    Handle = 'Vertical Z'
-    zGrid       => grid_warehouse%get_grid( Handle )
-    Handle = 'Temperature'
-    temperature => profile_warehouse%get_Profile( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
+    temperature => profile_warehouse%get_profile( "temperature", "K" )
 
     allocate( cross_section( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )
 

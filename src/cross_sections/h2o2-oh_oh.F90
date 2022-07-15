@@ -113,17 +113,13 @@ contains
         'h2o2+hv->oh+oh cross section calculate'
     integer    :: vertNdx, wNdx
     real(dk)       :: lambda, sumA, sumB, t, chi, xs
-    type(string_t) :: Handle
     class(grid_t),    pointer :: zGrid => null( )
     class(grid_t),    pointer :: lambdaGrid => null( )
     class(profile_t), pointer :: temperature => null( )
 
-    Handle = 'Vertical Z'
-    zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Temperature'
-    temperature => profile_warehouse%get_Profile( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    temperature => profile_warehouse%get_profile( "temperature", "K" )
 
     allocate( cross_section( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )
 

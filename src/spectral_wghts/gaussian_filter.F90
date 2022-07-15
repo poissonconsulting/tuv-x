@@ -93,10 +93,9 @@ contains
     character(len=*), parameter :: Iam = 'gaussian calculate: '
     real(dk)                    :: accum
 
-    type(string_t)              :: Handle
     class(grid_t), pointer      :: lambdaGrid => null()
 
-    Handle = 'Photolysis, wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     spectral_wght = exp( -(log(rTWO)*.04_dk*(lambdaGrid%mid_ - this%centroid)**2) )
     accum = sum( spectral_wght )

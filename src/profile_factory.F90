@@ -46,29 +46,29 @@ contains
     type(string_t) :: profile_type
 
     new_profile_t => null()
-    call config%get( 'Profile type', profile_type, Iam )
+    call config%get( 'type', profile_type, Iam )
 
     select case( profile_type%to_char() )
-      case( 'From csv file' )
+      case( 'from csv file' )
         new_profile_t => from_csv_file_t( config, grid_warehouse )
-      case( 'Etfl from csv file' )
+      case( 'extraterrestrial flux' )
         new_profile_t => extraterrestrial_flux_t( config, grid_warehouse )
-      case( 'From config file' )
+      case( 'from config file' )
         new_profile_t => from_config_t( config, grid_warehouse )
-      case( 'SrfAlbedo from config file' )
+      case( 'surface albedo' )
         new_profile_t => surface_albedo_t( config, grid_warehouse )
-      case( 'Air from csv file' )
+      case( 'air' )
         new_profile_t => profile_air_t( config, grid_warehouse )
-      case( 'O2 from csv file' )
+      case( 'O2' )
         new_profile_t => o2_from_csv_file_t( config, grid_warehouse )
-      case( 'O3 from csv file' )
+      case( 'O3' )
         new_profile_t => o3_from_csv_file_t( config, grid_warehouse )
-      case( 'Sza from time' )
+      case( 'solar zenith angle' )
         new_profile_t => sza_from_time_t( config, grid_warehouse )
-      case( 'Earth sun distance' )
+      case( 'Earth-Sun distance' )
         new_profile_t => earth_sun_distance_t( config, grid_warehouse )
       case default
-        call die_msg( 460768215, "Invalid profile type: '" // &
+        call die_msg( 884374015, "Invalid profile type: '" // &
           profile_type%to_char()//"'" )
     end select
 

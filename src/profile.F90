@@ -12,9 +12,11 @@ module tuvx_profile
   private
   public :: profile_t, profile_ptr
 
-  type, abstract ::  profile_t
+  type ::  profile_t
     !> grid handle
     type(string_t) :: handle_
+    !> units
+    type(string_t) :: units_
     !> number of wavelength grid cells
     integer(musica_ik)           :: ncells_
     !> scale heigth
@@ -32,6 +34,8 @@ module tuvx_profile
     !> overhead column burden
     real(musica_dk), allocatable :: burden_dens_(:)
   contains
+    !> Returns the units for the profile
+    procedure :: units
   end type profile_t
 
   !> Pointer type for building sets of spectral wght objects
@@ -39,24 +43,18 @@ module tuvx_profile
     class(profile_t), pointer :: val_ => null( )
   end type profile_ptr
 
-interface
+contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize grid
-  subroutine base_constructor( this, profile_config, grid_warehouse )
+  !> Returns the units for the profile
+  type(string_t) function units( this )
 
-    use musica_config, only : config_t
-    use musica_constants, only : musica_dk
-    use tuvx_grid_warehouse,  only : grid_warehouse_t
+    class(profile_t), intent(in) :: this
 
-    import profile_t
-    class(profile_t), intent(inout)      :: this
-    type(config_t), intent(inout)            :: profile_config
-    type(grid_warehouse_t), intent(inout)    :: grid_warehouse
-  end subroutine base_constructor
+    units = this%units_
 
-end interface
+  end function units
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

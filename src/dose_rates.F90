@@ -69,7 +69,6 @@ contains
     character(len=64)           :: keychar
     type(string_t)              :: netcdfFile, Object
     type(string_t)              :: wght_key
-    type(string_t)              :: Handle
     type(string_t), allocatable :: netcdfFiles(:)
 
     allocate( dose_rates )
@@ -129,15 +128,15 @@ contains
     real(dk), allocatable :: spectral_wght(:)
     real(dk), allocatable :: tmp_spectral_wght(:)
     real(dk), allocatable :: sirrad(:,:)
-    type(string_t)        :: Handle
     character(len=64), allocatable :: annotatedslabel(:)
     class(grid_t),    pointer :: zGrid => null()
     class(grid_t),    pointer :: lambdaGrid => null()
     class(profile_t), pointer :: etfl => null()
 
-    Handle = 'Vertical Z' ;  zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength' ;  lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Etfl' ;  etfl  => profile_warehouse%get_profile( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    etfl => profile_warehouse%get_profile( "extraterrestrial flux",           &
+                                           "photon cm-2 s-1" )
 
     allocate( tmp_spectral_wght(0) )
 

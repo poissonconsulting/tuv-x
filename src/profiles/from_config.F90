@@ -31,7 +31,7 @@ contains
 
     use musica_config, only : config_t
     use musica_string, only : string_t
-    use musica_assert, only : die_msg
+    use musica_assert, only : assert_msg
     use tuvx_grid,     only : grid_t
     use tuvx_grid_warehouse,  only : grid_warehouse_t
 
@@ -44,32 +44,31 @@ contains
     integer(ik)                 :: ndx
     real(dk)                    :: uniformValue
     logical(lk)                 :: found
-    type(string_t)              :: gridHandle
+    type(config_t)              :: grid_config
+    type(string_t)              :: grid_name, grid_units
     class(grid_t), pointer :: theGrid
 
     allocate( this )
 
     ! Get the handle
-    call profile_config%get( 'Handle', this%handle_, Iam, default = 'None' )
+    call profile_config%get( 'name', this%handle_, Iam, default = 'none' )
+    call profile_config%get( 'units', this%units_, Iam )
 
     ! Get values from config file
-    call profile_config%get( "Values", this%edge_val_, Iam, found=found )
+    call profile_config%get( "values", this%edge_val_, Iam, found=found )
     if( .not. found ) then
-      call profile_config%get( "Uniform value", &
-        uniformValue, Iam, found=found )
+      call profile_config%get( "uniform value", uniformValue, Iam,            &
+                               found = found )
+      call assert_msg( 715232062, found,                                      &
+                      "Neither 'Values' or 'Uniform value' keyword specified" )
 
-      if( .not. found ) then
-        call die_msg( 123457, &
-          "Neither 'Values' or 'Uniform value' keyword specified" )
-      endif
+      call profile_config%get( "grid", grid_config, Iam, found = found )
+      call assert_msg( 376823788, found,                                      &
+                       "Grid missing from profile configuration" )
+      call grid_config%get( "name", grid_name, Iam )
+      call grid_config%get( "units", grid_units, Iam )
 
-      call profile_config%get( "Grid", gridHandle, Iam, found=found )
-      if( .not. found ) then
-        call die_msg( 123456,"Grid " // &
-          gridHandle%to_char() // " not in grid warehouse" )
-      endif
-
-      theGrid => grid_warehouse%get_grid( gridHandle )
+      theGrid => grid_warehouse%get_grid( grid_name, grid_units )
       this%edge_val_ = (/ (uniformValue,ndx=1,theGrid%ncells_+1_ik) /)
     endif
 

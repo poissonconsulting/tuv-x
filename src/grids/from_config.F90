@@ -41,9 +41,9 @@ contains
 
     allocate( this )
  
-    call grid_config%get( 'Handle', this%handle_, Iam, default = 'None' )
-
-    call grid_config%get( "Values", this%edge_, Iam )
+    call grid_config%get( 'name', this%handle_, Iam, default = 'none' )
+    call grid_config%get( 'units', this%units_, Iam )
+    call grid_config%get( "values", this%edge_, Iam )
 
     this%ncells_ = size(this%edge_) - 1_ik
     this%mid_ = .5_dk * &

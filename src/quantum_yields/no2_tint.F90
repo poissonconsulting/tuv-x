@@ -73,7 +73,6 @@ contains
     real(dk), allocatable :: data_parameter(:)
     logical     :: found, monopos
     character(len=:), allocatable :: msg
-    type(string_t)                :: Handle
     type(netcdf_t),   allocatable :: netcdf_obj
     type(string_t),   allocatable :: netcdfFiles(:)
     class(grid_t),    pointer     :: lambdaGrid => null( )
@@ -81,8 +80,7 @@ contains
     allocate( this )
 
     !> Get model wavelength grid
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     ! get quantum yield netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
@@ -202,17 +200,13 @@ file_loop: &
     integer     :: fileNdx, tNdx, vertNdx
     real(dk)    :: Tadj, Tstar
     real(dk),         allocatable :: WrkQuantumYield(:,:)
-    type(string_t)                :: Handle
     class(grid_t),    pointer     :: zGrid => null( )
     class(grid_t),    pointer     :: lambdaGrid => null( )
     class(profile_t), pointer     :: mdlTemperature => null( )
 
-    Handle = 'Vertical Z'
-    zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Temperature'
-    mdlTemperature => profile_warehouse%get_profile( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    mdlTemperature => profile_warehouse%get_profile( "temperature", "K" )
 
     allocate( wrkQuantumYield( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )
     wrkQuantumYield = 0.0_dk
@@ -222,7 +216,7 @@ file_loop: &
                  wrkQyield => this%quantum_yield( fileNdx ) )
       nTemp = size( Temp )
       do vertNdx = 1, zGrid%ncells_ + 1
-        Tadj  = mdltemperature%edge_val_( vertNdx )
+        Tadj  = mdlTemperature%edge_val_( vertNdx )
         do tNdx = 2, nTemp
           if( Tadj <= Temp( tNdx ) ) then
             exit

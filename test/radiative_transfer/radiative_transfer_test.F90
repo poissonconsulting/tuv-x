@@ -19,9 +19,7 @@ program radXfer_test
   type(string_t)     :: configFileSpec
 
   !> Get the model configuration file and options from the command line
-! if( command_argument_count( ) /= 1 ) call fail_run( )
-! call get_command_argument( command_argument_count( ), argument )
-  argument = 'test/data/radXfer.tst.config.json'
+  argument = 'test/data/radiative_transfer.test.config.json'
 
   configFileSpec = argument
 
@@ -40,7 +38,7 @@ program radXfer_test
   !> Fail run and print usage info
   subroutine fail_run( )
 
-    write(*,*) "Usage: ./radXfer_test configuration_file.json"
+    write(*,*) "Usage: ./radiative_transfer_test configuration_file.json"
     stop 3
 
   end subroutine fail_run

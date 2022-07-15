@@ -96,15 +96,12 @@ contains
     class(grid_t),    pointer     :: zGrid => null( )
     class(grid_t),    pointer     :: lambdaGrid => null( )
     character(len=*), parameter   :: Iam = 'rayliegh cross section calculate'
-    type(string_t)                :: Handle
     real(musica_dk)               :: wmicrn
     real(musica_dk), allocatable  :: pwr(:), wrk(:)
     real(musica_dk), allocatable  :: wrkCrossSection(:,:)
 
-    Handle = 'Vertical Z'
-    zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     nzdim = zGrid%ncells_ + 1
     if( present( at_mid_point ) ) then

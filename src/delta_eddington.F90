@@ -95,7 +95,6 @@ module tuvx_delta_eddington
     real(dk), allocatable                :: dscat_accum(:,:)
     real(dk), allocatable                :: dabs_accum(:,:)
     real(dk), allocatable                :: asym_accum(:,:)
-    type(string_t)                       :: Handle
     type(warehouse_iterator_t), pointer  :: iter => null( )
     class(radiator_t),          pointer  :: aRadiator
     type(radiator_state_t)               :: atmRadiatorState
@@ -108,9 +107,9 @@ module tuvx_delta_eddington
 
     allocate( radField )
 
-    Handle = 'Vertical Z' ; zGrid => GridWareHouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength' ; lambdaGrid => GridWareHouse%get_grid( Handle )
-    Handle = 'Surface albedo' ; surfaceAlbedo => ProfileWareHouse%get_Profile( Handle )
+    zGrid => GridWareHouse%get_grid( "height", "km" )
+    lambdaGrid => GridWareHouse%get_grid( "wavelength", "nm" )
+    surfaceAlbedo => ProfileWareHouse%get_profile( "surface albedo", "none" )
 
     nlambda = lambdaGrid%ncells_
     allocate( dscat(nlyr,nlambda) )

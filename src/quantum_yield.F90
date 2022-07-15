@@ -15,7 +15,7 @@ module tuvx_quantum_yield
   public :: quantum_yield_t, quantum_yield_ptr, base_constructor
 
   type quantum_yield_parms_t
-    !> Temperature \todo include units - what is this used for?
+    !> temperature \todo include units - what is this used for?
     real(dk), allocatable :: temperature(:)
     !> Parameters for calculating quantum yields (wavelength, parameter)
     real(dk), allocatable :: array(:,:)
@@ -89,13 +89,11 @@ contains
     logical :: found
     character(len=:), allocatable :: msg
     type(netcdf_t), allocatable   :: netcdf_obj
-    type(string_t)                :: Handle
     type(string_t), allocatable   :: netcdfFiles(:)
     class(grid_t),  pointer       :: lambdaGrid => null( )
 
     ! Get model wavelength grid
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     ! get quantum yield netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
@@ -182,11 +180,9 @@ file_loop: &
     character(len=*), parameter :: Iam = 'base quantum yield calculate'
     integer                     :: vertNdx
     class(grid_t),  pointer     :: zGrid => null( )
-    type(string_t)              :: Handle
     real(dk),       allocatable :: wrkQuantumYield(:,:)
 
-    Handle = 'Vertical Z'
-    zGrid => grid_warehouse%get_grid( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
 
     allocate( wrkQuantumYield(                                                &
       size( this%quantum_yield_parms(1)%array, dim = 1 ), zGrid%ncells_ + 1 ) )

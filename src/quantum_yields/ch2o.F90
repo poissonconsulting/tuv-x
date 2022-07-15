@@ -92,16 +92,11 @@ contains
     class(grid_t),    pointer     :: lambdaGrid => null( )
     class(profile_t), pointer     :: mdlTemperature => null( )
     class(profile_t), pointer     :: mdlDensity => null( )
-    type(string_t)                :: Handle
 
-    Handle = 'Vertical Z'
-    zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Temperature'
-    mdlTemperature => profile_warehouse%get_profile( Handle )
-    Handle = 'Air'
-    mdlDensity => profile_warehouse%get_profile( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    mdlTemperature => profile_warehouse%get_profile( "temperature", "K" )
+    mdlDensity => profile_warehouse%get_profile( "air", "molecule cm-3" )
 
     nzdim = zGrid%ncells_ + 1
     modelTemp = mdlTemperature%edge_val_

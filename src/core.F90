@@ -66,7 +66,6 @@ contains
     logical(lk)                 :: found
     type(string_t)              :: keyString
     type(config_t)              :: core_config, child_config
-    type(string_t)              :: Handle
     class(iterator_t), pointer  :: iter
     class(profile_t),  pointer  :: aProfile
     type(string_t)              :: required_keys(3), optional_keys(2)
@@ -96,15 +95,15 @@ contains
         profile_warehouse_t( child_config, photolysis_core_obj%GridWareHouse_ )
 
     !> Diagnostics for testing
-    Handle = 'Temperature' ; aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( Handle )
+    aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( "temperature", "K" )
     call diagout( 'vptmp.new', aProfile%edge_val_ )
     deallocate( aProfile )
 
-    Handle = 'Air' ; aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( Handle )
+    aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( "air", "molecule cm-3" )
     call diagout( 'vpair.new', aProfile%edge_val_ )
     deallocate( aProfile )
 
-    Handle = 'O3' ; aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( Handle )
+    aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( "O3", "molecule cm-3" )
     call diagout( 'vpco3.new', aProfile%layer_dens_ )
     deallocate( aProfile )
 
@@ -172,13 +171,12 @@ contains
   class(profile_t),       pointer :: SZAngles => null( )
   class(radiator_t),      pointer :: aRadiator => null()
   class(radField_t),      pointer :: radiationFld => null( )
-  type(string_t)                  :: Handle
 
   write(*,*) ' '
   write(*,*) Iam // 'entering'
 
   ! get the solar zenith angles
-  Handle = 'Sza' ; SZAngles => this%ProfileWareHouse_%get_Profile( Handle )
+  SZAngles => this%ProfileWareHouse_%get_Profile( "solar zenith angle", "degrees" )
 
   ! calculate the radiation field
 sza_loop: &
@@ -262,15 +260,15 @@ sza_loop: &
 
     type(netcdf_file) :: output_file
     integer           :: i_rxn
-    type(string_t)    :: key
     type(string_t), allocatable :: rxn_names(:)
     class(profile_t),   pointer :: sza
     class(grid_t),      pointer :: time, vertical
 
     call assert( 337750978, associated( this%photorates_component_ ) )
-    key = "Sza"; sza => this%ProfileWarehouse_%get_profile( key )
-    key = "Time, hrs"; time => this%GridWareHouse_%get_grid( key )
-    key = "Vertical Z"; vertical => this%GridWareHouse_%get_grid( key )
+    sza => this%ProfileWarehouse_%get_profile( "solar zenith angle",          &
+                                               "degrees" )
+    time => this%GridWareHouse_%get_grid( "time", "hours" )
+    vertical => this%GridWareHouse_%get_grid( "height", "km" )
     rxn_names = this%photorates_component_%labels( )
     call assert( 182934700,                                                   &
                  size( sza%edge_val_ ) .eq. size( time%edge_ ) )

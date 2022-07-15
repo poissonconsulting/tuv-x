@@ -18,10 +18,7 @@ program test_Profile
   integer :: i_arg
 
   !> Get the model configuration file and options from the command line
-! if( command_argument_count( ) /= 1 ) call fail_run( )
-! call get_command_argument( command_argument_count( ), argument )
-! argument = 'data/Profile.tst.org.config.json'
-  argument = 'test/data/Profile.tst.config.json'
+  argument = 'test/data/profile.test.config.json'
 
   configFileSpec = argument
   call test_Profile_t( configFileSpec )
@@ -65,14 +62,12 @@ contains
     theGridWarehouse => grid_warehouse_t( child_config )
 
     !> Get copy of grid
-    Handle = 'Vertical Z'
-    zGrid => theGridWarehouse%get_grid( Handle )
+    zGrid => theGridWarehouse%get_grid( "height", "km" )
     call assert( 412238768, zGrid%ncells_ .eq. 120_ik )
     call assert( 412238769, all( zGrid%delta_ .eq. 1._dk ) )
 
     !> Get copy of wavelength grid
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => theGridWarehouse%get_grid( Handle )
+    lambdaGrid => theGridWarehouse%get_grid( "wavelength", "nm" )
 
     !> Initialize profile warehouse
     call tst_config%get( "profiles", child_config, Iam )
@@ -80,20 +75,17 @@ contains
         Profile_warehouse_t( child_config, theGridWareHouse )
 
     !> Get copy of the Air Profile
-    Handle = 'Air'
-    AirProfile => theProfileWarehouse%get_Profile( Handle )
+    AirProfile => theProfileWarehouse%get_profile( "air", "molecule cm-3" )
     call assert( 412238771, all( AirProfile%delta_val_ < 0._dk ) )
 
     !> Get copy of the temperature Profile
-    Handle = 'Temperature'
-    TemperatureProfile => theProfileWarehouse%get_Profile( Handle )
+    TemperatureProfile => theProfileWarehouse%get_profile( "temperature", "K" )
     call assert( 412238772, all( TemperatureProfile%edge_val_ < 400._dk ) )
     call assert( 412238772, all( TemperatureProfile%edge_val_ > 150._dk ) )
     call assert( 412238773, all( abs(TemperatureProfile%delta_val_) < 20._dk ) )
 
     !> Get copy of the Unit test
-    Handle = 'UnitTest'
-    aProfile => theProfileWarehouse%get_Profile( Handle )
+    aProfile => theProfileWarehouse%get_profile( "UnitTest", "foos" )
     write(*,*) Iam // 'UnitTest'
     write(*,'(1p10g15.7)') aProfile%mid_val_
     call assert( 412238770, all( aProfile%mid_val_ .eq. 7.7e11_dk ) )
@@ -101,14 +93,12 @@ contains
     deallocate( aProfile )
 
     !> Get copy of O2 profile
-    Handle = 'O2'
-    aProfile => theProfileWarehouse%get_Profile( Handle )
+    aProfile => theProfileWarehouse%get_profile( "O2", "molecule cm-3" )
 
     deallocate( aProfile )
 
     !> Get copy of ozone profile
-    Handle = 'O3'
-    O3Profile => theProfileWarehouse%get_Profile( Handle )
+    O3Profile => theProfileWarehouse%get_profile( "O3", "molecule cm-3" )
 
     write(*,*) Iam // 'Handle = ',O3Profile%handle_
     write(*,*) ' '
@@ -117,11 +107,6 @@ contains
     write(*,'(1p10g15.7)') O3Profile%edge_val_
 
     deallocate( O3Profile )
-
-    !> Get copy of etfl profile
-    Handle = 'Etfl'
-!   aProfile => theProfileWarehouse%get_Profile( Handle )
-!   write(*,*) Iam // 'Handle = ',aProfile%handle_
 
     deallocate( zGrid )
     deallocate( lambdaGrid )

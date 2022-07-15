@@ -1,7 +1,7 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 !
-!> Surface albedo profile type
+!> surface albedo profile type
 module tuvx_profile_surface_albedo
 
   use musica_constants, only : &
@@ -42,20 +42,19 @@ contains
     ! Local variables
     real(dk)                    :: uniformValue
     integer(ik)                 :: ndx
-    type(string_t)              :: Handle
     class(grid_t), pointer      :: lambdaGrid
     character(len=*), parameter :: Iam = 'From config profile initialize: '
 
     allocate( this )
 
     ! Get the handle
-    call profile_config%get( 'Handle', this%handle_, Iam, default = 'None' )
+    call profile_config%get( 'name', this%handle_, Iam, default = 'none' )
+    call profile_config%get( 'units', this%units_, Iam )
 
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     ! Get values from config file
-    call profile_config%get( "Uniform Value", uniformValue, Iam )
+    call profile_config%get( "uniform Value", uniformValue, Iam )
 
     this%ncells_ = lambdaGrid%ncells_
 

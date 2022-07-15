@@ -87,10 +87,9 @@ contains
     real(dk), parameter  :: a2 = .01274_dk
     real(dk), parameter  :: a3 = -1.13118e-5_dk
 
-    type(string_t)              :: Handle
     class(grid_t), pointer      :: lambdaGrid => null()
 
-    Handle = 'Photolysis, wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     spectral_wght = a0 + lambdaGrid%mid_*(a1 + lambdaGrid%mid_*(a2 + lambdaGrid%mid_*a3))
     where( spectral_wght < 0.0_dk .or. lambdaGrid%mid_ > 313._dk )

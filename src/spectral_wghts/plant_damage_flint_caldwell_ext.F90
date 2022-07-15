@@ -87,10 +87,9 @@ contains
     real(dk), parameter  :: w1 = 307.867_dk
     real(dk), parameter  :: w2 = 390._dk
 
-    type(string_t)              :: Handle
     class(grid_t), pointer      :: lambdaGrid => null()
 
-    Handle = 'Photolysis, wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     spectral_wght = exp( a0*exp( -exp(a1*(lambdaGrid%mid_ - w1)/1.15_dk) ) &
                          + ((w2 - lambdaGrid%mid_)/121.7557_dk - 4.183832_dk) )

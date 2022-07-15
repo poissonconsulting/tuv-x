@@ -123,13 +123,11 @@ contains
     logical :: found
     character(len=:), allocatable :: msg
     type(netcdf_t), allocatable :: netcdf_obj
-    type(string_t)              :: Handle
     type(string_t), allocatable :: netcdfFiles(:)
     class(grid_t), pointer :: lambdaGrid
 
     !> Get model wavelength grids
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     !> get cross section netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
@@ -212,11 +210,9 @@ file_loop: &
     character(len=*), parameter :: Iam =                                      &
         'radXfer base cross section calculate: '
     class(grid_t), pointer     :: zGrid => null( )
-    type(string_t)             :: Handle
     real(dk),      allocatable :: wrkCrossSection(:,:)
 
-    Handle = 'Vertical Z'
-    zGrid => grid_warehouse%get_grid( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
 
     nzdim = zGrid%ncells_ + 1
     if( present( at_mid_point ) ) then

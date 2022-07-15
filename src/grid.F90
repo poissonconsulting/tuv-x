@@ -10,11 +10,13 @@ module tuvx_grid
   implicit none
 
   private
-  public :: grid_t, grid_ptr, base_constructor
+  public :: grid_t, grid_ptr
 
-  type, abstract ::  grid_t
+  type ::  grid_t
     !> grid handle
     type(string_t) :: handle_
+    !> units
+    type(string_t) :: units_
     !> number of wavelength grid cells
     integer(musica_ik) :: ncells_
     !> cell centers
@@ -24,6 +26,8 @@ module tuvx_grid
     !> cell deltas
     real(musica_dk), allocatable :: delta_(:)
   contains
+    !> Returns the units for the grid
+    procedure :: units
   end type grid_t
 
   !> Pointer type for building sets of spectral wght objects
@@ -31,22 +35,19 @@ module tuvx_grid
     class(grid_t), pointer :: val_ => null( )
   end type grid_ptr
 
-interface
+contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    !> construct the grid
-    subroutine base_constructor( this, grid_config )
+  !> Returns the units for the grid
+  type(string_t) function units( this )
 
-      use musica_config, only : config_t
+    class(grid_t), intent(in) :: this
 
-      import grid_t
-      class(grid_t), intent(inout)  :: this
-      type(config_t), intent(inout) :: grid_config
-    end subroutine base_constructor
+    units = this%units_
+
+  end function units
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-end interface
 
 end module tuvx_grid

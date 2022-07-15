@@ -32,6 +32,8 @@ module tuvx_radiator
     type(string_t)         :: handle_
     !> Name of the vertical profile to use
     type(string_t)         :: vertical_profile_name_
+    !> Units for the vertical profile
+    type(string_t)         :: vertical_profile_units_
     !> Name of the absorption cross-section to use
     type(string_t)         :: cross_section_name_
     !> Optical properties
@@ -93,26 +95,26 @@ contains
 
     ! local variables
     character(len=*), parameter   :: Iam = "Base radiator constructor"
-    type(string_t)                :: handle
     class(grid_t),    pointer     :: z_grid, lambda_grid
-    type(string_t)                :: required_keys(4), optional_keys(0)
+    type(string_t)                :: required_keys(5), optional_keys(0)
 
     required_keys(1) = "name"
     required_keys(2) = "type"
     required_keys(3) = "cross section"
     required_keys(4) = "vertical profile"
+    required_keys(5) = "vertical profile units"
     call assert_msg( 691711954,                                               &
                      config%validate( required_keys, optional_keys ),         &
                      "Bad configuration data format for "//                   &
                      "base radiator." )
 
-    handle = 'Vertical Z'
-    z_grid => grid_warehouse%get_grid( handle )
-    handle = 'Photolysis, wavelength'
-    lambda_grid => grid_warehouse%get_grid( handle )
+    z_grid => grid_warehouse%get_grid( "height", "km" )
+    lambda_grid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     call config%get( 'name',             this%handle_,                Iam )
     call config%get( 'vertical profile', this%vertical_profile_name_, Iam )
+    call config%get( 'vertical profile units', this%vertical_profile_units_,  &
+                     Iam )
     call config%get( 'cross section',    this%cross_section_name_,    Iam )
 
     ! allocate radiator state variables
@@ -152,7 +154,6 @@ contains
     ! Local variables
     character(len=*), parameter     :: Iam = 'Base radiator update state'
     real(dk) ,        parameter     :: km2cm = 1.e5_dk
-    type(string_t)                  :: handle
     integer                         :: w_index
     real(dk),         allocatable   :: cross_section(:,:)
     class(grid_t),          pointer :: z_grid
@@ -161,13 +162,12 @@ contains
     class(cross_section_t), pointer :: radiator_cross_section
 
     ! get specific grids and profiles
-    handle = 'Vertical Z'
-    z_grid => grid_warehouse%get_grid( handle )
-    handle = 'Photolysis, wavelength'
-    lambda_grid => grid_warehouse%get_grid( handle )
+    z_grid => grid_warehouse%get_grid( "height", "km" )
+    lambda_grid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     radiator_profile =>                                                       &
-      profile_warehouse%get_profile( this%vertical_profile_name_ )
+      profile_warehouse%get_profile( this%vertical_profile_name_,             &
+                                     this%vertical_profile_units_ )
 
     radiator_cross_section =>                                                 &
       cross_section_warehouse%get( this%cross_section_name_ )

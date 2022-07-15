@@ -61,7 +61,6 @@ contains
     logical :: found
     character(len=:), allocatable :: msg
     type(netcdf_t),   allocatable :: netcdf_obj
-    type(string_t)                :: Handle
     type(string_t),   allocatable :: netcdfFiles(:)
     class(grid_t),    pointer     :: lambdaGrid => null( )
     class(grid_t),    pointer     :: zGrid => null( )
@@ -78,10 +77,8 @@ contains
     allocate( this )
 
     ! Get model wavelength grids
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Vertical Z'
-    zGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
 
     ! Get cross section netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )

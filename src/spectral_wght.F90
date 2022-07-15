@@ -113,11 +113,10 @@ contains
     logical(lk) :: found
     type(netcdf_t), allocatable :: netcdf_obj
     type(string_t), allocatable :: netcdfFiles(:)
-    type(string_t)              :: Handle
     class(grid_t), pointer      :: lambdaGrid => null()
 
     !> Get model wavelength grid
-    Handle = 'Photolysis, wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     !> Get spectral wght netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found=found )

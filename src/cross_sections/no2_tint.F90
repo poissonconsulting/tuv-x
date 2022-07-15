@@ -70,7 +70,6 @@ contains
     type(netcdf_t), allocatable :: netcdf_obj
     type(string_t), allocatable :: netcdfFiles(:)
     class(grid_t),  pointer     :: lambdaGrid => null( )
-    type(string_t)              :: Handle
     type(string_t) :: required_keys(2), optional_keys(3)
 
     required_keys(1) = "type"
@@ -86,8 +85,7 @@ contains
     allocate(this)
 
     ! Get model wavelength grids
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     ! Get cross section netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
@@ -227,14 +225,10 @@ file_loop: &
     class(grid_t),    pointer     :: zGrid => null( )
     class(grid_t),    pointer     :: lambdaGrid => null( )
     class(profile_t), pointer     :: mdlTemperature => null( )
-    type(string_t)                :: Handle
 
-    Handle = 'Vertical Z'
-    zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Temperature'
-    mdlTemperature => profile_warehouse%get_Profile( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    mdlTemperature => profile_warehouse%get_profile( "temperature", "K" )
 
     nzdim = zGrid%ncells_ + 1
     if( present( at_mid_point ) ) then

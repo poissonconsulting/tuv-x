@@ -79,10 +79,9 @@ contains
     character(len=*), parameter :: Iam = 'eppley calculate: '
     real(dk)                    :: accum
 
-    type(string_t)              :: Handle
     class(grid_t), pointer      :: lambdaGrid => null()
 
-    Handle = 'Photolysis, wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     spectral_wght = this%spectral_wght_parms(1)%array(:,1)
     accum = dot_product( spectral_wght,lambdaGrid%delta_ )

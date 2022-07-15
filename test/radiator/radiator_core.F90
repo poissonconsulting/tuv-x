@@ -25,10 +25,13 @@ module radiator_core
   public :: radiator_core_t
 
   type :: radiator_core_t
-    type(grid_warehouse_t), pointer          :: theGridWarehouse_
-    type(Profile_warehouse_t), pointer       :: theProfileWarehouse_
-    type(cross_section_warehouse_t), pointer :: theradXferXsectWarehouse_
-    type(radiator_warehouse_t), pointer      :: theRadiatorWarehouse_
+    type(grid_warehouse_t), pointer          :: theGridWarehouse_ => null( )
+    type(Profile_warehouse_t), pointer       ::                               &
+        theProfileWarehouse_ => null( )
+    type(cross_section_warehouse_t), pointer ::                               &
+        theradXferXsectWarehouse_ => null( )
+    type(radiator_warehouse_t), pointer      ::                               &
+        theRadiatorWarehouse_ => null( )
   contains
     procedure :: test => run
     final     :: finalize
@@ -111,20 +114,17 @@ contains
     write(*,*) Iam // 'entering'
 
     !> Get copy of grid
-    Handle = 'Vertical Z'
-    zGrid => this%theGridWarehouse_%get_grid( Handle )
+    zGrid => this%theGridWarehouse_%get_grid( "height", "km" )
     call assert( 412238768, zGrid%ncells_ .eq. 120_ik )
     call assert( 412238769, all( zGrid%delta_ .eq. 1._dk ) )
 
     !> Get copy of wavelength grid
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => this%theGridWarehouse_%get_grid( Handle )
+    lambdaGrid => this%theGridWarehouse_%get_grid( "wavelength", "nm" )
     call assert( 412238766, all( lambdaGrid%edge_ > 0._dk ) )
     call assert( 412238767, all( lambdaGrid%delta_ > 0._dk ) )
 
     !> Get copy of the Air Profile
-    Handle = 'Air'
-    AirProfile => this%theProfileWarehouse_%get_Profile( Handle )
+    AirProfile => this%theProfileWarehouse_%get_profile( "air", "molecule cm-3" )
     call assert( 412238771, all( AirProfile%delta_val_ < 0._dk ) )
     call assert( 412238771, all( AirProfile%layer_dens_ > 0._dk ) )
     write(*,*) ' '
@@ -136,8 +136,7 @@ contains
     write(*,'(1p10g15.7)') AirProfile%burden_dens_
 
     !> Get copy of the temperature Profile
-    Handle = 'Temperature'
-    TemperatureProfile => this%theProfileWarehouse_%get_Profile( Handle )
+    TemperatureProfile => this%theProfileWarehouse_%get_profile( "temperature", "K" )
     call assert( 412238772, all( TemperatureProfile%edge_val_ < 400._dk ) )
     call assert( 412238772, all( TemperatureProfile%edge_val_ > 150._dk ) )
     call assert( 412238773, all( abs(TemperatureProfile%delta_val_) < 20._dk ) )

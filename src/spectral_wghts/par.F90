@@ -85,10 +85,9 @@ contains
     real(dk), parameter         :: rONE  = 1.0_dk
     character(len=*), parameter :: Iam = 'par calculate: '
 
-    type(string_t)              :: Handle
     class(grid_t), pointer      :: lambdaGrid => null()
 
-    Handle = 'Photolysis, wavelength' ; lambdaGrid => grid_warehouse%get_grid( Handle )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     allocate( spectral_wght(lambdaGrid%ncells_) )
 

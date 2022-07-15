@@ -39,14 +39,14 @@ contains
     character(len=*), parameter :: Iam = 'Grid builder: '
 
     new_grid_t => null()
-    call config%get( 'Grid type', grid_type, Iam )
+    call config%get( 'type', grid_type, Iam )
 
     select case( grid_type%to_char() )
-      case( 'Equal interval' )
+      case( 'equal interval' )
         new_grid_t => equal_delta_t( config )
-      case( 'From csv file' )
+      case( 'from csv file' )
         new_grid_t => from_csv_file_t( config )
-      case( 'From config file' )
+      case( 'from config file' )
         new_grid_t => from_config_t( config )
       case default
         call die_msg( 460768215, "Invalid grid type: '" &

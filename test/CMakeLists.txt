@@ -20,12 +20,12 @@ add_subdirectory(regression)
 # Photo-decomp tests
 
 # \todo should be moved to unit or regression folder
-create_standard_test(NAME profile SOURCES Profiles/test.F90
+create_standard_test(NAME profile SOURCES profile/test.F90
                                   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 
 # \todo should be moved to unit or regression folder
-create_standard_test(NAME radXfer SOURCES radXfer/radXfer_core.F90
-                                          radXfer/radXfer_test.F90)
+create_standard_test(NAME radiative_transfer SOURCES radiative_transfer/radiative_transfer_core.F90
+                                                     radiative_transfer/radiative_transfer_test.F90)
 
 # \todo should be moved to unit or regression folder
 create_standard_test(NAME radiator SOURCES radiator/radiator_core.F90

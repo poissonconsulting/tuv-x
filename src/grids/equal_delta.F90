@@ -43,13 +43,11 @@ contains
 
     allocate ( this )
 
-    call grid_config%get( 'Grid begins at', Lower_val, Iam )
-    call grid_config%get( 'Grid ends at', Upper_val, Iam )
-    call grid_config%get( 'Grid cell delta', Delta_val, Iam )
-    call grid_config%get( 'Handle', this%handle_, Iam, found = found )
-    if( .not. found ) then
-      this%handle_ = "None"
-    endif
+    call grid_config%get( 'begins at', Lower_val, Iam )
+    call grid_config%get( 'ends at', Upper_val, Iam )
+    call grid_config%get( 'cell delta', Delta_val, Iam )
+    call grid_config%get( 'name', this%handle_, Iam, default = "none" )
+    call grid_config%get( 'units', this%units_, Iam )
 
     this%ncells_ = int( (Upper_val - Lower_val)/Delta_val,kind=ik )
     if( mod((Upper_val - Lower_val),Delta_val ) /= 0._dk ) then

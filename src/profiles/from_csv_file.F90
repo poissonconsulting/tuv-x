@@ -53,7 +53,6 @@ contains
     logical(lk) :: found
     character(len=132) :: InputLine
     type(string_t)     :: Filespec, Interpolator
-    type(string_t)     :: Handle
     real(dk), allocatable :: zdata(:)
     real(dk), allocatable :: profile(:)
     class(abs_interpolator_t), pointer :: theInterpolator
@@ -61,12 +60,13 @@ contains
     allocate( this )
 
     ! Get the configuration settings
-    call profile_config%get( 'Filespec', Filespec, Iam )
-    call profile_config%get( 'Handle', this%handle_, Iam, &
-      default = 'None' )
-    call profile_config%get( 'Interpolator', Interpolator, Iam, &
+    call profile_config%get( 'file path', Filespec, Iam )
+    call profile_config%get( 'name', this%handle_, Iam, &
+      default = 'none' )
+    call profile_config%get( 'units', this%units_, Iam )
+    call profile_config%get( 'interpolator', Interpolator, Iam, &
       default = 'interp1' )
-    call profile_config%get( 'Scale heigth', this%hscale_, Iam, &
+    call profile_config%get( 'scale heigth', this%hscale_, Iam, &
       default = 0._dk )
 
     ! Does input grid file exist?
@@ -109,8 +109,7 @@ contains
 
     close(unit=inUnit)
 
-    Handle = 'Vertical Z'
-    zGrid => grid_warehouse%get_grid( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
     this%ncells_ = zGrid%ncells_
 
     ! assign actual interpolator for this profile

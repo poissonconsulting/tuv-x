@@ -7,7 +7,6 @@
 !> The photolysis_rates_t type and related functions
 module tuvx_photolysis_rates
 
-  use musica_assert,                   only : die_msg
   use musica_constants,                only : dk => musica_dk
   use musica_string,                   only : string_t
   use tuvx_grid,                       only : grid_t
@@ -56,6 +55,7 @@ contains
   function constructor( reaction_set, grid_warehouse, profile_warehouse )     &
       result( photolysis_rates )
 
+    use musica_assert,                 only : assert
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
     use tuvx_cross_section_factory,    only : cross_section_builder
@@ -84,7 +84,6 @@ contains
     character(len=64)           :: keychar
     type(string_t)              :: netcdfFile, Object
     type(string_t)              :: reaction_key
-    type(string_t)              :: Handle
     type(string_t), allocatable :: netcdfFiles(:)
 
     allocate( photolysis_rates )
@@ -123,9 +122,9 @@ contains
     end do
     deallocate( iter )
 
-    if( size( rates%cross_sections_ ) /= size( rates%quantum_yields_ ) ) then
-      call die_msg( 131408672, Iam//': # cross sections != # quantum yields' )
-    endif
+    call assert( 613491108,                                                   &
+                 size( rates%cross_sections_ )                                &
+                 == size( rates%quantum_yields_ ) )
 
     end associate
 
@@ -179,12 +178,10 @@ contains
     class(profile_t), pointer :: airProfile => null()
     class(profile_t), pointer :: etfl => null()
 
-    Handle = 'Vertical Z'
-    zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Etfl'
-    etfl  => profile_warehouse%get_profile( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    etfl  => profile_warehouse%get_profile( "extraterrestrial flux",          &
+                                            "photon cm-2 s-1" )
 
     nRates = size( this%cross_sections_ )
     if( .not. allocated( photolysis_rates ) ) then
@@ -219,7 +216,7 @@ rate_loop:                                                                    &
 
       ! O2 photolysis can have special la & srb band handling
       if( trim( this%handles_( rateNdx )%to_char( ) ) == 'O2+hv->O+O' ) then
-        Handle = 'Air' ; airProfile => profile_warehouse%get_profile( Handle )
+        airProfile => profile_warehouse%get_profile( "air", "molecule cm-3" )
         allocate( airVcol( airProfile%ncells_ ),                              &
                   airScol( airProfile%ncells_ + 1 ) )
         call spherical_geometry%airmas( airProfile%exo_layer_dens_, airVcol,  &

@@ -83,13 +83,10 @@ contains
     real(dk),      allocatable :: wrkQuantumYield(:)
     class(grid_t), pointer     :: lambdaGrid => null( )
     class(grid_t), pointer     :: zGrid => null( )
-    type(string_t) :: Handle
 
     ! Get model wavelength grid
-    Handle = 'Vertical Z'
-    zGrid => grid_warehouse%get_grid( Handle )
-    Handle = 'Photolysis, wavelength'
-    lambdaGrid => grid_warehouse%get_grid( Handle )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
+    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     allocate( wrkQuantumYield( lambdaGrid%ncells_) )
     allocate( quantum_yield( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )

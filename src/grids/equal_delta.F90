@@ -25,8 +25,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize grid
   function constructor( grid_config ) result ( this )
+    ! Initialize grid
       
     use musica_config, only : config_t
     use musica_string, only : string_t

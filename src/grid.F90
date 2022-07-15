@@ -1,8 +1,8 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-! one dimension grid type
 module tuvx_grid
+
+! one dimension grid type
 
   use musica_constants, only : musica_dk, musica_ik
   use musica_string,    only : string_t
@@ -39,8 +39,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Returns the units for the grid
   type(string_t) function units( this )
+  !> Returns the units for the grid
 
     class(grid_t), intent(in) :: this
 

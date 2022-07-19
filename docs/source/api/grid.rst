@@ -11,8 +11,8 @@ at runtime is configurd from the configuration file. See
 SOmething
 
 
-The base ``grid`` type
-^^^^^^^^^^^^^^^^^^^^^^
+The base grid type
+^^^^^^^^^^^^^^^^^^
 .. f:automodule:: tuvx_grid
 
 Grid from equal delta

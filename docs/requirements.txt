@@ -1,6 +1,6 @@
 sphinx
 sphinx-book-theme
-myst_parser
+myst-parser
 sphinx-fortran
 six
 numpy

@@ -8,8 +8,6 @@ classes that can be used to configure TUV-x. Typically, the type of grid used
 at runtime is configurd from the configuration file. See 
 :ref:`configuration-grid` for more information.
 
-SOmething
-
 
 The base grid type
 ^^^^^^^^^^^^^^^^^^

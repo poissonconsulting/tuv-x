@@ -88,7 +88,10 @@ contains
     class(grid_t),    pointer     :: zGrid => null( )
     class(grid_t),    pointer     :: lambdaGrid => null( )
     class(profile_t), pointer     :: mdlDensity => null( )
+<<<<<<< HEAD
     type(string_t)                :: Handle
+=======
+>>>>>>> main
 
     zGrid => grid_warehouse%get_grid( "height", "km" )
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )

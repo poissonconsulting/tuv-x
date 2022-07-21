@@ -1,8 +1,11 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 module tuvx_grid
-
-! one dimension grid type
+! The base grid type
+! ^^^^^^^^^^^^^^^^^^
+!
+! A one dimensional grid type.
+!
 
   use musica_constants, only : musica_dk, musica_ik
   use musica_string,    only : string_t
@@ -40,7 +43,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   type(string_t) function units( this )
-  !> Returns the units for the grid
+  ! Returns the units for the grid
 
     class(grid_t), intent(in) :: this
 

@@ -1,8 +1,12 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-! one dimension, equally spaced  grid type
+
 module tuvx_grid_equal_delta
+!
+! Grid from equal delta
+! ^^^^^^^^^^^^^^^^^^^^^
+! one dimension, equally spaced  grid type
+!
 
   use musica_constants, only : &
     dk => musica_dk, ik => musica_ik, lk => musica_lk

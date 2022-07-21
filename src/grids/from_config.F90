@@ -1,8 +1,10 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-! 1d grid specified in json config file
+  
 module tuvx_grid_from_config
+! Grid from configuration file
+! ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+! 1d grid specified in json config file
 
   use musica_constants, only : &
     dk => musica_dk, ik => musica_ik, lk => musica_lk

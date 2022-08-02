@@ -2,8 +2,6 @@
 ! SPDX-License-Identifier: Apache-2.0
   
 module tuvx_grid_from_config
-! Grid from configuration file
-! ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ! 1d grid specified in json config file
 
   use musica_constants, only : &

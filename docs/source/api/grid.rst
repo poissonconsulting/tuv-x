@@ -42,8 +42,14 @@ Grid Warehouse
 ^^^^^^^^^^^^^^
 .. f:automodule:: tuvx_grid_warehouse
 
+Grid from equal delta
+^^^^^^^^^^^^^^^^^^^^^
 .. f:automodule:: tuvx_grid_equal_delta 
 
+Grid from configuration file
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. f:automodule:: tuvx_grid_from_config 
 
+Grid from CSV File
+^^^^^^^^^^^^^^^^^^
 .. f:automodule:: tuvx_grid_from_csv_file 

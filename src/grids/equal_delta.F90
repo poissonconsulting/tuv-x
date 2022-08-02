@@ -2,11 +2,7 @@
 ! SPDX-License-Identifier: Apache-2.0
 
 module tuvx_grid_equal_delta
-!
-! Grid from equal delta
-! ^^^^^^^^^^^^^^^^^^^^^
 ! one dimension, equally spaced  grid type
-!
 
   use musica_constants, only : &
     dk => musica_dk, ik => musica_ik, lk => musica_lk

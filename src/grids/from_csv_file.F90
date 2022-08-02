@@ -2,9 +2,8 @@
 ! SPDX-License-Identifier: Apache-2.0
 
 module tuvx_grid_from_csv_file
-! Grid from CSV File
-! ^^^^^^^^^^^^^^^^^^
-! one dimension, equally spaced  grid type
+! read a grid defined in a CSV file. See 
+! :ref:`configuration-grid` for more information.
 
   use musica_constants, only : &
     dk => musica_dk, ik => musica_ik, lk => musica_lk

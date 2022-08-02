@@ -1,8 +1,6 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 module tuvx_grid
-! The base grid type
-! ^^^^^^^^^^^^^^^^^^
 ! A one dimensional grid type.
 !
 

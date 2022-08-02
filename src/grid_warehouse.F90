@@ -2,8 +2,7 @@
 ! SPDX-License-Identifier: Apache-2.0
 
 module tuvx_grid_warehouse
-! Grid Warehouse
-! ^^^^^^^^^^^^^^
+! A warehouse to hold and distribute grids.
 
   use tuvx_grid, only : grid_ptr
 

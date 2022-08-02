@@ -2,8 +2,8 @@
 ! SPDX-License-Identifier: Apache-2.0
 
 module tuvx_grid_factory
-! Grid Factory
-! ^^^^^^^^^^^^
+! Provides a function which creates grids for the 
+! :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`.
 
   use tuvx_grid,                       only : grid_t
   use tuvx_grid_equal_delta,           only : equal_delta_t

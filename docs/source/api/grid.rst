@@ -15,7 +15,7 @@ created once and lives in the :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 class. A copy of the grid is returned each time the grid is needed. Each class
 that depends on a grid will take a 
 :f:type:`~tuvx_grid_warehouse/grid_warehouse_t` object as an
-argument and pull the type of grid that is desired out of the warehosue, 
+argument and pull the type of grid that is desired out of the warehouse, 
 like this: ::
 
   function run( grid_warehouse ) result( thing )

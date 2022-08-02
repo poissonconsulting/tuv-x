@@ -3,7 +3,7 @@
 Grids
 =====
 
-A :f:type:`~tuvx_grid/grid_t` object defines the vertical extent of the model. 
+A :f:type:`~tuvx_grid/grid_t` object defines discrete values along an axis (e.g., height, wavelength). 
 There are three 
 classes that can be used to configure TUV-x. Typically, the type of grid used
 at runtime is configurd from the configuration file. See 

@@ -30,10 +30,16 @@ like this: ::
       ...
     end function run
 
+The base grid type
+^^^^^^^^^^^^^^^^^^
 .. f:automodule:: tuvx_grid
 
+Grid Factory
+^^^^^^^^^^^^
 .. f:automodule:: tuvx_grid_factory
 
+Grid Warehouse
+^^^^^^^^^^^^^^
 .. f:automodule:: tuvx_grid_warehouse
 
 .. f:automodule:: tuvx_grid_equal_delta 

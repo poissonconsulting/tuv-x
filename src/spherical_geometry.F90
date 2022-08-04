@@ -1,7 +1,8 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
+
 module tuvx_spherical_geometry
+! Calculates paths in a spherical geometry
 
       use musica_constants, only : ik => musica_ik, dk => musica_dk
       use musica_string, only    : string_t
@@ -13,9 +14,9 @@ module tuvx_spherical_geometry
       public :: spherical_geom_t
 
       type :: spherical_geom_t
-        integer(ik), allocatable :: nid_(:)
-        real(dk)                 :: SolarZenithAngle_
-        real(dk), allocatable    :: dsdh_(:,:)  
+        integer(ik), allocatable :: nid_(:) ! number of layers crossed by the direct beam when travelling from the top of the atmosphere to layer i
+        real(dk)                 :: SolarZenithAngle_ ! the solar zenith angle in degrees
+        real(dk), allocatable    :: dsdh_(:,:) ! slant path of direct beam through each layer crossed when travelling from the top of the atmosphere to layer i
       contains
         procedure :: setSphericalParams
         procedure :: airmas
@@ -38,11 +39,9 @@ module tuvx_spherical_geometry
           use tuvx_grid_warehouse, only : grid_warehouse_t
           use tuvx_grid, only        : grid_t
 
-          type(spherical_geom_t), pointer :: this
-          !> Arguments
-          type(grid_warehouse_t), intent(inout)  :: gridWareHouse
+          type(spherical_geom_t), pointer :: this ! A :f:type:`~tuvx_spherical_geometry/spherical_geom_t`
+          type(grid_warehouse_t), intent(inout)  :: gridWareHouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 
-          !> Local variables
           character(len=*), parameter            :: Iam = 'sphers initialize: '
 
           class(grid_t), pointer          :: zGrid
@@ -63,59 +62,25 @@ module tuvx_spherical_geometry
       end function constructor
 
       subroutine setSphericalParams(this, zen, gridWareHouse)
-!-----------------------------------------------------------------------------*
-!=  purpose:                                                                 =*
-!=  calculate slant path over vertical depth ds/dh in spherical geometry.    =*
-!=  calculation is based on:  a.dahlback, and k.stamnes, a new spheric model =*
-!=  for computing the radiation field available for photolysis and heating   =*
-!=  at twilight, planet.space sci., v39, n5, pp. 671-683, 1991 (appendix b)  =*
-!-----------------------------------------------------------------------------*
-!=  parameters:                                                              =*
-!=  nz      - integer, number of specified altitude levels in the working (i)=*
-!=            grid                                                           =*
-!=  z       - real(dk), specified altitude working grid (km)                  (i)=*
-!=  zen     - real(dk), solar zenith angle (degrees)                          (i)=*
-!=  dsdh    - real(dk), slant path of direct beam through each layer crossed  (o)=*
-!=            when travelling from the top of the atmosphere to layer i;     =*
-!=            dsdh(i,j), i = 0..nz-1, j = 1..nz-1                            =*
-!=  nid     - integer, number of layers crossed by the direct beam when   (o)=*
-!=            travelling from the top of the atmosphere to layer i;          =*
-!=            nid(i), i = 0..nz-1                                            =*
-!-----------------------------------------------------------------------------*
-!=  edit history:                                                            =*
-!=  double precision fix for shallow layers - julia lee-taylor dec 2000      =*
-!-----------------------------------------------------------------------------*
-!= this program is free software;  you can redistribute it and/or modify     =*
-!= it under the terms of the gnu general public license as published by the  =*
-!= free software foundation;  either version 2 of the license, or (at your   =*
-!= option) any later version.                                                =*
-!= the tuv package is distributed in the hope that it will be useful, but    =*
-!= without any warranty;  without even the implied warranty of merchantibi-  =*
-!= lity or fitness for a particular purpose.  see the gnu general public     =*
-!= license for more details.                                                 =*
-!= to obtain a copy of the gnu general public license, write to:             =*
-!= free software foundation, inc., 675 mass ave, cambridge, ma 02139, usa.   =*
-!-----------------------------------------------------------------------------*
-!= to contact the authors, please mail to:                                   =*
-!= sasha madronich, ncar/acd, p.o.box 3000, boulder, co, 80307-3000, usa  or =*
-!= send email to:  sasha@ucar.edu                                            =*
-!-----------------------------------------------------------------------------*
+      ! Calculates the slant path over vertical depth ds/dh in spherical geometry.   
+      ! calculation is based on:  a.dahlback, and k.stamnes, a new spheric model
+      ! for computing the radiation field available for photolysis and heating   
+      ! at twilight, planet.space sci., v39, n5, 
+      ! pp. 671-683, 1991 (appendix b) `doi:10.1016/0032-0633(91)90061-E 
+      ! <https://doi.org/10.1016/0032-0633(91)90061-E>`_
 
       use tuvx_grid_warehouse, only : grid_warehouse_t
       use tuvx_grid, only        : grid_t
  
-! input
-      real(dk), intent(in) :: zen
-      class(spherical_geom_t), intent(inout) :: this
-      type(grid_warehouse_t), intent(inout)  :: gridWareHouse
+      real(dk), intent(in) :: zen ! solar zenith angle (degrees)
+      class(spherical_geom_t), intent(inout) :: this ! A :f:type:`~tuvx_spherical_geometry/spherical_geom_t`
+      type(grid_warehouse_t), intent(inout)  :: gridWareHouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 
-! more program constants
       real(dk) :: re
       real(dk), allocatable :: ze(:)
 
-! local 
       character(len=*), parameter            :: Iam = 'sphers setSphericalParams: '
-      integer(ik) :: nz
+      integer(ik) :: nz ! number of specified altitude levels in the working grid
       integer(ik) :: i, j, k
       integer(ik) :: id
       integer(ik) :: nlayer
@@ -133,31 +98,29 @@ module tuvx_spherical_geometry
 
       nlayer = zGrid%ncells_
       nz     = nlayer + iONE
-! number of layers:
+      ! number of layers:
 
-! include the elevation above sea level to the radius of the earth:
+      ! include the elevation above sea level to the radius of the earth:
       re = radius + zGrid%edge_(iONE)
-! correspondingly z changed to the elevation above earth surface:
+      ! correspondingly z changed to the elevation above earth surface:
       ze = zGrid%edge_ - zGrid%edge_(iONE)
 
       allocate( zd(0:nlayer) )
-! inverse coordinate of z
+      ! inverse coordinate of z
       zd(0:nlayer) = ze(nz:iONE:-iONE)
 
-! initialize dsdh, nid
+      ! initialize dsdh, nid
       this%nid_  = 0_ik
       this%dsdh_ = rZERO
 
       sinrad = sin(zenrad)
-! calculate ds/dh of every layer
+      ! calculate ds/dh of every layer
       layer_loop: do i = 0_ik, nlayer
         rpsinz = (re + zd(i)) * sinrad
         if ( zen > NINETY .and. rpsinz < re ) then
           this%nid_(i) = -iONE
         else
-!
-! find index of layer in which the screening height lies
-!
+          ! find index of layer in which the screening height lies
           if( zen <= NINETY ) then
             id = i
           else
@@ -199,42 +162,24 @@ module tuvx_spherical_geometry
       end subroutine setSphericalParams
 
       subroutine airmas(this, aircol, vcol, scol)
-!-----------------------------------------------------------------------------*
-!=  purpose:                                                                 =*
-!=  calculate vertical and slant air columns, in spherical geometry, as a    =*
-!=  function of altitude.                                                    =*
-!-----------------------------------------------------------------------------*
-!=  parameters:                                                              =*
-!=  nz      - integer, number of specified altitude levels in the working (i)=*
-!=            grid                                                           =*
-!=  dsdh    - real(dk), slant path of direct beam through each layer crossed  (o)=*
-!=            when travelling from the top of the atmosphere to layer i;     =*
-!=            dsdh(i,j), i = 0..nz-1, j = 1..nz-1                            =*
-!=  nid     - integer, number of layers crossed by the direct beam when   (o)=*
-!=            travelling from the top of the atmosphere to layer i;          =*
-!=            nid(i), i = 0..nz-1                                            =*
-!=  vcol    - real(dk), output, vertical air column, molec cm-2, above level iz  =*
-!=  scol    - real(dk), output, slant air column in direction of sun, above iz   =*
-!=            also in molec cm-2                                             =*
-!-----------------------------------------------------------------------------*
+      !  calculate vertical and slant air columns, in spherical geometry, as a    
+      !  function of altitude.                                                    
 
       use tuvx_constants, only : largest
 
-! input:
-      real(dk), intent(in)    :: aircol(:)
-      class(spherical_geom_t), intent(in) :: this
+      real(dk), intent(in)    :: aircol(:) ! /todo define and describe this. I don't know what it is 
+      class(spherical_geom_t), intent(in) :: this ! This :f:type:`~tuvx_spherical_geometry/spherical_geom_t`
 
-! output: 
-      real(dk), intent(out)   :: vcol(:), scol(:)
+      real(dk), intent(out)   :: vcol(:) ! vertical air column, molec cm-2, above level iz
+      real(dk), intent(out)   :: scol(:) ! slant air column in direction of sun, above iz also in molec cm-2
 
-! internal:
-
-      integer(ik) :: nz, nlayer
+      integer(ik) :: nz ! number of specified altitude levels in the working (i) grid
+      integer(ik) :: nlayer
       integer(ik) :: id, j
       real(dk)    :: accum
 
-! calculate vertical and slant column from each level:
-! work downward
+      ! calculate vertical and slant column from each level:
+      ! work downward
 
       nz = size(aircol)
       nlayer = nz - iONE
@@ -250,11 +195,11 @@ module tuvx_spherical_geometry
          if(this%nid_(id) < 0_ik) then
             accum = largest
          else
-! single pass layers:
+            ! single pass layers:
             do j = iONE, min(this%nid_(id), id)
                accum = accum + aircol(nz-j)*this%dsdh_(id,j)
             enddo
-! double pass layers:
+            ! double pass layers:
             do j = min(this%nid_(id),id)+iONE, this%nid_(id)
                accum = accum + 2._dk*aircol(nz-j)*this%dsdh_(id,j)
             enddo
@@ -266,7 +211,7 @@ module tuvx_spherical_geometry
 
       subroutine finalize( this )
 
-      type(spherical_geom_t), intent(inout) :: this
+      type(spherical_geom_t), intent(inout) :: this ! A :f:type:`~tuvx_spherical_geometry/spherical_geom_t`
 
       if( allocated(this%nid_) ) then
         deallocate(this%nid_)

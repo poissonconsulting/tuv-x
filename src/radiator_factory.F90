@@ -1,11 +1,9 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> The tuvx_radiator_factory module
 
-!> Build radiator objects
 module tuvx_radiator_factory
+! Builds :f:type:`~tuvx_radiator/radiator_t` s for
+! :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`. 
 
   use tuvx_radiator,                   only : radiator_t
   use tuvx_radiator_aerosol,           only : radiator_aerosol_t
@@ -19,20 +17,17 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Builder of radiator_t objects
   function radiator_builder( config, gridWareHouse ) result( new_radiator )
+    ! Builder of :f:type:`~tuvx_radiator/radiator_t` objects
 
     use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
 
-    !> Radiator configuration data
-    type(config_t),         intent(inout) :: config
-    !> Grid warehouse
-    type(grid_warehouse_t), intent(inout) :: gridWareHouse
-    !> New radiator object
-    class(radiator_t),      pointer       :: new_radiator
+    type(config_t),         intent(inout) :: config        ! Radiator configuration data
+    type(grid_warehouse_t), intent(inout) :: gridWareHouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    class(radiator_t),      pointer       :: new_radiator  ! New :f:type:`~tuvx_radiator/radiator_t` object
 
     ! Local variables
     type(string_t) :: radiator_type

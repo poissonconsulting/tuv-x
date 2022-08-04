@@ -1,7 +1,9 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 !
+
 module tuvx_radiative_transfer_solver
+! The interface for the radiative transfer solver
 
    use musica_constants,         only : ik => musica_ik, dk => musica_dk
 

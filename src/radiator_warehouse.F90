@@ -1,11 +1,11 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> The tuvx_radiator warehouse module
 
-!> The radiator_warehouse_t type and related functions
 module tuvx_radiator_warehouse
+! A class that holds and gives out 
+! :f:type:`~tuvx_radiator/radiator_t`'s built by the
+! :f:mod:`~tuvx_radiator_factory`. 
+
 
   use musica_constants,                only : musica_dk
   use musica_iterator,                 only : iterator_t
@@ -17,13 +17,12 @@ module tuvx_radiator_warehouse
   private
   public :: radiator_warehouse_t, warehouse_iterator_t
 
-  !> Radiator warehouse
-  type :: radiator_warehouse_t
+  type radiator_warehouse_t
+    ! Radiator warehouse
+
     private
-    !> Radiators
-    type(radiator_ptr), allocatable :: radiators_(:)
-    !> Radiator "handles"
-    type(string_t),     allocatable :: handle_(:)
+    type(radiator_ptr), allocatable :: radiators_(:) ! Radiators
+    type(string_t),     allocatable :: handle_(:) ! Radiator "handles"
   contains
     !> @name Returns a pointer to a requested radiator
     !! @{
@@ -41,12 +40,11 @@ module tuvx_radiator_warehouse
     final     :: finalize
   end type radiator_warehouse_t
 
-  !>  Radiator warehouse iterator
-  type :: warehouse_iterator_t
-    !> Pointer to the radiator warehouse
-    type(radiator_warehouse_t), pointer :: warehouse_ => null( )
-    !> Current index in the data set
-    integer :: id_ = 0
+  type warehouse_iterator_t
+    !  Radiator warehouse iterator
+
+    type(radiator_warehouse_t), pointer :: warehouse_ => null( ) ! Pointer to the radiator warehouse
+    integer :: id_ = 0 ! Current index in the data set
   contains
     !> Advances to the next key-value pair
     procedure :: next => iterator_next
@@ -54,8 +52,8 @@ module tuvx_radiator_warehouse
     procedure :: reset => iterator_reset
   end type warehouse_iterator_t
 
-  !> radiator_warehouse_t constructor
   interface radiator_warehouse_t
+    ! radiator_warehouse_t constructor
     module procedure :: constructor
   end interface
 
@@ -63,8 +61,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Constructs radiator_warehouse_t abjects
   function constructor( config, grid_warehouse ) result( radiator_warehouse )
+    ! Constructs radiator_warehouse_t abjects
 
     use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
@@ -73,12 +71,9 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_radiator_factory,         only : radiator_builder
 
-    !> Radiator configuration
-    type(config_t), intent(inout)         :: config
-    !> Grid warehouse
-    type(grid_warehouse_t), intent(inout) :: grid_warehouse
-    !> Radiator warehouse
-    class(radiator_warehouse_t), pointer :: radiator_warehouse
+    type(config_t), intent(inout)        :: config ! Radiator configuration
+    type(grid_warehouse_t), intent(inout):: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    class(radiator_warehouse_t), pointer :: radiator_warehouse ! A :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
 
     ! local variables
     character(len=*), parameter :: Iam = "Radiator warehouse constructor: "
@@ -108,20 +103,17 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Returns a pointer to a requested radiator
   function get_radiator_from_handle( this, radiator_handle )                  &
       result( radiator )
+    ! Returns a pointer to a requested radiator
 
     use musica_assert,                 only : assert_msg
     use musica_string,                 only : string_t
     use tuvx_radiator,                 only : radiator_t
 
-    !> Radiator warehouse
-    class(radiator_warehouse_t), intent(inout) :: this
-    !> Name associated with requested radiator
-    type(string_t),              intent(in)    :: radiator_handle
-    !> Pointer to requested radiator
-    class(radiator_t),           pointer       :: radiator
+    class(radiator_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
+    type(string_t),              intent(in)    :: radiator_handle ! Name associated with requested radiator
+    class(radiator_t),           pointer       :: radiator ! Pointer to the requested radiator of type :f:type:`~tuvx_radiator/radiator_t`
 
     ! Local variables
     character(len=*), parameter :: Iam = 'radiator warehouse get radiator'
@@ -144,21 +136,18 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Returns the index associated with a given radiator
-  !!
-  !! If the radiator is not found, returns -1
   function get_radiator_ndx_from_handle( this, radiator_handle )              &
       result( index )
+    ! Returns the index associated with a given radiator
+    !
+    ! If the radiator is not found, returns -1
 
     use tuvx_radiator,                 only : radiator_t
     use musica_string,                 only : string_t
 
-    !> Radiator warehouse
-    class(radiator_warehouse_t), intent(inout) :: this
-    !> Requested radiator name
-    type(string_t),              intent(in)    :: radiator_handle
-    !> Index of requested radiator in warehouse
-    integer                                    :: index
+    class(radiator_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
+    type(string_t),              intent(in)    :: radiator_handle ! Requested radiator name
+    integer                                    :: index ! Index of requested radiator in warehouse
 
     ! Local variables
     character(len=*), parameter :: Iam =                                      &
@@ -178,17 +167,14 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Returns a pointer to a radiator in the warehouse from an iterator
   function get_radiator_from_iterator( this, iterator ) result( radiator )
+    ! Returns a pointer to a radiator in the warehouse from an iterator
 
     use tuvx_radiator,                 only : radiator_t
 
-    !> Radiator warehouse
-    class(radiator_warehouse_t), intent(inout) :: this
-    !> Radiator warehouse iterator
-    type(warehouse_iterator_t),  intent(in)    :: iterator
-    !> Pointer to requested radiator
-    class(radiator_t),           pointer       :: radiator
+    class(radiator_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
+    type(warehouse_iterator_t),  intent(in)    :: iterator ! ! A :f:type:`~tuvx_radiator_warehouse/warehouse_iterator_t`
+    class(radiator_t),           pointer       :: radiator ! Pointer to requested :f:type:`~tuvx_radiator/radiator_t`
 
     ! Local variables
     character(len=*), parameter :: Iam =                                      &
@@ -200,18 +186,15 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Returns whether a radiator exists in the warehouse
   function in_warehouse( this, radiator_handle )
+    ! Returns whether a radiator exists in the warehouse
 
     use musica_string,      only : string_t
     use musica_assert,      only : die_msg
 
-    !> Radiator warehouse
-    class(radiator_warehouse_t), intent(inout) :: this
-    !> Name associated with requested radiator
-    type(string_t),              intent(in)    :: radiator_handle
-    !> Flag indicating whether the radiator exists in the warehouse
-    logical                                    :: in_warehouse
+    class(radiator_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
+    type(string_t),              intent(in)    :: radiator_handle ! Name associated with requested radiator
+    logical                                    :: in_warehouse ! Flag indicating whether the radiator exists in the warehouse
 
     ! Local variables
     character(len=*), parameter :: Iam = 'radiator in warehouse'
@@ -229,15 +212,13 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Gets an interator for the radiator warehouse
   function get_iterator( this )
+    ! Gets an iterator for the radiator warehouse
 
     use musica_assert,                 only : assert
 
-    !> Pointer to the iterator
-    class(warehouse_iterator_t), pointer            :: get_iterator
-    !> Radiator warehouse
-    class(radiator_warehouse_t), intent(in), target :: this
+    class(warehouse_iterator_t), pointer            :: get_iterator ! Pointer to the :f:type:`~tuvx_radiator_warehouse/warehouse_iterator_t`
+    class(radiator_warehouse_t), intent(in), target :: this ! This :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
 
     call assert( 753334333, allocated( this%radiators_ ) )
     allocate( warehouse_iterator_t :: get_iterator )
@@ -250,13 +231,12 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Advances the iterator
-  !!
-  !! Returns false if the end of the collection has been reached
   function iterator_next( this ) result( continue )
+    ! Advances the iterator
+    !
+    ! Returns false if the end of the collection has been reached
 
-    !> Iterator
-    class(warehouse_iterator_t), intent(inout) :: this
+    class(warehouse_iterator_t), intent(inout) :: this ! A :f:type:`~tuvx_radiator_warehouse/warehouse_iterator_t`
 
     logical :: continue
 
@@ -267,11 +247,10 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Resets the iterator
   subroutine iterator_reset( this )
+    ! Resets the iterator
 
-    !> Iterator
-    class(warehouse_iterator_t), intent(inout) :: this
+    class(warehouse_iterator_t), intent(inout) :: this ! This :f:type:`~tuvx_radiator_warehouse/warehouse_iterator_t`
 
     this%id_ = 0
 
@@ -279,11 +258,10 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Finalize the radiator warehouse
   subroutine finalize( this )
+    ! Finalize the radiator warehouse
 
-    !> Radiator warehouse
-    type(radiator_warehouse_t), intent(inout) :: this
+    type(radiator_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
 
     integer :: ndx
     character(len=*), parameter :: Iam = 'radiator_warehouse finalize: '

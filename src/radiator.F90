@@ -1,11 +1,8 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> The base_tuvx_radiator module
 
-!> The radiator_t type and related functions
 module tuvx_radiator
+! Represents an atmospheric constituent that affects radiative transfer calculations by absorbing or scattering radiation
 
   use musica_constants,                only : dk => musica_dk
   use musica_string,                   only : string_t
@@ -15,29 +12,24 @@ module tuvx_radiator
   private
   public :: radiator_t, radiator_ptr, radiator_state_t, base_constructor
 
-  !> Optical properties for a radiator
-  type :: radiator_state_t
-    !> layer optical depth
-    real(kind=dk), allocatable :: layer_OD_(:,:)
-    !> layer single scattering albedo
-    real(kind=dk), allocatable :: layer_SSA_(:,:)
-    !> layer asymmetry factor
-    real(kind=dk), allocatable :: layer_G_(:,:)
+  type radiator_state_t
+    ! Optical properties for a radiator
+
+    real(kind=dk), allocatable :: layer_OD_(:,:) ! layer optical depth
+    real(kind=dk), allocatable :: layer_SSA_(:,:) ! layer single scattering albedo
+    real(kind=dk), allocatable :: layer_G_(:,:) ! layer asymmetry factor
   contains
     final :: finalize
   end type radiator_state_t
 
-  !> Optically active species
-  type :: radiator_t
+  type radiator_t
+    ! Optically active species
+
     type(string_t)         :: handle_
-    !> Name of the vertical profile to use
-    type(string_t)         :: vertical_profile_name_
-    !> Units for the vertical profile
-    type(string_t)         :: vertical_profile_units_
-    !> Name of the absorption cross-section to use
-    type(string_t)         :: cross_section_name_
-    !> Optical properties
-    type(radiator_state_t) :: state_
+    type(string_t)         :: vertical_profile_name_ ! Name of the vertical profile to use
+    type(string_t)         :: vertical_profile_units_ ! Units for the vertical profile
+    type(string_t)         :: cross_section_name_ ! Name of the absorption cross-section to use
+    type(radiator_state_t) :: state_ ! Optical properties, a :f:type:`~tuvx_radiator/radiator_state_t`
   contains
     !> Update radiator for new environmental conditions
     procedure :: update_state
@@ -47,8 +39,9 @@ module tuvx_radiator
     module procedure :: constructor
   end interface
 
-  !> Pointer type for building sets of radiator objects
-  type :: radiator_ptr
+  type radiator_ptr
+    ! Pointer type for building sets of radiator objects
+
     class(radiator_t), pointer :: val_ => null( )
   end type radiator_ptr
 
@@ -56,18 +49,15 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Constructs a base_radiator_t object
   function constructor( config, grid_warehouse ) result( new_radiator )
+    ! Constructs a base_radiator_t object
 
     use musica_config,                 only : config_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
 
-    !> New radiator object
-    class(radiator_t),      pointer       :: new_radiator
-    !> Radiator configuration
-    type(config_t),         intent(inout) :: config
-    !> Grid warehouse
-    type(grid_warehouse_t), intent(inout) :: grid_warehouse
+    class(radiator_t),      pointer       :: new_radiator ! New :f:type:`~tuvx_radiator/radiator_t` object
+    type(config_t),         intent(inout) :: config ! Radiator configuration
+    type(grid_warehouse_t), intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 
     allocate( new_radiator )
     call base_constructor( new_radiator, config, grid_warehouse )
@@ -76,22 +66,19 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initializes a radiator_t object
-  !!
-  !! This should only be called by subclasses of radiator_t
   subroutine base_constructor( this, config, grid_warehouse )
+    ! Initializes a radiator_t object
+    !
+    ! This should only be called by subclasses of radiator_t
 
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_grid,                     only : grid_t
 
-    !> Radiator object
-    class(radiator_t),      intent(inout) :: this
-    !> Radiator configuration
-    type(config_t),         intent(inout) :: config
-    !> Grid warehouse
-    type(grid_warehouse_t), intent(inout) :: grid_warehouse
+    class(radiator_t),      intent(inout) :: this ! New :f:type:`~tuvx_radiator/radiator_t` object
+    type(config_t),         intent(inout) :: config ! Radiator configuration
+    type(grid_warehouse_t), intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 
     ! local variables
     character(len=*), parameter   :: Iam = "Base radiator constructor"
@@ -129,9 +116,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Update radiator state
   subroutine update_state( this, grid_warehouse, profile_warehouse,           &
       cross_section_warehouse )
+    ! Update radiator state
 
     use musica_assert,                 only : assert_msg
     use tuvx_cross_section,            only : cross_section_t
@@ -142,14 +129,10 @@ contains
     use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    !> Radiator
-    class(radiator_t),               intent(inout) :: this
-    !> Grid warehouse
-    type(grid_warehouse_t),          intent(inout) :: grid_warehouse
-    !> Profile warehouse
-    type(profile_warehouse_t),       intent(inout) :: profile_warehouse
-    !> Cross section warehouse
-    type(cross_section_warehouse_t), intent(inout) :: cross_section_warehouse
+    class(radiator_t),               intent(inout) :: this ! A :f:type:`~tuvx_radiator/radiator_state_t`
+    type(grid_warehouse_t),          intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t),       intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    type(cross_section_warehouse_t), intent(inout) :: cross_section_warehouse ! A :f:type:`~tuvx_cross_section_warehouse/cross_section_warehouse_t`
 
     ! Local variables
     character(len=*), parameter     :: Iam = 'Base radiator update state'
@@ -204,11 +187,10 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Finalizes a radiator state object
   subroutine finalize( this )
+    ! Finalizes a radiator state object
 
-    !> Radiator optical properties
-    type(radiator_state_t) :: this
+    type(radiator_state_t) :: this ! A :f:type:`~tuvx_radiator/radiator_state_t`
 
     if( allocated( this%layer_OD_ ) ) then
       deallocate( this%layer_OD_ )

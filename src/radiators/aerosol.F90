@@ -1,11 +1,8 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> The aerosol_tuvx_radiator module
 
-!> The radiator_aerosol_t type and related functions
 module tuvx_radiator_aerosol
+! A radiator that accounts for the effects of aerosols on the radiation field
 
   use musica_constants,                only : dk => musica_dk
   use musica_string,                   only : string_t
@@ -16,16 +13,16 @@ module tuvx_radiator_aerosol
   private
   public :: radiator_aerosol_t
 
-  !> aerosol radiator type
   type, extends(radiator_t) :: radiator_aerosol_t
+    ! aerosol radiator type
   contains
     !> Initialize radiator
     !> Update radiator for new environmental conditions
     procedure :: update_state
   end type radiator_aerosol_t
 
-  !> Constructor
   interface radiator_aerosol_t
+    ! Constructor
     module procedure constructor
   end interface radiator_aerosol_t
 
@@ -33,8 +30,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize radiator_t object
   function constructor( config, grid_warehouse ) result( this )
+    ! Initialize radiator_t object
 
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
@@ -44,12 +41,9 @@ contains
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
 
-    !> Radiator object
-    type(radiator_aerosol_t), pointer     :: this
-    !> Radiator configuration object
-    type(config_t), intent(inout)         :: config
-    !> Grid warehouse
-    type(grid_warehouse_t), intent(inout) :: grid_warehouse
+    type(radiator_aerosol_t), pointer     :: this ! This :f:type:`~tuvx_radiator_aerosol/radiator_aerosol_t`
+    type(config_t), intent(inout)         :: config ! Radiator configuration object
+    type(grid_warehouse_t), intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 
     ! Local variables
     character(len=*), parameter   :: Iam = "Aerosol radiator constructor"
@@ -172,9 +166,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Update radiator state
   subroutine update_state( this, grid_warehouse, profile_warehouse,           &
       cross_section_warehouse )
+    ! Update radiator state
 
     use musica_assert,                 only : assert_msg
     use tuvx_cross_section_warehouse,  only : cross_section_warehouse_t
@@ -183,14 +177,10 @@ contains
     use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : Profile_warehouse_t
 
-    !> Radiator
-    class(radiator_aerosol_t),       intent(inout) :: this
-    !> Grid warehouse
-    type(grid_warehouse_t),          intent(inout) :: grid_warehouse
-    !> Profile warehouse
-    type(Profile_warehouse_t),       intent(inout) :: profile_warehouse
-    !> Cross section warehouse
-    type(cross_section_warehouse_t), intent(inout) :: cross_section_warehouse
+    class(radiator_aerosol_t),       intent(inout) :: this ! This :f:type:`~tuvx_radiator_aerosol/radiator_aerosol_t`
+    type(grid_warehouse_t),          intent(inout) :: grid_warehouse ! :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(Profile_warehouse_t),       intent(inout) :: profile_warehouse ! :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    type(cross_section_warehouse_t), intent(inout) :: cross_section_warehouse ! A :f:type:`~tuvx_cross_section_warehouse/cross_section_warehouse_t`
 
     ! check that radiator state is allocated
     ! (no updates to the aerosol state are required)

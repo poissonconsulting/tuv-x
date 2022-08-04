@@ -18,13 +18,14 @@ Grids
 Cross Sections
 --------------
 
-Soieing thinew
 <describe cross sections>
 
 Profiles
 --------
 
 <describe profiles>
+
+.. _configuration-radiation:
 
 Radiative Transfer
 ------------------

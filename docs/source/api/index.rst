@@ -10,7 +10,9 @@ API
    grid
    photolysis_rates
    profiles
+   quantum_yield
    radiative_transfer
+   spherical_geom
    quantum_yield
 
 

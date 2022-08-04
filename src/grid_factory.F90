@@ -1,11 +1,9 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> The tuvx_grid_factory module
 
-!> Build grid objects
 module tuvx_grid_factory
+! Provides a function which creates grids for the 
+! :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`.
 
   use tuvx_grid,                       only : grid_t
   use tuvx_grid_equal_delta,           only : equal_delta_t
@@ -31,8 +29,7 @@ contains
     !> Grid configuration data
     type(config_t), intent(inout) :: config
 
-    !> New grid object
-    class(grid_t), pointer :: new_grid_t
+    class(grid_t), pointer :: new_grid_t ! New A :f:type:`~tuvx_grid/grid_t` object
 
     !> Local variables
     type(string_t) :: grid_type

@@ -1,8 +1,9 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-! one dimension, equally spaced  grid type
+
 module tuvx_grid_from_csv_file
+! read a grid defined in a CSV file. See 
+! :ref:`configuration-grid` for more information.
 
   use musica_constants, only : &
     dk => musica_dk, ik => musica_ik, lk => musica_lk
@@ -25,15 +26,14 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize grid
   function constructor( grid_config ) result ( this )
+    ! Initialize grid
 
     use musica_config, only : config_t
     use musica_string, only : string_t
     use musica_assert, only : die_msg
 
-    !> arguments
-    type(config_t), intent(inout) :: grid_config
+    type(config_t), intent(inout) :: grid_config ! The grid config. See :ref:`configuration-grid` for more details
 
     !> local variables
     integer(ik), parameter :: Ok = 0_ik

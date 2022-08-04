@@ -1,8 +1,8 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-! one dimension grid type
 module tuvx_grid
+! A one dimensional grid type.
+!
 
   use musica_constants, only : musica_dk, musica_ik
   use musica_string,    only : string_t
@@ -13,18 +13,12 @@ module tuvx_grid
   public :: grid_t, grid_ptr
 
   type ::  grid_t
-    !> grid handle
-    type(string_t) :: handle_
-    !> units
-    type(string_t) :: units_
-    !> number of wavelength grid cells
-    integer(musica_ik) :: ncells_
-    !> cell centers
-    real(musica_dk), allocatable :: mid_(:)
-    !> cell edges
-    real(musica_dk), allocatable :: edge_(:)
-    !> cell deltas
-    real(musica_dk), allocatable :: delta_(:)
+    type(string_t) :: handle_ ! grid handle
+    type(string_t) :: units_ ! units
+    integer(musica_ik) :: ncells_ ! number of wavelength grid cells
+    real(musica_dk), allocatable :: mid_(:) ! cell centers
+    real(musica_dk), allocatable :: edge_(:) ! cell edges
+    real(musica_dk), allocatable :: delta_(:) ! cell deltas
   contains
     !> Returns the units for the grid
     procedure :: units
@@ -39,10 +33,10 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Returns the units for the grid
   type(string_t) function units( this )
+  ! Returns the units for the grid
 
-    class(grid_t), intent(in) :: this
+    class(grid_t), intent(in) :: this ! A :f:type:`~tuvx_grid/grid_t`
 
     units = this%units_
 

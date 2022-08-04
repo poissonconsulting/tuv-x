@@ -9,7 +9,7 @@ TUV-x: A photolysis rate constant calculator.
 
 Copyright (C) 2020 National Center for Atmospheric Research
 
-Please see the [TUV-x documentation](https://ncar.github.io/photo-decomp/) for detailed
+Please see the [TUV-x documentation](https://ncar.github.io/tuv-x/) for detailed
 installation and usage instructions.
 
 # Build and run (Docker version)

@@ -107,8 +107,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Get a copy of a grid object
   function get_grid_string( this, name, units ) result( grid_ptr )
+    ! Get a copy of a grid object
 
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
@@ -116,7 +116,7 @@ contains
     class(grid_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     type(string_t),          intent(in)    :: name ! The name of a grid, see :ref:`configuration-grid` for grid names
     type(string_t),          intent(in)    :: units ! The units of the grid 
-    class(grid_t), pointer                 :: grid_p ! The :f:type:`~tuvx_grid/grid_t` which matches the name passed intr  
+    class(grid_t), pointer                 :: grid_ptr ! The :f:type:`~tuvx_grid/grid_t` which matches the name passed in
 
     grid_ptr => this%get_grid_char( name%to_char( ), units%to_char( ) )
 
@@ -124,8 +124,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Finalize grid warehouse
   subroutine finalize( this )
+    ! Finalize grid warehouse
 
     use musica_constants, only : ik => musica_ik
 

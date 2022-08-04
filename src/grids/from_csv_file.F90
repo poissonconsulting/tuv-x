@@ -33,8 +33,7 @@ contains
     use musica_string, only : string_t
     use musica_assert, only : die_msg
 
-    !> arguments
-    type(config_t), intent(inout) :: grid_config
+    type(config_t), intent(inout) :: grid_config ! The grid config. See :ref:`configuration-grid` for more details
 
     !> local variables
     integer(ik), parameter :: Ok = 0_ik

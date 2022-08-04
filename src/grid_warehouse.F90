@@ -14,8 +14,7 @@ module tuvx_grid_warehouse
   !> Grid warehouse type
   type :: grid_warehouse_t
     private
-    !> grid objects
-    type(grid_ptr), allocatable :: grid_objs_(:)
+    type(grid_ptr), allocatable :: grid_objs_(:) ! grid objects
   contains
     !> get a copy of a grid object
     procedure, private :: get_grid_char, get_grid_string
@@ -33,20 +32,16 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Grid warehouse constructor
   function constructor( config ) result( grid_warehouse )
+    ! Grid warehouse constructor
 
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
     use musica_string,                 only : string_t
     use tuvx_grid_factory,             only : grid_builder
 
-    !> Arguments
-    !> grid configuration data
-    type(config_t), intent(inout) :: config
-
-    !> New grid_warehouse
-    class(grid_warehouse_t), pointer :: grid_warehouse
+    type(config_t), intent(inout) :: config ! grid configuration data
+    class(grid_warehouse_t), pointer :: grid_warehouse ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 
     !> local variables
     character(len=*), parameter :: Iam = "Grid warehouse constructor: "
@@ -78,17 +73,17 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Get copy of a grid object
   function get_grid_char( this, name, units ) result( grid_ptr )
+    ! Get copy of a grid object
 
     use musica_assert,                 only : assert_msg
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
 
-    class(grid_warehouse_t), intent(inout) :: this
-    character(len=*),        intent(in)    :: name
-    character(len=*),        intent(in)    :: units
-    class(grid_t), pointer                 :: grid_ptr
+    class(grid_warehouse_t), intent(inout) :: this     ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    character(len=*),        intent(in)    :: name     ! The name of a grid, see :ref:`configuration-grid` for grid names
+    character(len=*),        intent(in)    :: units    ! The units of the grid
+    class(grid_t), pointer                 :: grid_ptr ! The :f:type:`~tuvx_grid/grid_t` which matches the name passed in
 
     integer :: ndx
     logical :: found
@@ -118,10 +113,10 @@ contains
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
 
-    class(grid_warehouse_t), intent(inout) :: this
-    type(string_t),          intent(in)    :: name
-    type(string_t),          intent(in)    :: units
-    class(grid_t), pointer                 :: grid_ptr
+    class(grid_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(string_t),          intent(in)    :: name ! The name of a grid, see :ref:`configuration-grid` for grid names
+    type(string_t),          intent(in)    :: units ! The units of the grid 
+    class(grid_t), pointer                 :: grid_p ! The :f:type:`~tuvx_grid/grid_t` which matches the name passed intr  
 
     grid_ptr => this%get_grid_char( name%to_char( ), units%to_char( ) )
 
@@ -135,7 +130,7 @@ contains
     use musica_constants, only : ik => musica_ik
 
     !> Arguments
-    type(grid_warehouse_t), intent(inout) :: this
+    type(grid_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 
     integer(kind=ik) :: ndx
 

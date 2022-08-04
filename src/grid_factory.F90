@@ -29,8 +29,7 @@ contains
     !> Grid configuration data
     type(config_t), intent(inout) :: config
 
-    !> New grid object
-    class(grid_t), pointer :: new_grid_t
+    class(grid_t), pointer :: new_grid_t ! New A :f:type:`~tuvx_grid/grid_t` object
 
     !> Local variables
     type(string_t) :: grid_type

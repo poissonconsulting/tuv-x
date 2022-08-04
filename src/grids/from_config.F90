@@ -2,7 +2,8 @@
 ! SPDX-License-Identifier: Apache-2.0
   
 module tuvx_grid_from_config
-! 1d grid specified in json config file
+! 1d grid specified in json config file. See 
+! :ref:`configuration-grid` for more information.
 
   use musica_constants, only : &
     dk => musica_dk, ik => musica_ik, lk => musica_lk
@@ -32,8 +33,7 @@ contains
     use musica_string, only : string_t
     use musica_assert, only : die_msg
 
-    !> Arguments
-    type(config_t), intent(inout) :: grid_config
+    type(config_t), intent(inout) :: grid_config ! The grid config. See :ref:`configuration-grid` for more details
 
     !> Local variables
     character(len=*), parameter :: Iam = 'From config grid initialize: '

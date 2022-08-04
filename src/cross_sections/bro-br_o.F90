@@ -1,11 +1,8 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> This bro+hv->br_o cross_section module
 
-!> The bro+hv->br+o_cross_section type and related functions
 module tuvx_cross_section_bro_br_o
+! Calculates the cross section for BrO -> Br + O
 
   use tuvx_cross_section,              only : cross_section_t
 
@@ -27,9 +24,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize cross_section_bro_br_o_t object
   function constructor( config, grid_warehouse, profile_warehouse )           &
       result( this )
+    ! Initialize cross_section_bro_br_o_t object
 
     use musica_assert,                 only : assert_msg, die_msg
     use musica_config,                 only : config_t
@@ -41,14 +38,10 @@ contains
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_util,                     only : inter4
 
-    !> New cross section calculator
-    type(cross_section_bro_br_o_t), pointer  :: this
-    !> Cross section configuration object
-    type(config_t),            intent(inout) :: config
-    !> Grid warehouse
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
-    !> Profile warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
+    type(cross_section_bro_br_o_t), pointer  :: this ! This :f:type:`~tuvx_cross_section_bro_br_o/cross_section_bro_br_o_t`
+    type(config_t),            intent(inout) :: config ! Cross section configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     ! Local variables
     character(len=*), parameter :: Iam = 'bro->br+o cross section initialize: '

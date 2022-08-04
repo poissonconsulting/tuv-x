@@ -1,11 +1,8 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> This tint_cross_section module
 
-!> The temperature interpolation cross_section type and related functions
 module tuvx_cross_section_tint
+! Calculate a cross section with temperature interpolation
 
   use tuvx_cross_section,              only : cross_section_t
 
@@ -32,9 +29,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initializecross_section_tint_t object
   function constructor( config, grid_warehouse, profile_warehouse )           &
       result ( this )
+    ! Initializecross_section_tint_t object
 
     use musica_assert,                 only : assert_msg, die_msg
     use musica_config,                 only : config_t
@@ -183,9 +180,9 @@ file_loop:                                                                    &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Calculate the cross section for a given set of environmental conditions
   function run( this, grid_warehouse, profile_warehouse, at_mid_point )       &
       result( cross_section )
+    ! Calculate the cross section for a given set of environmental conditions
 
     use musica_constants,              only : dk => musica_dk
     use musica_string,                 only : string_t
@@ -194,20 +191,11 @@ file_loop:                                                                    &
     use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    !> Calculated cross section
-    real(kind=dk), allocatable                 :: cross_section(:,:)
-    !> Cross section calculator
-    class(cross_section_tint_t), intent(in)    :: this
-    !> Grid warehouse
-    type(grid_warehouse_t),      intent(inout) :: grid_warehouse
-    !> Profile warehouse
-    type(profile_warehouse_t),   intent(inout) :: profile_warehouse
-    !> Flag indicating whether cross-section data should be at mid-points on
-    !! the wavelength grid.
-    !!
-    !! If this is false or omitted, cross-section data are calculated at
-    !! interfaces on the wavelength grid.
-    logical, optional,           intent(in)    :: at_mid_point
+    real(kind=dk), allocatable                 :: cross_section(:,:) ! Calculated cross section
+    class(cross_section_tint_t), intent(in)    :: this ! A :f:type:`~tuvx_cross_section_tint/cross_section_tint_t`
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    logical, optional,           intent(in)    :: at_mid_point ! Flag indicating whether cross-section data should be at mid-points on the wavelength grid.  If this is false or omitted, cross-section data are calculated at interfaces on the wavelength grid.
 
     ! Local variables
     character(len=*), parameter :: Iam = 'tint cross section calculate: '
@@ -273,29 +261,29 @@ file_loop:                                                                    &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> finalize the cross section type
   subroutine finalize( this )
+  ! finalize the cross section type
 
-  type(cross_section_tint_t), intent(inout) :: this
+    type(cross_section_tint_t), intent(inout) :: this
 
-  integer :: ndx
+    integer :: ndx
 
-  if( allocated( this%cross_section_parms ) ) then
-    do ndx = 1, size( this%cross_section_parms )
-      associate( Xsection => this%cross_section_parms( ndx ) )
-      if( allocated( Xsection%array ) ) then
-        deallocate( Xsection%array )
-      endif
-      if( allocated( Xsection%temperature ) ) then
-        deallocate( Xsection%temperature )
-      endif
-      if( allocated( Xsection%deltaT ) ) then
-        deallocate( Xsection%deltaT )
-      endif
-      end associate
-    enddo
-    deallocate( this%cross_section_parms )
-  endif
+    if( allocated( this%cross_section_parms ) ) then
+      do ndx = 1, size( this%cross_section_parms )
+        associate( Xsection => this%cross_section_parms( ndx ) )
+        if( allocated( Xsection%array ) ) then
+          deallocate( Xsection%array )
+        endif
+        if( allocated( Xsection%temperature ) ) then
+          deallocate( Xsection%temperature )
+        endif
+        if( allocated( Xsection%deltaT ) ) then
+          deallocate( Xsection%deltaT )
+        endif
+        end associate
+      enddo
+      deallocate( this%cross_section_parms )
+    endif
 
   end subroutine finalize
 

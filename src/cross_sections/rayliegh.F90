@@ -1,11 +1,13 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> This rayliegh_cross_section module
 
-!> The rayliegh_cross_section type and related functions
 module tuvx_cross_section_rayliegh
+! Rayleigh scattering cross section from WMO 1985 (originally from
+! Nicolet, M., On the molecular scattering in the terrestrial atmosphere:
+! An empirical formula for its calculation in the homoshpere, Planet.
+! Space Sci., 32, 1467-1468, 1984. 
+! `doi:10.1016/10.1016/0032-0633(84)90089-8 
+! <https://doi.org/10.1016/0032-0633(84)90089-8>`_
 
   use tuvx_cross_section,              only : cross_section_t
 
@@ -30,9 +32,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize the cross section
   function constructor( config, grid_warehouse, profile_warehouse )           &
       result ( this )
+    ! Initialize the cross section
 
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
@@ -41,10 +43,10 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    class(cross_section_t),    pointer       :: this
-    type(config_t),            intent(inout) :: config
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
+    class(cross_section_t),    pointer       :: this ! This :f:type:`~tuvx_cross_section/cross_section_t`
+    type(config_t),            intent(inout) :: config ! Cross section configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     type(string_t) :: required_keys(1), optional_keys(1)
 
@@ -61,14 +63,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Calculate the cross section for a given set of environmental conditions
-  !!
-  !! Rayleigh scattering cross section from WMO 1985 (originally from
-  !! Nicolet, M., On the molecular scattering in the terrestrial atmosphere:
-  !! An empirical formula for its calculation in the homoshpere, Planet.
-  !! Space Sci., 32, 1467-1468, 1984.
   function run( this, grid_warehouse, profile_warehouse, at_mid_point )       &
       result( cross_section )
+    ! Calculate the cross section for a given set of environmental conditions
 
     use musica_constants,              only : musica_dk
     use musica_string,                 only : string_t
@@ -76,20 +73,11 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    !> Calculated cross section
-    real(kind=musica_dk), allocatable              :: cross_section(:,:)
-    !> Rayliegh cross section
-    class(cross_section_rayliegh_t), intent(in)    :: this
-    !> Grid warehouse
-    type(grid_warehouse_t),          intent(inout) :: grid_warehouse
-    !> Profile warehouse
-    type(profile_warehouse_t),       intent(inout) :: profile_warehouse
-    !> Flag indicating whether cross-section data should be at mid-points on
-    !! the wavelength grid.
-    !!
-    !! If this is false or omitted, cross-section data are calculated at
-    !! interfaces on the wavelength grid.
-    logical, optional,               intent(in)    :: at_mid_point
+    real(kind=musica_dk), allocatable              :: cross_section(:,:) ! Calculated cross section
+    class(cross_section_rayliegh_t), intent(in)    :: this ! A :f:type:`~tuvx_cross_section_rayliegh/cross_section_rayliegh_t`
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    logical, optional,           intent(in)    :: at_mid_point ! Flag indicating whether cross-section data should be at mid-points on the wavelength grid.  If this is false or omitted, cross-section data are calculated at interfaces on the wavelength grid.
 
     ! Local variables
     integer :: colndx, nzdim

@@ -1,12 +1,9 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> The tuvx_radXfer_xsect_warehouse module
 
-!> The cross_section_warehouse_t type and related functions
-!!
 module tuvx_cross_section_warehouse
+! A type to store all cross sections needed for a particular run
+!
 
   use musica_constants,                only : musica_dk
   use musica_string,                   only : string_t
@@ -18,12 +15,10 @@ module tuvx_cross_section_warehouse
   public :: cross_section_warehouse_t
 
   !> Radiative xfer cross section type
-  type :: cross_section_warehouse_t
+  type cross_section_warehouse_t
     private
-    !> cross section calculators
-    type(cross_section_ptr), allocatable :: cross_section_objs_(:)
-    !> cross section "handle"
-    type(string_t), allocatable          :: handles_(:)
+    type(cross_section_ptr), allocatable :: cross_section_objs_(:) ! A:f:type:`~tuvx_cross_section/cross_section_ptr`
+    type(string_t), allocatable          :: handles_(:) ! cross section "handle"
   contains
     !> Get a copy of a specific radXfer cross section
     procedure :: get
@@ -40,9 +35,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Constructor of cross_section_warehouse_t objects
   function constructor( config, grid_warehouse, profile_warehouse )           &
       result( new_obj )
+    ! Constructor of cross_section_warehouse_t objects
 
     use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
@@ -51,14 +46,10 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : Profile_warehouse_t
 
-    !> New radiative cross section object
-    class(cross_section_warehouse_t), pointer :: new_obj
-    !> Cross section configuration data
-    type(config_t),             intent(inout) :: config
-    !> Grid warehouse
-    type(grid_warehouse_t),     intent(inout) :: grid_warehouse
-    !> Profile warehouse
-    type(Profile_warehouse_t),  intent(inout) :: profile_warehouse
+    class(cross_section_warehouse_t), pointer :: new_obj ! New radiative :f:type:`~tuvx_cross_section_warehouse/cross_section_warehouse_t` object
+    type(config_t),             intent(inout) :: config ! Cross section configuration data
+    type(grid_warehouse_t),     intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(Profile_warehouse_t),  intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     ! local variables
     integer :: ndx
@@ -96,19 +87,16 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Get a copy of a specific radXfer cross section object
   function get( this, cross_section_name ) result( cross_section_ptr )
+    ! Get a copy of a specific radiative transfer cross section object
 
     use musica_assert,                 only : die_msg
     use musica_string,                 only : string_t
     use tuvx_cross_section,            only : cross_section_t
 
-    !> Pointer to a copy of the requested cross section
-    class(cross_section_t),           pointer       :: cross_section_ptr
-    !> Cross section warehouse
-    class(cross_section_warehouse_t), intent(inout) :: this
-    !> Name of the cross section to find
-    type(string_t),                   intent(in)    :: cross_section_name
+    class(cross_section_t),           pointer       :: cross_section_ptr ! Pointer to a copy of the requested :f:type:`~tuvx_cross_section/cross_section_t`
+    class(cross_section_warehouse_t), intent(inout) :: this ! A :f:type:`~tuvx_cross_section_warehouse/cross_section_warehouse_t`
+    type(string_t),                   intent(in)    :: cross_section_name ! Name of the cross section to find
 
     ! Local variables
     character(len=*), parameter :: Iam = 'radXfer cross section warehouse get: '
@@ -134,11 +122,10 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Finalize the cross section warehouse
   subroutine finalize( this )
+    ! Finalize the cross section warehouse
 
-    !> cross section warehouse
-    type(cross_section_warehouse_t), intent(inout) :: this
+    type(cross_section_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_cross_section_warehouse/cross_section_warehouse_t`
 
     integer :: ndx
 

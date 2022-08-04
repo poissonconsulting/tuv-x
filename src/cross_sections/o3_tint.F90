@@ -1,11 +1,9 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> This o3_tint_cross_section module
 
-!> The o3 temperature interpolation cross_section type and related functions
 module tuvx_cross_section_o3_tint
+! Calculates the cross section for ozone with temperature
+! interpolation
 
   use musica_constants,                only : dk => musica_dk
   use tuvx_cross_section_tint,         only : cross_section_tint_t
@@ -34,9 +32,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize cross_section_o3_tint_t object
   function constructor( config, grid_warehouse, profile_warehouse )           &
       result ( this )
+    ! Initialize cross_section_o3_tint_t object
 
     use musica_assert,                 only : assert_msg, die_msg
     use musica_config,                 only : config_t
@@ -47,10 +45,10 @@ contains
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_util,                     only : inter2
 
-    type(cross_section_o3_tint_t), pointer       :: this
-    type(config_t),                intent(inout) :: config
-    type(grid_warehouse_t),        intent(inout) :: grid_warehouse
-    type(profile_warehouse_t),     intent(inout) :: profile_warehouse
+    type(cross_section_o3_tint_t), pointer       :: this ! A :f:type:`~tuvx_cross_section_o3_tint/cross_section_o3_tint_t`
+    type(config_t),            intent(inout) :: config ! Cross section configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     ! Local variables
     real(dk), parameter :: rZERO = 0.0_dk
@@ -189,9 +187,9 @@ file_loop: &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Calculate the cross section for a given set of environmental conditions
   function run( this, grid_warehouse, profile_warehouse, at_mid_point )       &
       result( cross_section )
+    ! Calculate the cross section for a given set of environmental conditions
 
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
@@ -199,20 +197,11 @@ file_loop: &
     use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    !> Calculated cross section
-    real(kind=dk), allocatable                    :: cross_section(:,:)
-    !> O3 tint cross section
-    class(cross_section_o3_tint_t), intent(in)    :: this
-    !> Grid warehouse
-    type(grid_warehouse_t),         intent(inout) :: grid_warehouse
-    !> Grid warehouse
-    type(profile_warehouse_t),      intent(inout) :: profile_warehouse
-    !> Flag indicating whether cross-section data should be at mid-points on
-    !! the wavelength grid.
-    !!
-    !! If this is false or omitted, cross-section data are calculated at
-    !! interfaces on the wavelength grid.
-    logical, optional,               intent(in)   :: at_mid_point
+    real(kind=dk), allocatable                    :: cross_section(:,:) ! Calculated cross section
+    class(cross_section_o3_tint_t), intent(in)    :: this ! A :f:type:`~tuvx_cross_section_o3_tint/cross_section_o3_tint_t`
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    logical, optional,           intent(in)    :: at_mid_point ! Flag indicating whether cross-section data should be at mid-points on the wavelength grid.  If this is false or omitted, cross-section data are calculated at interfaces on the wavelength grid.
 
     character(len=*), parameter :: Iam = 'o3 tint cross section calculate'
     real(dk), parameter :: rZERO = 0.0_dk
@@ -293,22 +282,18 @@ lambda_loop:                                                                  &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Calculate the refractive index for standard air
-  !!
-  !! (dry air at 15 deg. C, 101.325 kPa, 0.03% CO2)
-  !! from CRC Handbook, originally from Edlen, B., Metrologia, 2, 71, 1966.
-  !! valid from 200 nm to 2000 nm
-  !! beyond this range, use constant value
   function refraction( this, wavelength, atmDensity ) result( refrac )
+    ! Calculate the refractive index for standard air
+    !
+    ! (dry air at 15 deg. C, 101.325 kPa, 0.03% CO2)
+    ! from CRC Handbook, originally from Edlen, B., Metrologia, 2, 71, 1966.
+    ! valid from 200 nm to 2000 nm
+    ! beyond this range, use constant value
 
-    !> O3 tint cross section
-    class(cross_section_o3_tint_t), intent(in) :: this
-    !> air density [molecule cm-3]
-    real(dk),                       intent(in) :: atmDensity
-    !> Vacuum wavelength [nm]
-    real(dk),                       intent(in) :: wavelength(:)
-    !> Refractive index of standard air
-    real(dk)                                   :: refrac( size( wavelength ) )
+    class(cross_section_o3_tint_t), intent(in) :: this ! A :f:type:`~tuvx_cross_section_o3_tint/cross_section_o3_tint_t`
+    real(dk),                       intent(in) :: atmDensity ! air density [molecule cm-3]
+    real(dk),                       intent(in) :: wavelength(:) ! Vacuum wavelength [nm]
+    real(dk)                                   :: refrac( size( wavelength ) ) ! Refractive index of standard air
 
     real(dk), parameter :: rONE = 1.0_dk
     real(dk), parameter :: divisor = 2.69e19_dk * 273.15_dk / 288.15_dk

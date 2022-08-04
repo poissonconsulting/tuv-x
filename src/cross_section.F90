@@ -1,11 +1,8 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> This cross_section module
 
-!> The cross_section type and related functions
 module tuvx_cross_section
+! The base cross section type and related functions
 
   use musica_constants,                only : dk => musica_dk
 
@@ -15,17 +12,18 @@ module tuvx_cross_section
   public :: cross_section_t, cross_section_parms_t, base_constructor,         &
             cross_section_ptr
 
-  !> Common cross section parameters
   type cross_section_parms_t
-    !> \todo what are these used for, what axis are they on, and what units?
-    real(dk), allocatable :: temperature(:)
-    real(dk), allocatable :: deltaT(:)
+    ! local working type for holding cross section parameters
+    real(dk), allocatable :: temperature(:) ! in kelvin
+    real(dk), allocatable :: deltaT(:) 
     real(dk), allocatable :: array(:,:)
   end type cross_section_parms_t
 
-  !> Calculator for cross_section
-  type :: cross_section_t
-    !> The cross section array \todo what axis are these on?
+  type cross_section_t
+    ! Calculator for cross_section
+    ! The cross section array 
+  
+    ! \todo what axis are these on? add to the comment block above
     type(cross_section_parms_t), allocatable :: cross_section_parms(:)
   contains
     !> Calculate the cross section
@@ -39,8 +37,8 @@ module tuvx_cross_section
     module procedure :: constructor
   end interface
 
-  !> Pointer type for building sets of photo rate constants
-  type :: cross_section_ptr
+  type cross_section_ptr
+    ! Pointer type for building sets of photo rate constants
     class(cross_section_t), pointer :: val_ => null( )
   end type cross_section_ptr
 
@@ -51,9 +49,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Create an instance of the base cross section type
   function constructor( config, grid_warehouse, profile_warehouse )           &
       result( new_obj )
+    ! Create an instance of the base cross section type
 
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
@@ -61,14 +59,10 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    !> Base cross section type
-    class(cross_section_t),    pointer       :: new_obj
-    !> Cross section configuration object
-    type(config_t),            intent(inout) :: config
-    !> Grid warehouse
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
-    !> profile warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
+    class(cross_section_t),    pointer       :: new_obj ! Base :f:type:`~tuvx_cross_section/cross_section_t` type
+    type(config_t),            intent(inout) :: config ! Cross section configuration object
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     type(string_t) :: required_keys(1), optional_keys(4)
 
@@ -88,9 +82,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize cross_section_t objects
   subroutine base_constructor( new_obj, config, grid_warehouse,               &
       profile_warehouse )
+    ! Initialize cross_section_t objects
 
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
@@ -102,14 +96,10 @@ contains
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_profile,                  only : profile_t
 
-    !> Base cross section type
-    class(cross_section_t),    pointer       :: new_obj
-    !> Cross section configuration object
-    type(config_t),            intent(inout) :: config
-    !> Grid warehouse
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
-    !> profile warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
+    class(cross_section_t),    pointer       :: new_obj ! A :f:type:`~tuvx_cross_section/cross_section_t`
+    type(config_t),            intent(inout) :: config ! Cross section configuration object
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     !   local variables
     character(len=*), parameter   :: Iam = 'base cross section initialize'
@@ -182,27 +172,20 @@ file_loop: &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Calculate the cross section for a given set of environmental conditions
   function run( this, grid_warehouse, profile_warehouse, at_mid_point )       &
       result( cross_section )
+    ! Calculate the cross section for a given set of environmental conditions
 
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    !> Calculated cross section
-    real(kind=dk), allocatable               :: cross_section(:,:)
-    !> Base cross section
-    class(cross_section_t),    intent(in)    :: this
-    !> Grid warehouse
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
-    !> Profile warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
-    !> Flag indicating that the cross section data is at grid mid-points
-    !!
-    !! If omitted or false, data is assumed to be at interfaces
-    logical, optional,         intent(in)    :: at_mid_point
+    real(kind=dk), allocatable               :: cross_section(:,:) ! Calculated cross section
+    class(cross_section_t),    intent(in)    :: this ! A :f:type:`~tuvx_cross_section/cross_section_t`
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    logical, optional,         intent(in)    :: at_mid_point ! Flag indicating that the cross section data is at grid mid-points. If omitted or false, data is assumed to be at interfaces
 
     !> Local variables
     integer :: colndx
@@ -237,18 +220,18 @@ file_loop: &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Adds points to the cross section grid based on configuration data
   subroutine add_points( this, config, data_lambda, data_parameter )
+    ! Adds points to the cross section grid based on configuration data
 
     use musica_assert,                 only : assert_msg, die_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
     use tuvx_util,                     only : addpnt
 
-    class(cross_section_t), intent(in)    :: this
-    type(config_t),         intent(inout) :: config
-    real(dk), allocatable,  intent(inout) :: data_lambda(:)
-    real(dk), allocatable,  intent(inout) :: data_parameter(:)
+    class(cross_section_t), intent(in)    :: this ! This :f:type:`~tuvx_cross_section/cross_section_t`
+    type(config_t),         intent(inout) :: config ! The configuration used to build this object
+    real(dk), allocatable,  intent(inout) :: data_lambda(:) ! Wavelength, in meters /todo, verify units
+    real(dk), allocatable,  intent(inout) :: data_parameter(:) ! /todo what is this?
 
     real(dk), parameter :: rZERO = 0.0_dk
     real(dk), parameter :: rONE  = 1.0_dk
@@ -321,10 +304,10 @@ file_loop: &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> finalize the cross section type
   subroutine finalize( this )
+    ! finalize the cross section type
 
-    type(cross_section_t), intent(inout) :: this
+    type(cross_section_t), intent(inout) :: this ! This :f:type:`~tuvx_cross_section/cross_section_t`
 
     integer :: ndx
 

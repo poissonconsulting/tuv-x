@@ -79,4 +79,8 @@ fortran_src = [
     '../src/grid_factory.F90',
     '../src/grid_warehouse.F90',
     '../src/grids/*.F90',
+    '../src/cross_section.F90',
+    '../src/cross_section_factory.F90',
+    '../src/cross_section_warehouse.F90',
+    '../src/cross_sections/*.F90',
 ]

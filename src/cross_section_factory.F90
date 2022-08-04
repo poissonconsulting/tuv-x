@@ -1,11 +1,9 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> The tuvx_cross_section_factory module
 
-!> Builder of cross section calculators
 module tuvx_cross_section_factory
+! Builder of cross section calculators for use by 
+! :f:type:`~tuvx_cross_section_warehouse/cross_section_warehouse_t`.
 
   use tuvx_cross_section,              only : cross_section_t
   use tuvx_cross_section_bro_br_o,     only : cross_section_bro_br_o_t
@@ -50,6 +48,7 @@ contains
 
   function cross_section_builder( config, grid_warehouse, profile_warehouse ) &
       result( new_cross_section )
+      ! Build cross sections from a configuration
 
     use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
@@ -58,14 +57,10 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    !> New rate constant calculator
-    class(cross_section_t),    pointer       :: new_cross_section
-    !> Cross section configuration data
-    type(config_t),            intent(inout) :: config
-    !> Grid warehouse
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
-    !> Profile warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
+    class(cross_section_t),    pointer       :: new_cross_section ! New :f:type:`~tuvx_cross_section/cross_section_t`
+    type(config_t),            intent(inout) :: config ! Cross section configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     type(string_t) :: cross_section_type
     character(len=*), parameter :: Iam = 'cross section builder'

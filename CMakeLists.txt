@@ -8,7 +8,7 @@ set(CMAKE_Fortran_FLAGS_COVERAGE "-g -fprofile-arcs -ftest-coverage -fprofile-ab
 
 ################################################################################
 # project
-project(photo-decomp)
+project(tuv-x)
 enable_language(Fortran)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -113,13 +113,13 @@ add_custom_target(copy-tool ALL COMMAND ${CMAKE_COMMAND}
   -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tool ${CMAKE_BINARY_DIR}/tool)
 
 ################################################################################
-# Photo-decomp source
+# TUV-x source
 
 add_subdirectory(src)
 include_directories(${CMAKE_BINARY_DIR}/src)
 
 ################################################################################
-# Photo-decomp tests
+# TUV-x tests
 
 enable_testing()
 add_subdirectory(test)

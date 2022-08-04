@@ -12,9 +12,9 @@ jobs:
       with:
         submodules: recursive
     - name: build Docker image
-      run: docker build -t photo-decomp-test .
+      run: docker build -t tuv-x-test .
     - name: run tests in container
-      run: docker run --name test-container -t photo-decomp-test bash -c 'cd build; make coverage'
+      run: docker run --name test-container -t tuv-x-test bash -c 'cd build; make coverage'
     - name: copy coverage from container
       run: docker cp test-container:build/coverage.info .
     - uses: codecov/codecov-action@v2

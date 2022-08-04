@@ -36,11 +36,11 @@ RUN curl -LO https://github.com/geospace-code/nc4fortran/archive/refs/tags/v1.4.
       && cmake .. \
       && make install
 
-# build the photo-decomp tool
-COPY . /photo-decomp/
+# build the tuv-x tool
+COPY . /tuv-x/
 RUN mkdir /build \
       && cd /build \
       && export JSON_FORTRAN_HOME="/usr/local/jsonfortran-gnu-8.2.0" \
       && cmake -D CMAKE_BUILD_TYPE=COVERAGE \
-               /photo-decomp \
+               /tuv-x \
       && make

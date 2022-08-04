@@ -13,7 +13,6 @@ API
    quantum_yield
    radiative_transfer
    spherical_geom
-   quantum_yield
 
 
 .. if there is no :math: on a page then mathjax does not get loaded

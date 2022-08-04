@@ -14,7 +14,7 @@ With Docker Desktop running, open a terminal window and run the following comman
 
 .. code-block:: bash
 
-   docker run -it ghcr.io/NCAR/photo-decomp:main bash
+   docker run -it ghcr.io/NCAR/tuv-x:main bash
 
 
 Inside the container, you can run the TUV-x tests from the ``/build/`` folder:

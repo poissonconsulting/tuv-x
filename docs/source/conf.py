@@ -60,10 +60,10 @@ html_theme = 'pydata_sphinx_theme'
 
 html_theme_options = {
     "external_links": [],
-    "github_url": "https://github.com/NCAR/photo-decomp",
+    "github_url": "https://github.com/NCAR/tuv-x",
     "navbar_end": ["version-switcher", "navbar-icon-links"],
     "switcher": {
-        "json_url": "https://ncar.github.io/photo-decomp/switcher.json",
+        "json_url": "https://ncar.github.io/tuv-x/switcher.json",
         "version_match": release,
     },
 }

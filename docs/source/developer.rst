@@ -4,7 +4,7 @@ Science Contributions
 =====================
 
 To submit a new feature or bug-fix, first create an issue on the
-`TUV-x GitHub repository <https://github.com/NCAR/photo-decomp>`_
+`TUV-x GitHub repository <https://github.com/NCAR/tuv-x>`_
 that describes the new feature or bug. The software contribution can
 then be submitted as a pull request. Please reference the issue in
 the pull request description.

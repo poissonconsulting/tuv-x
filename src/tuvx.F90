@@ -7,8 +7,8 @@
 !> Driver for the photolysis utility
 program tuvx
 
-  use musica_string,    only : string_t
-  use tuvx_core,  only : photolysis_core_t
+  use musica_string,                   only : string_t
+  use tuvx_core,                       only : photolysis_core_t
 
   implicit none
 
@@ -18,7 +18,7 @@ program tuvx
   character(len=256) :: argument
   type(string_t)     :: configFileSpec
 
-  !> Get the model configuration file and options from the command line
+  ! Get the model configuration file and options from the command line
   if( command_argument_count() /= 1 ) then
     call fail_run( )
   endif
@@ -26,10 +26,10 @@ program tuvx
 
   configFileSpec = argument
 
-  !> instatiate and initialize photolysis core object
+  ! instatiate and initialize photolysis core object
   photolysis_core => photolysis_core_t( configFileSpec )
 
-  !> run photolysis
+  ! run photolysis
   call photolysis_core%run()
 
   deallocate( photolysis_core )

@@ -5,16 +5,16 @@
 !> The photolysis_core_t and related procedures
 module tuvx_core
 
-  use musica_config,            only : config_t
-  use musica_string,            only : string_t
-  use musica_assert,            only : assert
-  use musica_constants,         only : ik => musica_ik, dk => musica_dk, lk => musica_lk
-  use tuvx_grid_warehouse,      only : grid_warehouse_t
-  use tuvx_grid,             only : grid_t
-  use tuvx_profile_warehouse,   only : Profile_warehouse_t
-  use tuvx_spherical_geometry,      only : spherical_geom_t
-  use tuvx_la_sr_bands,              only : la_srb_t
-  use tuvx_radiative_transfer,   only : radXfer_component_core_t
+  use musica_config,                   only : config_t
+  use musica_string,                   only : string_t
+  use musica_assert,                   only : assert
+  use musica_constants,                only : dk => musica_dk
+  use tuvx_grid_warehouse,             only : grid_warehouse_t
+  use tuvx_grid,                       only : grid_t
+  use tuvx_profile_warehouse,          only : profile_warehouse_t
+  use tuvx_spherical_geometry,         only : spherical_geom_t
+  use tuvx_la_sr_bands,                only : la_srb_t
+  use tuvx_radiative_transfer,         only : radXfer_component_core_t
   use tuvx_photolysis_rates,           only : photolysis_rates_t
   use tuvx_dose_rates,                 only : dose_rates_t
 
@@ -24,14 +24,14 @@ module tuvx_core
   public :: photolysis_core_t
 
   type :: photolysis_core_t
-    type(grid_warehouse_t), pointer     :: GridWareHouse_ => null()
-    type(Profile_warehouse_t), pointer  :: ProfileWareHouse_ => null()
-    type(spherical_geom_t), pointer     :: sphericalGeom_ => null()
-    type(la_srb_t), pointer             :: la_srb_ => null()
-    type(string_t), allocatable         :: diagnostics_(:)
-    type(radXfer_component_core_t), pointer    :: radXfer_component_ => null()
-    type(photolysis_rates_t), pointer :: photorates_component_ => null()
-    type(dose_rates_t),       pointer :: doserates_component_ => null()
+    type(grid_warehouse_t),          pointer :: grid_warehouse_ => null()
+    type(profile_warehouse_t),       pointer :: profile_warehouse_ => null()
+    type(spherical_geom_t),          pointer :: spherical_geometry_ => null()
+    type(la_srb_t),                  pointer :: la_sr_bands_ => null()
+    type(string_t),              allocatable :: diagnostics_(:)
+    type(radXfer_component_core_t),  pointer :: radiative_transfer_ => null()
+    type(photolysis_rates_t),        pointer :: photolysis_rates_ => null()
+    type(dose_rates_t),              pointer :: dose_rates_ => null()
   contains
     procedure :: run
     procedure :: output
@@ -46,7 +46,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function constructor( config_flsp ) result( photolysis_core_obj )
+  function constructor( config ) result( new_core )
 
     use musica_assert,                 only : assert_msg
     use musica_iterator,               only : iterator_t
@@ -54,23 +54,22 @@ contains
     use tuvx_diagnostic_util,          only : diagout
     use tuvx_profile,                  only : profile_t
 
-    !> Arguments
-    type(string_t), intent(in) :: config_flsp
+    !> Configuration data
+    type(string_t), intent(in) :: config
 
-    class(photolysis_core_t), pointer :: photolysis_core_obj
+    class(photolysis_core_t), pointer :: new_core
 
-    !> Local variables
+    ! Local variables
     character(len=*), parameter :: Iam = 'Photolysis core constructor: '
-
     character(len=32)           :: keyChar
-    logical(lk)                 :: found
+    logical                     :: found
     type(string_t)              :: keyString
     type(config_t)              :: core_config, child_config
     class(iterator_t), pointer  :: iter
-    class(profile_t),  pointer  :: aProfile
+    class(profile_t),  pointer  :: aprofile
     type(string_t)              :: required_keys(3), optional_keys(2)
 
-    call core_config%from_file( config_flsp%to_char() )
+    call core_config%from_file( config%to_char() )
 
     ! Check json configuration file for basic structure, integrity
     required_keys(1) = "radiative transfer"
@@ -82,162 +81,174 @@ contains
                      core_config%validate( required_keys, optional_keys ),    &
                      "Bad configuration data format for tuv-x core." )
 
-    !> Instantiate photolysis core
-    allocate( photolysis_core_obj )
+    ! Instantiate photolysis core
+    allocate( new_core )
 
     ! Instantiate and initialize grid warehouse
     call core_config%get( "grids", child_config, Iam )
-    photolysis_core_obj%GridWarehouse_ => grid_warehouse_t( child_config )
+    new_core%grid_warehouse_ => grid_warehouse_t( child_config )
 
-    !> Instantiate and initialize profile warehouse
+    ! Instantiate and initialize profile warehouse
     call core_config%get( "profiles", child_config, Iam )
-    photolysis_core_obj%ProfileWarehouse_ =>                                  &
-        profile_warehouse_t( child_config, photolysis_core_obj%GridWareHouse_ )
+    new_core%profile_warehouse_ =>                                            &
+       profile_warehouse_t( child_config, new_core%grid_warehouse_ )
 
-    !> Diagnostics for testing
-    aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( "temperature", "K" )
-    call diagout( 'vptmp.new', aProfile%edge_val_ )
-    deallocate( aProfile )
+    ! Diagnostics for testing
+    aprofile => new_core%profile_warehouse_%get_profile( "temperature", "K" )
+    call diagout( 'vptmp.new', aprofile%edge_val_ )
+    deallocate( aprofile )
 
-    aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( "air", "molecule cm-3" )
-    call diagout( 'vpair.new', aProfile%edge_val_ )
-    deallocate( aProfile )
+    aprofile => new_core%profile_warehouse_%get_profile( "air",               &
+                                                         "molecule cm-3" )
+    call diagout( 'vpair.new', aprofile%edge_val_ )
+    deallocate( aprofile )
 
-    aProfile => photolysis_core_obj%ProfileWareHouse_%get_Profile( "O3", "molecule cm-3" )
-    call diagout( 'vpco3.new', aProfile%layer_dens_ )
-    deallocate( aProfile )
+    aprofile => new_core%profile_warehouse_%get_profile( "O3",                &
+                                                         "molecule cm-3" )
+    call diagout( 'vpco3.new', aprofile%layer_dens_ )
+    deallocate( aprofile )
 
     ! Set up radiative transfer calculator
     call core_config%get( "radiative transfer", child_config, Iam )
-    photolysis_core_obj%radXfer_component_ => &
+    new_core%radiative_transfer_ => &
         radXfer_component_core_t( child_config,                               &
-                                  photolysis_core_obj%GridWareHouse_,         &
-                                  photolysis_core_obj%ProfileWareHouse_ )
+                                  new_core%grid_warehouse_,                   &
+                                  new_core%profile_warehouse_ )
 
     ! get optical depth diagnostics to output
     !> \todo this should be moved out of the radiative transfer config if it
     !!       is owned by the core
-    call child_config%get( "Diagnostics", photolysis_core_obj%diagnostics_,   &
+    call child_config%get( "Diagnostics", new_core%diagnostics_,              &
                            Iam, found = found )
-    if( .not. found ) allocate( photolysis_core_obj%diagnostics_( 0 ) )
+    if( .not. found ) allocate( new_core%diagnostics_( 0 ) )
 
     ! photolysis rate constants
     call core_config%get( "photolysis reactions", child_config, Iam,          &
                           found = found )
     if( found ) then
-      photolysis_core_obj%photorates_component_ => &
+      new_core%photolysis_rates_ => &
           photolysis_rates_t( child_config,                                   &
-                              photolysis_core_obj%GridWareHouse_,             &
-                              photolysis_core_obj%ProfileWareHouse_ )
+                              new_core%grid_warehouse_,                       &
+                              new_core%profile_warehouse_ )
     end if
 
     ! dose rates
     call core_config%get( "dose rates", child_config, Iam, found = found )
     if( found ) then
-      photolysis_core_obj%doserates_component_ => &
-          dose_rates_t( child_config, photolysis_core_obj%GridWareHouse_,     &
-                        photolysis_core_obj%ProfileWareHouse_ )
+      new_core%dose_rates_ => &
+          dose_rates_t( child_config, new_core%grid_warehouse_,               &
+                        new_core%profile_warehouse_ )
     end if
 
-    !> instantiate and initialize spherical geometry type
-    photolysis_core_obj%sphericalGeom_ => spherical_geom_t( photolysis_core_obj%GridWareHouse_ )
-    !> instantiate and initialize lyman alpha, srb type
-    photolysis_core_obj%la_srb_ => la_srb_t( photolysis_core_obj%GridWareHouse_ )
+    ! instantiate and initialize spherical geometry type
+    new_core%spherical_geometry_ =>                                           &
+        spherical_geom_t( new_core%grid_warehouse_ )
+    ! instantiate and initialize lyman alpha, srb type
+    new_core%la_sr_bands_ => la_srb_t( new_core%grid_warehouse_ )
 
   end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  !> Perform calculations for specified photolysis and dose rates for a
+  !! given set of conditions
   subroutine run( this )
 
-  use tuvx_profile,                    only : profile_t
-  use tuvx_radiator_warehouse,         only : radiator_warehouse_t
-  use tuvx_radiator,                   only : radiator_t
-  use tuvx_radiative_transfer_solver,  only : radField_t
-  use tuvx_diagnostic_util,            only : diagout
+    use tuvx_profile,                    only : profile_t
+    use tuvx_radiator_warehouse,         only : radiator_warehouse_t
+    use tuvx_radiator,                   only : radiator_t
+    use tuvx_radiative_transfer_solver,  only : radField_t
+    use tuvx_diagnostic_util,            only : diagout
 
-  !> Arguments
-  class(photolysis_core_t), intent(inout)  :: this
+    !> Photolysis core
+    class(photolysis_core_t), intent(inout)  :: this
 
-  !> Local variables
-  character(len=*), parameter :: Iam = 'Photolysis core run: '
+    ! Local variables
+    character(len=*), parameter     :: Iam = 'Photolysis core run: '
+    integer                         :: i_ndx, i_diag
+    ! photolysis rate constants (time, vertical level, reaction)
+    real(dk), allocatable           :: all_photo_rates(:,:,:)
+    real(dk), allocatable           :: photo_rates(:,:)
+    real(dk), allocatable           :: dose_rates(:,:)
+    character(len=2)                :: number
+    class(profile_t),       pointer :: solar_zenith_angles => null( )
+    class(radiator_t),      pointer :: radiator => null()
+    class(radField_t),      pointer :: radiation_field => null( )
 
-  integer(ik)                     :: i_ndx, i_diag
-  ! photolysis rate constants (time, vertical level, reaction)
-  real(dk), allocatable           :: all_photo_rates(:,:,:)
-  real(dk), allocatable           :: photoRates(:,:)
-  real(dk), allocatable           :: doseRates(:,:)
-  character(len=2)                :: number
-  class(profile_t),       pointer :: SZAngles => null( )
-  class(radiator_t),      pointer :: aRadiator => null()
-  class(radField_t),      pointer :: radiationFld => null( )
+    ! get the solar zenith angles
+    solar_zenith_angles =>                                                    &
+        this%profile_warehouse_%get_profile( "solar zenith angle", "degrees" )
 
-  write(*,*) ' '
-  write(*,*) Iam // 'entering'
-
-  ! get the solar zenith angles
-  SZAngles => this%ProfileWareHouse_%get_Profile( "solar zenith angle", "degrees" )
-
-  ! calculate the radiation field
-sza_loop: &
-  do i_ndx = 1,size(SZAngles%edge_val_)
-    write(*,*) Iam // 'calculating rad field @ i_ndx,sza = ',i_ndx,SZAngles%edge_val_(i_ndx)
-    if( associated( this%sphericalGeom_ ) ) then
-      call this%sphericalGeom_%setSphericalParams( SZAngles%edge_val_(i_ndx), this%GridWareHouse_ )
-    endif
-    call this%RadXfer_component_%upDate( this%la_srb_, this%sphericalGeom_, this%GridWareHouse_, &
-                                         this%ProfileWareHouse_, radiationFld )
-    write(number,'(i2.2)') i_ndx
-    call diagout( 'radField.' // number // '.new',radiationFld%fdr_+radiationFld%fup_+radiationFld%fdn_ )
-    if( associated(this%photorates_component_) ) then
-      if( allocated(photoRates) ) then
-        deallocate(photoRates)
+    ! calculate the radiation field
+    sza_loop: do i_ndx = 1,size(solar_zenith_angles%edge_val_)
+      if( associated( this%spherical_geometry_ ) ) then
+        call this%spherical_geometry_%setSphericalParams(                     &
+            solar_zenith_angles%edge_val_(i_ndx), this%grid_warehouse_ )
       endif
-      call this%photorates_component_%get( this%la_srb_, this%sphericalGeom_, &
-                                              this%GridWareHouse_, this%ProfileWareHouse_, &
-                                              radiationFld, photoRates, number )
-      if( .not. allocated( all_photo_rates ) ) then
-        allocate( all_photo_rates( size( SZAngles%edge_val_ ),                &
-                                   size( photoRates, 1 ),                     &
-                                   size( photoRates, 2 ) ) )
-      end if
-      all_photo_rates( i_ndx, :, : ) = photoRates(:,:)
-    elseif( associated(this%doserates_component_) ) then
-      if( allocated(doseRates) ) then
-        deallocate(doseRates)
+      call this%radiative_transfer_%update( this%la_sr_bands_,                &
+                                            this%spherical_geometry_,         &
+                                            this%grid_warehouse_,             &
+                                            this%profile_warehouse_,          &
+                                            radiation_field )
+      write(number,'(i2.2)') i_ndx
+      call diagout( 'radField.' // number // '.new',                          &
+                    radiation_field%fdr_ + radiation_field%fup_ +             &
+                      radiation_field%fdn_ )
+      if( associated( this%photolysis_rates_ ) ) then
+        if( allocated( photo_rates ) ) then
+          deallocate( photo_rates )
+        endif
+        call this%photolysis_rates_%get( this%la_sr_bands_,                   &
+                                         this%spherical_geometry_,            &
+                                         this%grid_warehouse_,                &
+                                         this%profile_warehouse_,             &
+                                         radiation_field,                     &
+                                         photo_rates,                         &
+                                         number )
+        if( .not. allocated( all_photo_rates ) ) then
+          allocate( all_photo_rates( size( solar_zenith_angles%edge_val_ ),   &
+                                     size( photo_rates, 1 ),                  &
+                                     size( photo_rates, 2 ) ) )
+        end if
+        all_photo_rates( i_ndx, :, : ) = photo_rates(:,:)
+      elseif( associated(this%dose_rates_) ) then
+        if( allocated(dose_rates) ) then
+          deallocate(dose_rates)
+        endif
+        call this%dose_rates_%get( this%grid_warehouse_,                      &
+                                   this%profile_warehouse_,                   &
+                                   radiation_field,                           &
+                                   dose_rates,                                &
+                                   number )
       endif
-      call this%doserates_component_%get( this%GridWareHouse_, this%ProfileWareHouse_, &
-                                          radiationFld, doseRates, number )
-    endif
-    deallocate( radiationFld )
-  enddo sza_loop
+      deallocate( radiation_field )
+    enddo sza_loop
 
-  ! output photolysis rate constants
-  if( associated( this%photorates_component_ ) ) then
-    call this%output( all_photo_rates, "photolysis_rate_constants.nc" )
-  end if
+    ! output photolysis rate constants
+    if( associated( this%photolysis_rates_ ) ) then
+      call this%output( all_photo_rates, "photolysis_rate_constants.nc" )
+    end if
 
-  ! diagnostic output
-  do i_diag = 1, size( this%diagnostics_ )
-    associate( diagnostic => this%diagnostics_( i_diag ) )
-      aRadiator => this%RadXfer_component_%RadiatorWareHouse_%get_radiator( diagnostic )
+    ! diagnostic output
+    do i_diag = 1, size( this%diagnostics_ )
+      associate( diagnostic => this%diagnostics_( i_diag ) )
+        radiator =>                                                           &
+            this%radiative_transfer_%RadiatorWareHouse_%get_radiator(         &
+                                                                  diagnostic )
         ! Diagnostics for testing
-      if( diagnostic == 'air' ) then
-        call diagout( 'dtrl.new', aRadiator%state_%layer_OD_ )
-      elseif( diagnostic == 'Aerosols' ) then
-        call diagout( 'dtaer.new', aRadiator%state_%layer_OD_ )
-      elseif( diagnostic == 'O3' ) then
-        call diagout( 'dto3.new', aRadiator%state_%layer_OD_ )
-      elseif( diagnostic == 'O2' ) then
-        call diagout( 'dto2.new', aRadiator%state_%layer_OD_ )
-      endif
-    end associate
-  end do
+        if( diagnostic == 'air' ) then
+          call diagout( 'dtrl.new', radiator%state_%layer_OD_ )
+        elseif( diagnostic == 'Aerosols' ) then
+          call diagout( 'dtaer.new', radiator%state_%layer_OD_ )
+        elseif( diagnostic == 'O3' ) then
+          call diagout( 'dto3.new', radiator%state_%layer_OD_ )
+        elseif( diagnostic == 'O2' ) then
+          call diagout( 'dto2.new', radiator%state_%layer_OD_ )
+        endif
+      end associate
+    end do
 
-  deallocate( SZAngles )
-
-  write(*,*) ' '
-  write(*,*) Iam // 'exiting'
+    deallocate( solar_zenith_angles )
 
   end subroutine run
 
@@ -258,18 +269,18 @@ sza_loop: &
     !> File path to output to
     character(len=*),         intent(in) :: file_path
 
-    type(netcdf_file) :: output_file
-    integer           :: i_rxn
+    type(netcdf_file)           :: output_file
+    integer                     :: i_rxn
     type(string_t), allocatable :: rxn_names(:)
     class(profile_t),   pointer :: sza
     class(grid_t),      pointer :: time, vertical
 
-    call assert( 337750978, associated( this%photorates_component_ ) )
-    sza => this%ProfileWarehouse_%get_profile( "solar zenith angle",          &
-                                               "degrees" )
-    time => this%GridWareHouse_%get_grid( "time", "hours" )
-    vertical => this%GridWareHouse_%get_grid( "height", "km" )
-    rxn_names = this%photorates_component_%labels( )
+    call assert( 337750978, associated( this%photolysis_rates_ ) )
+    sza => this%profile_warehouse_%get_profile( "solar zenith angle",         &
+                                                "degrees" )
+    time => this%grid_warehouse_%get_grid( "time", "hours" )
+    vertical => this%grid_warehouse_%get_grid( "height", "km" )
+    rxn_names = this%photolysis_rates_%labels( )
     call assert( 182934700,                                                   &
                  size( sza%edge_val_ ) .eq. size( time%edge_ ) )
     call assert( 394136298,                                                   &
@@ -303,35 +314,29 @@ sza_loop: &
   !> Finalize the photolysis core
   subroutine finalize( this )
 
-    !> radXfer core
+    !> Photolysis core
     type(photolysis_core_t), intent(inout) :: this
 
-    if( associated( this%GridWareHouse_ ) ) then
-      deallocate( this%GridWareHouse_ )
+    if( associated( this%grid_warehouse_ ) ) then
+      deallocate( this%grid_warehouse_ )
     end if
-
-    if( associated( this%ProfileWareHouse_ ) ) then
-      deallocate( this%ProfileWareHouse_ )
+    if( associated( this%profile_warehouse_ ) ) then
+      deallocate( this%profile_warehouse_ )
     end if
-
-    if( associated( this%sphericalGeom_ ) ) then
-      deallocate( this%sphericalGeom_ )
+    if( associated( this%spherical_geometry_ ) ) then
+      deallocate( this%spherical_geometry_ )
     end if
-
-    if( associated( this%la_srb_ ) ) then
-      deallocate( this%la_srb_ )
+    if( associated( this%la_sr_bands_ ) ) then
+      deallocate( this%la_sr_bands_ )
     end if
-
-    if( associated( this%radXfer_component_ ) ) then
-      deallocate( this%radXfer_component_ )
+    if( associated( this%radiative_transfer_ ) ) then
+      deallocate( this%radiative_transfer_ )
     end if
-
-    if( associated( this%photorates_component_ ) ) then
-      deallocate( this%photorates_component_ )
+    if( associated( this%photolysis_rates_ ) ) then
+      deallocate( this%photolysis_rates_ )
     end if
-
-    if( associated( this%doserates_component_ ) ) then
-      deallocate( this%doserates_component_ )
+    if( associated( this%dose_rates_ ) ) then
+      deallocate( this%dose_rates_ )
     end if
 
   end subroutine finalize

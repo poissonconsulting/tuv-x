@@ -14,20 +14,20 @@ module tuvx_profile_warehouse
   private
   public :: profile_warehouse_t
 
-  !> profile warehouse type
   type :: profile_warehouse_t
+    ! profile warehouse type
     private
-    !> profile objects
+    ! profile objects
     type(profile_ptr), allocatable :: profile_objs_(:)
   contains
-    !> get a copy of a profile object
+    ! get a copy of a profile object
     procedure, private :: get_profile_char, get_profile_string
     generic :: get_profile => get_profile_char, get_profile_string
-    !> Finalize the object
+    ! Finalize the object
     final :: finalize
   end type profile_warehouse_t
 
-  !> Grid warehouse_t constructor
+  ! profile warehouse_t constructor
   interface profile_warehouse_t
     module procedure :: constructor
   end interface

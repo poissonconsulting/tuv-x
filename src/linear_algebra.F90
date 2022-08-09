@@ -2,20 +2,22 @@
 ! SPDX-License-Identifier: Apache-2.0
 !
 module tuvx_linear_algebra
+  ! General interface and functions for linear algebra types
 
-   use musica_constants, only : ik => musica_ik, dk => musica_dk
+  ! \todo the function names in this module could be more descriptive
+
+   use musica_constants,               only : dk => musica_dk
 
    implicit none
 
    private
-   public :: abs_linalgebra_t, sscal, saxpy, sasum, sdot, isamax
+   public :: linear_algebra_t, sscal, saxpy, sasum, sdot, isamax
 
-   integer(ik), parameter :: iZERO = 0_ik
-   integer(ik), parameter :: iONE  = 1_ik
-   real(dk), parameter    :: rZERO = 0.0_dk
+   real(dk), parameter :: rZERO = 0.0_dk
 
-   type, abstract :: abs_linalgebra_t
-     contains
+   type, abstract :: linear_algebra_t
+    ! Linear algebra functions
+   contains
      procedure(SGBCO), deferred :: SGBCO
      procedure(SGBFA), deferred :: SGBFA
      procedure(SGBSL), deferred :: SGBSL
@@ -23,326 +25,370 @@ module tuvx_linear_algebra
      procedure(SGEFA), deferred :: SGEFA
      procedure(SGESL), deferred :: SGESL
      procedure(tridiag), deferred :: tridiag
-   end type abs_linalgebra_t
+   end type linear_algebra_t
 
-   interface
-      SUBROUTINE SGBCO( this, ABD, N, ML, MU, IPVT, RCOND, Z )
-        use musica_constants, only : ik => musica_ik, dk => musica_dk
-        import abs_linalgebra_t
-        class(abs_linalgebra_t), intent(inout) :: this
-        INTEGER(ik), intent(in)  :: N, ML, MU
-        INTEGER(ik), intent(out) :: IPVT(:)
-	REAL(dk), intent(out)    :: RCOND
-	REAL(dk), intent(inout)  :: ABD(:,:)
-	REAL(dk), intent(out)    :: Z(:)
-      END SUBROUTINE SGBCO
+interface
 
-      SUBROUTINE SGBFA( this, ABD, N, ML, MU, IPVT, INFO )
-        use musica_constants, only : ik => musica_ik, dk => musica_dk
-        import abs_linalgebra_t
-        class(abs_linalgebra_t), intent(inout) :: this
-        INTEGER(ik), intent(in)  :: N, ML, MU
-        INTEGER(ik), intent(out) ::  INFO
-        INTEGER(ik), intent(out) :: IPVT(:)
-	REAL(dk), intent(inout)  :: ABD(:,:)
-      END SUBROUTINE SGBFA
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      SUBROUTINE SGBSL( this, ABD, N, ML, MU, IPVT, B, JOB )
-        use musica_constants, only : ik => musica_ik, dk => musica_dk
-        import abs_linalgebra_t
-        class(abs_linalgebra_t), intent(inout) :: this
-        INTEGER(ik), intent(in) ::  N, ML, MU, JOB
-        INTEGER(ik), intent(in) ::  IPVT(:)
-        REAL(dk), intent(in)    ::  ABD(:,:)
-        REAL(dk), intent(inout) ::  B(:)
-      END SUBROUTINE SGBSL
+  subroutine SGBCO( this, ABD, N, ML, MU, IPVT, RCOND, Z )
+    ! Factors a real band matrix by Gaussian elimination and estimates the
+    ! condition of the matrix
+    use musica_constants,              only : dk => musica_dk
+    import linear_algebra_t
+    class(linear_algebra_t), intent(inout) :: this
+    real(dk),                intent(inout) :: ABD(:,:) ! \todo needs description
+    integer,                 intent(in)    :: N        ! Order of the original matrix
+    integer,                 intent(in)    :: ML       ! Number of diagonals below the main diagonal
+    integer,                 intent(in)    :: MU       ! Number of diagonals above the main diagonal
+    integer,                 intent(out)   :: IPVT(:)  ! Pivot vector
+    real(dk),                intent(out)   :: RCOND    ! \todo needs description
+    real(dk),                intent(out)   :: Z(:)     ! \todo needs description
+  end subroutine SGBCO
 
-      SUBROUTINE SGECO( this, A, N,IPVT, RCOND, Z )
-        use musica_constants, only : ik => musica_ik, dk => musica_dk
-        import abs_linalgebra_t
-        class(abs_linalgebra_t), intent(inout) :: this
-        INTEGER(ik), intent(in)  :: N
-        INTEGER(ik), intent(out) :: IPVT(:)
-	REAL(dk), intent(out)    :: RCOND
-        REAL(dk), intent(inout)  :: A(:,:)
-	REAL(dk), intent(out)    :: Z(:)
-      END SUBROUTINE SGECO
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      SUBROUTINE SGEFA( this, A, N, IPVT, INFO )
-        use musica_constants, only : ik => musica_ik, dk => musica_dk
-        import abs_linalgebra_t
-        class(abs_linalgebra_t), intent(inout) :: this
-        INTEGER(ik), intent(in)  :: N
-        INTEGER(ik), intent(out) :: INFO
-        INTEGER(ik), intent(out) :: IPVT(:)
-        REAL(dk), intent(inout)  :: A(:,:)
-      END SUBROUTINE SGEFA
+  subroutine SGBFA( this, ABD, N, ML, MU, IPVT, INFO )
+    ! Factors a real band matrix by elimination
+    !
+    ! SGBFA is usually called by SBGCO, but it can be called directly if
+    ! RCOND is not needed.
+    use musica_constants,              only : dk => musica_dk
+    import linear_algebra_t
+    class(linear_algebra_t), intent(inout) :: this
+    real(dk),                intent(inout) :: ABD(:,:) ! \todo needs description
+    integer,                 intent(in)    :: N        ! Order of the original matrix
+    integer,                 intent(in)    :: ML       ! Number of diagonals below the main diagonal
+    integer,                 intent(in)    :: MU       ! Number of diagonals above the main diagonal
+    integer,                 intent(out)   :: IPVT(:)  ! Pivot vector
+    integer,                 intent(out)   :: INFO     ! \todo needs description
+  end subroutine SGBFA
 
-      SUBROUTINE SGESL( this, A, N, IPVT, B, JOB )
-        use musica_constants, only : ik => musica_ik, dk => musica_dk
-        import abs_linalgebra_t
-        class(abs_linalgebra_t), intent(inout) :: this
-        INTEGER(ik), intent(in) :: N, JOB
-        INTEGER(ik), intent(in) :: IPVT(:)
-        REAL(dk), intent(in)    :: A(:,:)
-        REAL(dk), intent(inout) :: B(:)
-      END SUBROUTINE SGESL
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      FUNCTION tridiag(this, a, b, c, r) result(u)
-        use musica_constants, only : dk => musica_dk
-        import abs_linalgebra_t
-        class(abs_linalgebra_t), intent(in) :: this
-        REAL(dk), intent(in) :: a(:), b(:), c(:), r(:)
-        REAL(dk) :: u(size(b))
-      END FUNCTION tridiag
-   end interface
+  subroutine SGBSL( this, ABD, N, ML, MU, IPVT, B, JOB )
+    ! Solves the real band system
+    !  A * X = B or transpose(A) * X = B
+    ! using the factors computed by SGBCO or SGBFA
+    use musica_constants,              only : dk => musica_dk
+    import linear_algebra_t
+    class(linear_algebra_t), intent(inout) :: this
+    real(dk),                intent(in)    :: ABD(:,:) ! Output of SGBCO or SGBFA
+    integer,                 intent(in)    :: N        ! Order of the original matrix
+    integer,                 intent(in)    :: ML       ! Number of diagonals below the main diagonal
+    integer,                 intent(in)    :: MU       ! Number of diagonals above the main diagonal
+    integer,                 intent(in)    :: IPVT(:)  ! Pivot vector
+    real(dk),                intent(inout) :: B(:)     ! Right-hand side vector
+    integer,                 intent(in)    :: JOB      ! 0 = solve A*X=B, otherwise = solve transpose(A)*X=B
+  end subroutine SGBSL
 
-   contains
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   INTEGER(ik) FUNCTION ISAMAX( N, SX, INCX )
+  subroutine SGECO( this, A, N, IPVT, RCOND, Z )
+    ! Factors a real matrix by Gaussian Elimination and estimates the
+    ! condition of the matrix
+    !
+    ! If RCOND is not needed, SGEFA Is slightly faster
+    use musica_constants,              only : dk => musica_dk
+    import linear_algebra_t
+    class(linear_algebra_t), intent(inout) :: this
+    real(dk),                intent(inout) :: A(:,:) ! INPUT: The matrix to be factored
+    ! OUTPUT: An Upper Triangular matrix and the multipliers
+    !         which were used to obtain it.
+    !         The factorization can be written  A = L*U , where
+    !         L  is a product of perumtation and unit lower
+    !         triangular matrices and  U  is upper triangular.
+    integer,                 intent(in)    :: N       ! The order of matrix A
+    integer,                 intent(out)   :: IPVT(:) ! Pivot vector
+    real(dk),                intent(out)   :: RCOND   ! An estimate of the
+    ! reciprocal condition of  A .
+    ! For the system  A*X = B , relative perturbations
+    ! in  A  and  B  Oof size EPSILON  may cause
+    ! relative perturbations in  X  of size  EPSILON/RCOND .
+    ! If  RCOND  is so small that the logical expression
+    ! 1.0 + RCOND .EQ. 1.0
+    ! is true, then  A  may be singular to working
+    ! precision.  In particular,  RCOND  is zero  if
+    ! exact singularity is detected or the estimate
+    ! underflows.
+    real(dk),                intent(out)   :: Z(:)    ! Working vector
+  end subroutine SGECO
 
-!  --INPUT--  N  NUMBER OF ELEMENTS IN VECTOR OF INTEREST
-!            SX  SING-PREC ARRAY, LENGTH 1+(N-1)*INCX, CONTAINING VECTOR
-!          INCX  SPACING OF VECTOR ELEMENTS IN 'SX'
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-! --OUTPUT-- ISAMAX   FIRST I, I = 1 TO N, TO MAXIMIZE
-!                         ABS(SX(1+(I-1)*INCX))
+  subroutine SGEFA( this, A, N, IPVT, INFO )
+    ! Factors a real matrix by Gaussian Elimination
+    !
+    ! SGEFA is usually called by SGECO, but it can be called directly when
+    ! RCOND is not needed.
+    use musica_constants,              only : dk => musica_dk
+    import linear_algebra_t
+    class(linear_algebra_t), intent(inout) :: this
+    real(dk),                intent(inout) :: A(:,:) ! INPUT: The matrix to be factored
+    ! OUTPUT: An Upper Triangular matrix and the multipliers
+    !         which were used to obtain it.
+    !         The factorization can be written  A = L*U , where
+    !         L  is a product of perumtation and unit lower
+    !         triangular matrices and  U  is upper triangular.
+    integer,                 intent(in)    :: N       ! The order of matrix A
+    integer,                 intent(out)   :: IPVT(:) ! Pivot vector
+    integer,                 intent(out)   :: INFO    ! 0 = normal value
+    ! K = If  U(K,K) .EQ. 0.0 .  This is not an error
+    !     condition for this subroutine, but it does
+    !     indicate that SGESL or SGEDI will divide by zero
+    !     if called.  Use  RCOND  in SGECO for a reliable
+    !     indication of singularity.
+  end subroutine SGEFA
 
-        INTEGER(ik), intent(in) :: N, INCX
-	REAL(dk), intent(in)    :: SX(:)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        INTEGER(ik) :: I,II
-	REAL(dk) :: SMAX, XMAG
+  subroutine SGESL( this, A, N, IPVT, B, JOB )
+    ! Solves the real system
+    !  A * X = B or transpose(A) * X = B
+    ! using the factors computed by SGECO or SGEFA
+    use musica_constants,              only : dk => musica_dk
+    import linear_algebra_t
+    class(linear_algebra_t), intent(inout) :: this
+    real(dk),                intent(in)    :: A(:,:)  ! Output of SGECO or SGEFA
+    integer,                 intent(in)    :: N       ! Order of the A matrix
+    integer,                 intent(in)    :: IPVT(:) ! Pivot vector
+    real(dk),                intent(inout) :: B(:)    ! Right-hand side vector
+    integer,                 intent(in)    :: JOB     ! 0 = solve A*X=B, otherwise = solve transpose(A)*X=B
+  end subroutine SGESL
 
-        IF( N <= iZERO ) THEN
-          ISAMAX = iZERO
-        ELSEIF( N == iONE ) THEN
-          ISAMAX = iONE
-        ELSE
-	   SMAX = rZERO
-	   II = iONE
-	   DO I = iONE, iONE+(N-1)*INCX, INCX
-	      XMAG = ABS(SX(I))
-	      IF( SMAX.LT.XMAG ) THEN
-	         SMAX = XMAG
-	         ISAMAX = II
-	      ENDIF
-	      II = II + iONE
-           ENDDO
-        ENDIF
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   END FUNCTION  ISAMAX
+  function tridiag( this, a, b, c, r ) result( u )
+    ! Solves the tridiagonal system
+    use musica_constants,              only : dk => musica_dk
+    import linear_algebra_t
+    class(linear_algebra_t), intent(in) :: this
+    real(dk),                intent(in) :: a(:) ! \todo needs description
+    real(dk),                intent(in) :: b(:) ! \todo needs description
+    real(dk),                intent(in) :: c(:) ! \todo needs description
+    real(dk),                intent(in) :: r(:) ! \todo needs description
+    real(dk)                            :: u( size( b ) ) ! \todo needs description
+  end function tridiag
 
-   REAL(dk) FUNCTION SASUM( N, SX, INCX )
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-!  --INPUT--  N  NUMBER OF ELEMENTS IN VECTOR TO BE SUMMED
-!            SX  SING-PREC ARRAY, LENGTH 1+(N-1)*INCX, CONTAINING VECTOR
-!          INCX  SPACING OF VECTOR ELEMENTS IN 'SX'
+end interface
 
-! --OUTPUT-- SASUM   SUM FROM 0 TO N-1 OF  ABS(SX(1+I*INCX))
+contains
 
-        INTEGER(ik), intent(in) :: N, INCX
-	REAL(dk), intent(in)    :: SX(:)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        INTEGER(ik) :: I, M
+  integer function isamax( N, SX, INCX )
+    ! Returns the first I from 1 to N to maximize
+    ! abs( SX( 1 +( I - 1 ) * INCX ) )
 
-        SASUM = rZERO
-        IF( N > iZERO ) THEN
-          IF( INCX.NE. iONE ) THEN
-!                                          ** NON-UNIT INCREMENTS
-	    DO I = iONE, iONE+(N-1)*INCX, INCX
-	       SASUM = SASUM + ABS(SX(I))
-            ENDDO
-          ELSE
-!                                          ** UNIT INCREMENTS
-	    M = MOD(N,6_ik)
-	    IF( M.NE. iZERO ) THEN
-!                             ** CLEAN-UP LOOP SO REMAINING VECTOR 
-!                             ** LENGTH IS A MULTIPLE OF 6.
-	      DO I = iONE, M
-	        SASUM = SASUM + ABS(SX(I))
-              ENDDO
-            ENDIF
-!                              ** UNROLL LOOP FOR SPEED
-	    DO I = M+iONE, N, 6_ik
-	     SASUM = SASUM + ABS(SX(I))   + ABS(SX(I+1_ik)) + ABS(SX(I+2_ik)) &
-                           + ABS(SX(I+3_ik)) + ABS(SX(I+4_ik)) + ABS(SX(I+5_ik))
-            ENDDO
-          ENDIF
-        ENDIF
+    integer,  intent(in) :: N     ! Number of elements in the vector of interest
+    integer,  intent(in) :: INCX  ! Spacing of vector elements in SX
+    real(dk), intent(in) :: SX(:) ! Vector of interest
 
-   END FUNCTION SASUM
+    integer :: I,II
+    real(dk) :: SMAX, XMAG
 
-   REAL(dk) FUNCTION SDOT( N, SX, INCX, SY, INCY )
+    if( N <= 0 ) then
+      isamax = 0
+    elseif( N == 1 ) then
+      isamax = 1
+    else
+      SMAX = rZERO
+      II = 1
+      do I = 1, 1 + ( N - 1 ) * INCX, INCX
+        XMAG = abs( SX( I ) )
+        if( SMAX .lt. XMAG ) then
+          SMAX = XMAG
+          isamax = II
+        endif
+        II = II + 1
+      enddo
+    endif
 
-!          S.P. DOT PRODUCT OF VECTORS  'X'  AND  'Y'
+   end function isamax
 
-!  --INPUT--
-!        N  NUMBER OF ELEMENTS IN INPUT VECTORS 'X' AND 'Y'
-!       SX  SING-PREC ARRAY CONTAINING VECTOR 'X'
-!     INCX  SPACING OF ELEMENTS OF VECTOR 'X' IN 'SX'
-!       SY  SING-PREC ARRAY CONTAINING VECTOR 'Y'
-!     INCY  SPACING OF ELEMENTS OF VECTOR 'Y' IN 'SY'
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-! --OUTPUT--
-!     SDOT   SUM FOR I = 0 TO N-1 OF  SX(LX+I*INCX) * SY(LY+I*INCY),
-!            WHERE  LX = 1          IF INCX .GE. 0, 
-!                      = (-INCX)*N  IF INCX .LT. 0,
-!            AND LY IS DEFINED IN A SIMILAR WAY USING INCY.
+  real(dk) function sasum( N, SX, INCX )
+    ! Returns the sum from 1 to N-1 of abs( SX( 1 + I * INCX ) )
 
-        INTEGER(ik), intent(in) :: N, INCX, INCY
-	REAL(dk), intent(in)    :: SX(:), SY(:)
+    integer,  intent(in) :: N     ! Number of elements in the vector of interest
+    integer,  intent(in) :: INCX  ! Spacing of vector elements in SX
+    real(dk), intent(in) :: SX(:) ! Vector of interest
 
-        INTEGER(ik) :: I, M, IX, IY
+    integer :: I, M
 
-        SDOT = rZERO
-        IF( N > iZERO ) THEN
+    sasum = rZERO
+    if( N > 0 ) then
+      if( INCX.ne. 1 ) then
+        ! non-unit increments
+        do I = 1, 1 + ( N - 1 ) * INCX, INCX
+          sasum = sasum + abs( SX( I ) )
+        enddo
+      else
+        ! unit increments
+        M = mod( N, 6 )
+        if( M .ne. 0 ) then
+          ! clean-up loop so remaining vector
+          ! length is a multiple of 6.
+          do I = 1, M
+            sasum = sasum + abs( SX( I ) )
+          enddo
+        endif
+        ! unroll loop for speed
+        do I = M + 1, N, 6
+          sasum = sasum + abs( SX( I ) ) + abs( SX( I + 1 ) )                 &
+                        + abs( SX( I + 2 ) ) + abs( SX( I + 3 ) )             &
+                        + abs( SX( I + 4 ) ) + abs( SX( I + 5 ) )
+        enddo
+      endif
+    endif
 
-          IF ( INCX.EQ.INCY .AND. INCX.GT. iONE )  THEN
+  end function sasum
 
-	    DO I = iONE, iONE+(N-1)*INCX, INCX
-	       SDOT = SDOT + SX(I) * SY(I)
-            ENDDO
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-          ELSE IF ( INCX.EQ.INCY .AND. INCX.EQ.iONE )  THEN
+  real(dk) function SDOT( N, SX, INCX, SY, INCY )
+    ! Dot product of vectors X and Y
 
-!                                        ** EQUAL, UNIT INCREMENTS
-	    M = MOD(N,5_ik)
-	    IF( M .NE. iZERO ) THEN
-!                            ** CLEAN-UP LOOP SO REMAINING VECTOR LENGTH
-!                            ** IS A MULTIPLE OF 4.
-	      DO I = iONE, M
-	         SDOT = SDOT + SX(I) * SY(I)
-              ENDDO
-	    ENDIF
-!                              ** UNROLL LOOP FOR SPEED
-	    DO I = M+iONE, N, 5_ik
-	      SDOT = SDOT + SX(I)*SY(I) + SX(I+1_ik)*SY(I+1_ik) &
-                          + SX(I+2_ik)*SY(I+2_ik) + SX(I+3_ik)*SY(I+3_ik) &
-                          + SX(I+4_ik)*SY(I+4_ik)
-            ENDDO
+    integer,  intent(in) :: N     ! Number of elements in vectors X and Y
+    real(dk), intent(in) :: SX(:) ! Vector X
+    integer,  intent(in) :: INCX  ! Spacing of elements in vector X
+    real(dk), intent(in) :: SY(:) ! Vector Y
+    integer,  intent(in) :: INCY  ! Spacing of elements in vector Y
 
-          ELSE
-!               ** NONEQUAL OR NONPOSITIVE INCREMENTS.
-	    IX = iONE
-	    IY = iONE
-	    IF( INCX.LT. iZERO )  IX = iONE + (N-iONE)*(-INCX)
-	    IF( INCY.LT. iZERO )  IY = iONE + (N-iONE)*(-INCY)
-	    DO I = iONE, N
-	      SDOT = SDOT + SX(IX) * SY(IY)
-	      IX = IX + INCX
-	      IY = IY + INCY
-            ENDDO
+    integer :: I, M, IX, IY
 
-          ENDIF
-        ENDIF
+    SDOT = rZERO
+    if( N > 0 ) then
+      if ( INCX .eq. INCY .and. INCX .gt. 1 )  then
+        do I = 1, 1 + ( N - 1 ) * INCX, INCX
+           SDOT = SDOT + SX( I ) * SY( I )
+        enddo
+      else if ( INCX .eq. INCY .and. INCX .eq. 1 )  then
+        ! equal, unit increments
+        M = mod( N, 5 )
+        if( M .ne. 0 ) then
+          ! clean-up loop so remaining vector length
+          ! is a multiple of 4.
+          do I = 1, M
+            SDOT = SDOT + SX( I ) * SY( I )
+          enddo
+        endif
+        ! unroll loop for speed
+        do I = M + 1, N, 5
+          SDOT = SDOT + SX( I ) * SY( I ) + SX( I + 1 ) * SY( I + 1 )         &
+                      + SX( I + 2 ) * SY( I + 2 ) + SX( I + 3 ) * SY( I + 3 ) &
+                      + SX( I + 4 ) * SY( I + 4 )
+        enddo
+      else
+        ! nonequal or nonpositive increments.
+        IX = 1
+        IY = 1
+        if( INCX .lt. 0 ) IX = 1 + ( N - 1 ) * ( -INCX )
+        if( INCY .lt. 0 ) IY = 1 + ( N - 1 ) * ( -INCY )
+        do I = 1, N
+          SDOT = SDOT + SX( IX ) * SY( IY )
+          IX = IX + INCX
+          IY = IY + INCY
+        enddo
+      endif
+    endif
 
-   END FUNCTION SDOT
+  end function SDOT
 
-   SUBROUTINE SSCAL( N, SA, SX, INCX )
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-!         CALCULATE  X = A*X  (X = VECTOR, A = SCALAR)
+  subroutine sscal( N, SA, SX, INCX )
+    ! Calculates  X = A*X  (X = vector, A = scalar)
 
-!  --INPUT--  N  NUMBER OF ELEMENTS IN VECTOR
-!            SA  SINGLE PRECISION SCALE FACTOR
-!            SX  SING-PREC ARRAY, LENGTH 1+(N-1)*INCX, CONTAINING VECTOR
-!          INCX  SPACING OF VECTOR ELEMENTS IN 'SX'
-! --OUTPUT-- SX  REPLACE  SX(1+I*INCX)  WITH  SA * SX(1+I*INCX) 
-!                FOR I = 0 TO N-1
+    integer,  intent(in)    :: N     ! Number of elements in the vector of interest
+    real(dk), intent(in)    :: SA    ! Scale factor
+    real(dk), intent(inout) :: SX(:) ! Vector of interest
+    integer,  intent(in)    :: INCX  ! Spacing of the vector elements in SX
 
-        INTEGER(ik), intent(in) :: N, INCX
-	REAL(dk), intent(in)    :: SA
-	REAL(dk), intent(inout) :: SX(:)
+    integer :: I, M
 
-        INTEGER(ik) :: I, M
+    if( N > 0 ) then
+      if( INCX.ne. 1 ) then
+        do I = 1, 1 + ( N - 1 ) * INCX, INCX
+          SX( I ) = SA * SX( I )
+        enddo
+      else
+        M = mod( N, 5 )
+        if( M .ne. 0 ) then
+          ! clean-up loop so remaining vector length
+          ! is a multiple of 5.
+          do I = 1, M
+            SX( I ) = SA * SX( I )
+          enddo
+        endif
+        ! unroll loop for speed
+        do I = M+1, N, 5
+          SX( I )     = SA * SX( I )
+          SX( I + 1 ) = SA * SX( I + 1 )
+          SX( I + 2 ) = SA * SX( I + 2 )
+          SX( I + 3 ) = SA * SX( I + 3 )
+          SX( I + 4 ) = SA * SX( I + 4 )
+        enddo
+      endif
+    endif
 
-        IF( N > iZERO ) THEN
-          IF( INCX.NE. iONE ) THEN
-	    DO I = iONE, iONE+(N-1)*INCX, INCX
-	       SX(I) = SA * SX(I)
-            ENDDO
-          ELSE
-	    M = MOD(N,5_ik)
-	    IF( M.NE. iZERO ) THEN
-!                           ** CLEAN-UP LOOP SO REMAINING VECTOR LENGTH
-!                           ** IS A MULTIPLE OF 5.
-	      DO I = iONE, M
-	         SX(I) = SA * SX(I)
-              ENDDO
-	    ENDIF
-!                             ** UNROLL LOOP FOR SPEED
-	    DO I = M+iONE, N, 5_ik
-	      SX(I)   = SA * SX(I)
-	      SX(I+iONE) = SA * SX(I+iONE)
-	      SX(I+2_ik) = SA * SX(I+2_ik)
-	      SX(I+3_ik) = SA * SX(I+3_ik)
-	      SX(I+4_ik) = SA * SX(I+4_ik)
-            ENDDO
-          ENDIF
-        ENDIF
+  end subroutine sscal
 
-        END SUBROUTINE SSCAL
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   SUBROUTINE SAXPY( N, SA, SX, INCX, SY, INCY )
+  subroutine saxpy( N, SA, SX, INCX, SY, INCY )
+    ! Calculates Y = A*X + Y  (X, Y = vectors, A = scalar)
 
-!          Y = A*X + Y  (X, Y = VECTORS, A = SCALAR)
-!  --INPUT--
-!        N  NUMBER OF ELEMENTS IN INPUT VECTORS 'X' AND 'Y'
-!       SA  SINGLE PRECISION SCALAR MULTIPLIER 'A'
-!       SX  SING-PREC ARRAY CONTAINING VECTOR 'X'
-!     INCX  SPACING OF ELEMENTS OF VECTOR 'X' IN 'SX'
-!       SY  SING-PREC ARRAY CONTAINING VECTOR 'Y'
-!     INCY  SPACING OF ELEMENTS OF VECTOR 'Y' IN 'SY'
-! --OUTPUT--
-!       SY   FOR I = 0 TO N-1, OVERWRITE  SY(LY+I*INCY) WITH 
-!                 SA*SX(LX+I*INCX) + SY(LY+I*INCY), 
-!            WHERE LX = 1          IF INCX .GE. 0,
-!                     = (-INCX)*N  IF INCX .LT. 0
-!            AND LY IS DEFINED IN A SIMILAR WAY USING INCY.
+    integer,  intent(in)    :: N     ! Number of elements in the vector of interest
+    real(dk), intent(in)    :: SA    ! Scalar multiplier
+    real(dk), intent(in)    :: SX(:) ! Vector X
+    integer,  intent(in)    :: INCX  ! Spacing of elements in X
+    real(dk), intent(inout) :: SY(:) ! Vector Y
+    integer,  intent(in)    :: INCY  ! Spacing of elements in Y
 
-        INTEGER(ik), intent(in) :: N, INCX, INCY
-	REAL(dk), intent(in)    :: SA
-	REAL(dk), intent(in)    :: SX(:)
-	REAL(dk), intent(inout) :: SY(:)
+    integer :: I, M, IX, IY
 
-        INTEGER(ik) :: I, M, IX, IY
+    if( N > 0 .and. SA /= rZERO ) then
+      if ( INCX .eq. INCY .and. INCX .gt. 1 ) then
+        do I = 1, 1 + ( N - 1 ) * INCX, INCX
+          SY( I ) = SY( I ) + SA * SX( I )
+        enddo
+      else if ( INCX .eq. INCY .and. INCX .eq. 1 )  then
+        ! equal, unit increments
+        M = mod( N, 4 )
+        if( M .ne. 0 ) then
+          ! clean-up loop so remaining vector length
+          ! is a multiple of 4.
+          do I = 1, M
+            SY( I ) = SY( I ) + SA * SX( I )
+          enddo
+        endif
+        ! unroll loop for speed
+        do I = M + 1, N, 4
+          SY( I )     = SY( I )     + SA * SX( I )
+          SY( I + 1 ) = SY( I + 1 ) + SA * SX( I + 1 )
+          SY( I + 2 ) = SY( I + 2 ) + SA * SX( I + 2 )
+          SY( I + 3 ) = SY( I + 3 ) + SA * SX( I + 3 )
+        enddo
+      else
+        ! nonequal or nonpositive increments.
+        IX = 1
+        IY = 1
+        if( INCX .lt. 0 )  IX = 1 + ( N - 1 ) * ( -INCX )
+        if( INCY .lt. 0 )  IY = 1 + ( N - 1 ) * ( -INCY )
+        do I = 1, N
+          SY( IY ) = SY( IY ) + SA * SX( IX )
+          IX = IX + INCX
+          IY = IY + INCY
+        enddo
+      endif
+    endif
 
-        IF( N > iZERO .and. SA /= rZERO ) THEN
-          IF ( INCX.EQ.INCY .AND. INCX.GT. iONE )  THEN
-	    DO I = iONE, iONE+(N-1)*INCX, INCX
-	       SY(I) = SY(I) + SA * SX(I)
-            ENDDO
-          ELSE IF ( INCX.EQ.INCY .AND. INCX.EQ. iONE )  THEN
-!                                        ** EQUAL, UNIT INCREMENTS
-	    M = MOD(N,4_ik)
-	    IF( M .NE. iZERO ) THEN
-!                            ** CLEAN-UP LOOP SO REMAINING VECTOR LENGTH
-!                            ** IS A MULTIPLE OF 4.
-	      DO I = iONE, M
-	        SY(I) = SY(I) + SA * SX(I)
-              ENDDO
-	    ENDIF
-!                              ** UNROLL LOOP FOR SPEED
-	    DO I = M+iONE, N, 4_ik
-	      SY(I)   = SY(I)   + SA * SX(I)
-	      SY(I+iONE) = SY(I+iONE) + SA * SX(I+iONE)
-	      SY(I+2_ik) = SY(I+2_ik) + SA * SX(I+2_ik)
-	      SY(I+3_ik) = SY(I+3_ik) + SA * SX(I+3_ik)
-            ENDDO
-          ELSE
-!               ** NONEQUAL OR NONPOSITIVE INCREMENTS.
-	    IX = iONE
-	    IY = iONE
-	    IF( INCX.LT. iZERO )  IX = iONE + (N-iONE)*(-INCX)
-	    IF( INCY.LT. iZERO )  IY = iONE + (N-iONE)*(-INCY)
-	    DO I = iONE, N
-	      SY(IY) = SY(IY) + SA*SX(IX)
-	      IX = IX + INCX
-	      IY = IY + INCY
-            ENDDO
-          ENDIF
-        ENDIF
+  end subroutine saxpy
 
-        END SUBROUTINE SAXPY
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 end module tuvx_linear_algebra

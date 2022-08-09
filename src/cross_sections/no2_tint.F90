@@ -41,7 +41,7 @@ contains
     use tuvx_cross_section,            only : cross_section_parms_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_netcdf_util,              only : netcdf_t
+    use tuvx_netcdf,                   only : netcdf_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_util,                     only : inter2
 
@@ -96,7 +96,8 @@ file_loop: &
         allocate( netcdf_obj )
         ! read netcdf cross section parameters
         call netcdf_obj%read_netcdf_file(                                     &
-                     filespec = netcdfFiles( fileNdx )%to_char( ), Hdr = Hdr )
+                     file_path = netcdfFiles( fileNdx )%to_char( ),           &
+                     variable_name = Hdr )
         nParms = size( netcdf_obj%parameters, dim = 2 )
         ! must have at least one parameter
         if( nParms < 2 ) then

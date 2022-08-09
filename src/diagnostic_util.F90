@@ -2,123 +2,131 @@
 ! SPDX-License-Identifier: Apache-2.0
 !
 module tuvx_diagnostic_util
+  ! Diagnostic utilities
 
-   use musica_constants, only : dk => musica_dk
+  use musica_constants, only : dk => musica_dk
 
-   implicit none
+  implicit none
 
-   interface diagout
-     module procedure :: diagnostic_1d
-     module procedure :: diagnostic_1d_dk
-     module procedure :: diagnostic_2d
-     module procedure :: diagnostic_2d_dk
-   end interface diagout
+  interface diagout
+    module procedure :: diagnostic_1d
+    module procedure :: diagnostic_1d_dk
+    module procedure :: diagnostic_2d
+    module procedure :: diagnostic_2d_dk
+  end interface diagout
 
-   contains
+contains
 
-   subroutine diagnostic_1d( filename, variable )
-   
-   character(len=*), intent(in) :: filename
-   real, intent(in)             :: variable(:)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   integer :: ios
+  subroutine diagnostic_1d( filename, variable )
+    ! Output 1D float diagnostics to a specified file
 
-!  write(*,*) 'diagnostic_1d: entering'
+    character(len=*), intent(in) :: filename    ! File path to output to
+    real, intent(in)             :: variable(:) ! Diagnostics to output
 
-   open(unit=44,file='OUTPUTS/'//filename,form='unformatted',iostat=ios)
-   if( ios /= 0 ) then
-     write(*,*) 'diagnostic_1d: failed to open ',filename,'; error = ',ios
-     stop 3
-   endif
-   write(unit=44,iostat=ios) variable
-   if( ios /= 0 ) then
-     write(*,*) 'diagnostic_1d: failed to write ',filename,'; error = ',ios
-     stop 3
-   endif
+    integer :: ios
 
-   close(unit=44)
+    open( unit = 44, file = 'OUTPUTS/'//filename, form = 'unformatted',       &
+          iostat = ios)
+    if( ios /= 0 ) then
+      write(*,*) 'diagnostic_1d: failed to open ', filename, '; error = ', ios
+      stop 3
+    endif
+    write( unit = 44, iostat = ios ) variable
+    if( ios /= 0 ) then
+      write(*,*) 'diagnostic_1d: failed to write ', filename, '; error = ', ios
+      stop 3
+    endif
+    close( unit = 44 )
 
-!  write(*,*) 'diagnostic_1d: exiting'
+  end subroutine diagnostic_1d
 
-   end subroutine diagnostic_1d
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   subroutine diagnostic_1d_dk( filename, variable )
-   
-   character(len=*), intent(in) :: filename
-   real(dk), intent(in)         :: variable(:)
+  subroutine diagnostic_1d_dk( filename, variable )
+    ! Output 1D double diagnostics to a specified file
 
-   character(len=*), parameter  :: Iam = 'diagnostic_1d_dk: '
+    character(len=*), intent(in) :: filename    ! File path to output to
+    real(dk), intent(in)         :: variable(:) ! Diagnostics to output
 
-   integer :: ios
-   character(len=256) :: iomsg
+    character(len=*), parameter  :: Iam = 'diagnostic_1d_dk: '
 
-!  write(*,*) Iam // 'entering'
+    integer :: ios
+    character(len=256) :: iomsg
 
-   open(unit=44,file='OUTPUTS/'//filename,form='unformatted',iostat=ios,iomsg=iomsg)
-   if( ios /= 0 ) then
-     write(*,*) 'diagnostic_1d: failed to open ',filename,'; error = ',ios
-     write(*,*) trim(iomsg)
-     stop 3
-   endif
-   write(unit=44,iostat=ios,iomsg=iomsg) variable
-   if( ios /= 0 ) then
-     write(*,*) 'diagnostic_1d: failed to write ',filename,'; error = ',ios
-     write(*,*) trim(iomsg)
-     stop 3
-   endif
+    open( unit = 44, file = 'OUTPUTS/'//filename, form = 'unformatted',       &
+          iostat = ios, iomsg = iomsg )
+    if( ios /= 0 ) then
+      write(*,*) 'diagnostic_1d: failed to open ', filename, '; error = ', ios
+      write(*,*) trim( iomsg )
+      stop 3
+    endif
+    write( unit = 44, iostat = ios, iomsg = iomsg ) variable
+    if( ios /= 0 ) then
+      write(*,*) 'diagnostic_1d: failed to write ', filename, '; error = ', ios
+      write(*,*) trim( iomsg )
+      stop 3
+    endif
+    close(unit=44)
 
-   close(unit=44)
+  end subroutine diagnostic_1d_dk
 
-!  write(*,*) Iam // 'exiting'
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   end subroutine diagnostic_1d_dk
+  subroutine diagnostic_2d( filename, variable )
+    ! Ouptut 2D float diagnostics to a specified file
 
-   subroutine diagnostic_2d( filename, variable )
-   
-   character(len=*), intent(in) :: filename
-   real, intent(in)             :: variable(:,:)
+    character(len=*), intent(in) :: filename      ! File path to output to
+    real, intent(in)             :: variable(:,:) ! Diagnostics to output
 
-   integer :: ios
+    integer :: ios
 
-   open(unit=44,file='OUTPUTS/'//filename,form='unformatted',iostat=ios)
-   if( ios /= 0 ) then
-     write(*,*) 'diagnostic_2d: failed to open ',filename,'; error = ',ios
-     stop 3
-   endif
-   write(unit=44,iostat=ios) variable
-   if( ios /= 0 ) then
-     write(*,*) 'diagnostic_2d: failed to write ',filename,'; error = ',ios
-     stop 3
-   endif
+    open( unit = 44, file = 'OUTPUTS/'//filename, form = 'unformatted',       &
+          iostat = ios )
+    if( ios /= 0 ) then
+      write(*,*) 'diagnostic_2d: failed to open ', filename, '; error = ', ios
+      stop 3
+    endif
+    write( unit = 44, iostat = ios ) variable
+    if( ios /= 0 ) then
+      write(*,*) 'diagnostic_2d: failed to write ', filename, '; error = ', ios
+      stop 3
+    endif
+    close( unit = 44 )
 
-   close(unit=44)
+  end subroutine diagnostic_2d
 
-   end subroutine diagnostic_2d
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   subroutine diagnostic_2d_dk( filename, variable )
-   
-   character(len=*), intent(in) :: filename
-   real(dk), intent(in)         :: variable(:,:)
+  subroutine diagnostic_2d_dk( filename, variable )
+    ! Output 2D double diagnostics to a specified file
 
-   integer :: ios
-   character(len=512) :: iomsg
+    character(len=*), intent(in) :: filename      ! File path to output to
+    real(dk), intent(in)         :: variable(:,:) ! Diagnostics to output
 
-   open(unit=44,file='OUTPUTS/'//filename,form='unformatted',iostat=ios,iomsg=iomsg)
-   if( ios /= 0 ) then
-     write(*,*) 'diagnostic_2d_dk: failed to open ',filename,'; error = ',ios
-     write(*,*) trim(iomsg)
-     call execute_command_line('pwd')
-     stop 3
-   endif
-   write(unit=44,iostat=ios,iomsg=iomsg) variable
-   if( ios /= 0 ) then
-     write(*,*) 'diagnostic_2d_dk: failed to write ',filename,'; error = ',ios
-     write(*,*) trim(iomsg)
-     stop 3
-   endif
+    integer :: ios
+    character(len=512) :: iomsg
 
-   close(unit=44)
+    open( unit = 44, file = 'OUTPUTS/'//filename, form = 'unformatted',       &
+          iostat = ios, iomsg = iomsg )
+    if( ios /= 0 ) then
+      write(*,*) 'diagnostic_2d_dk: failed to open ', filename, '; error = ', &
+                 ios
+      write(*,*) trim( iomsg )
+      stop 3
+    endif
+    write( unit=44, iostat = ios, iomsg = iomsg ) variable
+    if( ios /= 0 ) then
+      write(*,*) 'diagnostic_2d_dk: failed to write ', filename, '; error = ',&
+                  ios
+      write(*,*) trim( iomsg )
+      stop 3
+    endif
+    close( unit = 44 )
 
    end subroutine diagnostic_2d_dk
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 end module tuvx_diagnostic_util

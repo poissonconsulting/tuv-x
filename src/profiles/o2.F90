@@ -58,7 +58,7 @@ contains
     real(dk), allocatable :: profile(:)
     real(dk), allocatable :: airlog(:)
     class(grid_t), pointer :: zGrid
-    class(abs_interpolator_t), pointer :: theInterpolator
+    class(interpolator_t), pointer :: theInterpolator
 
     allocate( this )
 

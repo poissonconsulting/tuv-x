@@ -1,69 +1,84 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 !
-
 module tuvx_radiative_transfer_solver
-! The interface for the radiative transfer solver
+! General interface for radiative transfer solvers
 
-   use musica_constants,         only : ik => musica_ik, dk => musica_dk
+   use musica_constants,               only : dk => musica_dk
 
    implicit none
 
    private
-   public :: abstract_radXfer_t, radField_t
+   public :: radiative_transfer_solver_t, radiation_field_t
 
-   type :: radField_t
-     real(dk), allocatable :: edr_(:,:), eup_(:,:), edn_(:,:)
-     real(dk), allocatable :: fdr_(:,:), fup_(:,:), fdn_(:,:)
+   type :: radiation_field_t
+     real(dk), allocatable :: edr_(:,:) ! \todo needs description
+     real(dk), allocatable :: eup_(:,:) ! \todo needs description
+     real(dk), allocatable :: edn_(:,:) ! \todo needs description
+     real(dk), allocatable :: fdr_(:,:) ! \todo needs description
+     real(dk), allocatable :: fup_(:,:) ! \todo needs description
+     real(dk), allocatable :: fdn_(:,:) ! \todo needs description
    contains
      final :: finalize
-   end type radField_t
+   end type radiation_field_t
 
-   type, abstract :: abstract_radXfer_t
+   type, abstract :: radiative_transfer_solver_t
      contains
-     procedure(upDateRadField), deferred :: upDateRadField
-   end type abstract_radXfer_t
+     procedure(update_radiation_field), deferred :: update_radiation_field
+   end type radiative_transfer_solver_t
 
-   interface
-     function upDateRadField( this, sza, nstr, nlyr, &
-                   sphericalGeom, gridWareHouse, ProfileWareHouse, radiatorWareHouse ) &
-                   result( radField )
+interface
 
-     use musica_constants,         only : ik => musica_ik, dk => musica_dk
-     use tuvx_grid_warehouse,      only : grid_warehouse_t
-     use tuvx_profile_warehouse,   only : Profile_warehouse_t
-     use tuvx_radiator_warehouse,  only : radiator_warehouse_t
-     use tuvx_spherical_geometry,      only : spherical_geom_t
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-     import abstract_radXfer_t, radField_t
+  function update_radiation_field( this, solar_zenith_angle, n_streams,       &
+      n_layers, spherical_geometry, grid_warehouse, profile_warehouse,        &
+      radiator_warehouse ) result( radiation_field )
+    ! Solves for the radiation field based on given conditions
 
-     class(abstract_radXfer_t), intent(inout)  :: this
-     integer(ik), intent(in)                   :: nlyr, nstr
-     real(dk), intent(in)                      :: sza
-     type(grid_warehouse_t), intent(inout)     :: gridWareHouse
-     type(Profile_warehouse_t), intent(inout)  :: ProfileWareHouse
-     type(radiator_warehouse_t), intent(inout) :: radiatorWareHouse
-     type(spherical_geom_t), intent(inout)     :: sphericalGeom
+     use musica_constants,             only : dk => musica_dk
+     use tuvx_grid_warehouse,          only : grid_warehouse_t
+     use tuvx_profile_warehouse,       only : profile_warehouse_t
+     use tuvx_radiator_warehouse,      only : radiator_warehouse_t
+     use tuvx_spherical_geometry,      only : spherical_geometry_t
 
-     class(radField_t), pointer                :: radField
+     import radiative_transfer_solver_t, radiation_field_t
 
-     end function upDateRadField
+     class(radiative_transfer_solver_t), intent(inout) :: this
+     integer, intent(in)                       :: n_streams          ! Number of streams
+     integer, intent(in)                       :: n_layers           ! Number of vertical layers
+     real(dk), intent(in)                      :: solar_zenith_angle ! Solar zenith angle [degrees]
+     type(grid_warehouse_t), intent(inout)     :: grid_warehouse     ! Available grids
+     type(profile_warehouse_t), intent(inout)  :: profile_warehouse  ! Available profiles
+     type(radiator_warehouse_t), intent(inout) :: radiator_warehouse ! Set of radiators
+     type(spherical_geometry_t), intent(inout) :: spherical_geometry ! Spherical geometry calculator
 
-   end interface
+     class(radiation_field_t), pointer         :: radiation_field
 
-   contains
+  end function update_radiation_field
 
-   subroutine finalize( this )
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   type(radField_t), intent(inout) :: this
+end interface
 
-   if( allocated( this%edr_ ) ) deallocate( this%edr_ )
-   if( allocated( this%eup_ ) ) deallocate( this%eup_ )
-   if( allocated( this%edn_ ) ) deallocate( this%edn_ )
-   if( allocated( this%fdr_ ) ) deallocate( this%fdr_ )
-   if( allocated( this%fup_ ) ) deallocate( this%fup_ )
-   if( allocated( this%fdn_ ) ) deallocate( this%fdn_ )
+contains
 
-   end subroutine finalize
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine finalize( this )
+    ! Cleans up memory for a radiative transfer solver
+
+    type(radiation_field_t), intent(inout) :: this
+
+    if( allocated( this%edr_ ) ) deallocate( this%edr_ )
+    if( allocated( this%eup_ ) ) deallocate( this%eup_ )
+    if( allocated( this%edn_ ) ) deallocate( this%edn_ )
+    if( allocated( this%fdr_ ) ) deallocate( this%fdr_ )
+    if( allocated( this%fup_ ) ) deallocate( this%fup_ )
+    if( allocated( this%fdn_ ) ) deallocate( this%fdn_ )
+
+  end subroutine finalize
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 end module tuvx_radiative_transfer_solver

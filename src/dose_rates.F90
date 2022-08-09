@@ -9,7 +9,7 @@ module tuvx_dose_rates
 
   use musica_constants,                only : dk => musica_dk
   use musica_string,                   only : string_t
-  use tuvx_spectral_wght,              only : spectral_wght_ptr
+  use tuvx_spectral_weight,            only : spectral_weight_ptr
   use tuvx_grid_warehouse,             only : grid_warehouse_t
   use tuvx_grid,                       only : grid_t
   use tuvx_profile_warehouse,          only : profile_warehouse_t
@@ -23,7 +23,7 @@ module tuvx_dose_rates
   !> Photolysis rate constant calculator
   type :: dose_rates_t
     !> Spectral weights
-    type(spectral_wght_ptr), allocatable :: spectral_wghts_(:)
+    type(spectral_weight_ptr), allocatable :: spectral_weights_(:)
     !> Configuration label for the dose rate
     type(string_t), allocatable          :: handles_(:)
   contains
@@ -43,14 +43,14 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Constructor of dose_rates_t objects
-  function constructor( config, grid_warehouse, profile_warehouse )     &
+  function constructor( config, grid_warehouse, profile_warehouse )           &
       result( dose_rates )
 
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
-    use tuvx_spectral_wght_factory,    only : spectral_wght_builder
+    use tuvx_spectral_weight_factory,  only : spectral_weight_builder
 
-    !> Arguments
+    !> Dose rate configuration
     type(config_t),            intent(inout) :: config
     !> grid warehouse
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse
@@ -59,13 +59,13 @@ contains
     !> New dose rates
     class(dose_rates_t),        pointer      :: dose_rates
 
-    !> Local variables
+    ! Local variables
     character(len=*), parameter :: Iam = "dose_rates_t constructor"
 
     integer        :: nRates
-    type(config_t) :: wght_config, spectral_wght_config
+    type(config_t) :: wght_config, spectral_weight_config
     class(iterator_t), pointer  :: iter
-    type(spectral_wght_ptr)     :: spectral_wght_ptr
+    type(spectral_weight_ptr)   :: spectral_weight_ptr
     character(len=64)           :: keychar
     type(string_t)              :: netcdfFile, Object
     type(string_t)              :: wght_key
@@ -76,7 +76,7 @@ contains
     associate( rates => dose_rates )
 
     allocate( string_t :: rates%handles_(0) )
-    allocate( rates%spectral_wghts_(0) )
+    allocate( rates%spectral_weights_(0) )
 
     ! iterate over dose rates
     iter => config%get_iterator( )
@@ -87,10 +87,12 @@ contains
       call config%get( iter, wght_config, Iam )
 
       ! get spectral wght
-      call wght_config%get( "weights", spectral_wght_config, Iam )
-      spectral_wght_ptr%val_ => &
-         spectral_wght_builder( spectral_wght_config, grid_warehouse, profile_warehouse )
-      rates%spectral_wghts_ = [ rates%spectral_wghts_, spectral_wght_ptr ]
+      call wght_config%get( "weights", spectral_weight_config, Iam )
+      spectral_weight_ptr%val_ => &
+         spectral_weight_builder( spectral_weight_config, grid_warehouse,     &
+                                  profile_warehouse )
+      rates%spectral_weights_ = [ rates%spectral_weights_,                    &
+                                  spectral_weight_ptr ]
     end do
     deallocate( iter )
 
@@ -101,32 +103,31 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> calculate dose rate constants
-  subroutine get( this, grid_warehouse, profile_warehouse, &
-                  radiation_field, dose_rates, file_tag )
+  subroutine get( this, grid_warehouse, profile_warehouse, radiation_field,   &
+      dose_rates, file_tag )
 
     use musica_assert,                 only : die_msg
     use tuvx_constants,                only : hc
     use tuvx_diagnostic_util,          only : diagout
-    use tuvx_radiative_transfer_solver,only : radField_t
+    use tuvx_radiative_transfer_solver,only : radiation_field_t
 
     !> Dose rate constant calculator
-    !> Arguments
     class(dose_rates_t),       intent(inout) :: this
     !> Warehouses
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse
     type(profile_warehouse_t), intent(inout) :: profile_warehouse
     !> Actinic flux
-    type(radField_t),          intent(in)    :: radiation_field
+    type(radiation_field_t),   intent(in)    :: radiation_field
     !> Tag used in file name of output data
     character(len=*),          intent(in)    :: file_tag
     !> Calculated dose rate constants
     real(dk), allocatable,     intent(inout) :: dose_rates(:,:)
 
-    !> Local variables
+    ! Local variables
     character(len=*), parameter :: Iam = "dose rates calculator:"
     integer               :: wavNdx, rateNdx, nRates
-    real(dk), allocatable :: spectral_wght(:)
-    real(dk), allocatable :: tmp_spectral_wght(:)
+    real(dk), allocatable :: spectral_weight(:)
+    real(dk), allocatable :: tmp_spectral_weight(:)
     real(dk), allocatable :: sirrad(:,:)
     character(len=64), allocatable :: annotatedslabel(:)
     class(grid_t),    pointer :: zGrid => null()
@@ -138,9 +139,9 @@ contains
     etfl => profile_warehouse%get_profile( "extraterrestrial flux",           &
                                            "photon cm-2 s-1" )
 
-    allocate( tmp_spectral_wght(0) )
+    allocate( tmp_spectral_weight(0) )
 
-    nRates = size( this%spectral_wghts_ )
+    nRates = size( this%spectral_weights_ )
     if( .not. allocated( dose_rates ) ) then
       allocate( dose_rates( zGrid%ncells_ + 1, nRates ) )
     endif
@@ -155,14 +156,15 @@ contains
 
 rate_loop:                                                                    &
     do rateNdx = 1, nRates
-      associate( calc_ftn => this%spectral_wghts_( rateNdx )%val_ )
-        spectral_wght = calc_ftn%calculate( grid_warehouse, profile_warehouse )
+      associate( calc_ftn => this%spectral_weights_( rateNdx )%val_ )
+        spectral_weight = calc_ftn%calculate( grid_warehouse,                 &
+                                              profile_warehouse )
       end associate
 
-      tmp_spectral_wght = [ tmp_spectral_wght, spectral_wght ]
-      dose_rates( :, rateNdx ) = matmul( sirrad, spectral_wght )
+      tmp_spectral_weight = [ tmp_spectral_weight, spectral_weight ]
+      dose_rates( :, rateNdx ) = matmul( sirrad, spectral_weight )
 
-      if( allocated( spectral_wght ) ) deallocate( spectral_wght )
+      if( allocated( spectral_weight ) ) deallocate( spectral_weight )
     end do rate_loop
 
     open( unit = 33, file = 'OUTPUTS/annotatedslabels.new' )
@@ -170,9 +172,9 @@ rate_loop:                                                                    &
       write(33,'(a)') this%handles_( rateNdx )%to_char( )
     enddo
     close( unit = 33 )
-    open( unit = 33, file = 'OUTPUTS/sw.'//file_tag//'.new',                &
+    open( unit = 33, file = 'OUTPUTS/sw.'//file_tag//'.new',                  &
           form = 'unformatted' )
-    write(33) tmp_spectral_wght
+    write(33) tmp_spectral_weight
     close( unit = 33 )
 
     if( associated( zGrid ) ) deallocate( zGrid )
@@ -191,13 +193,13 @@ rate_loop:                                                                    &
 
     integer :: ndx
 
-    if( allocated( this%spectral_wghts_ ) ) then
-      do ndx = 1,size( this%spectral_wghts_ )
-        if( associated( this%spectral_wghts_( ndx )%val_ ) ) then
-          deallocate( this%spectral_wghts_( ndx )%val_ )
+    if( allocated( this%spectral_weights_ ) ) then
+      do ndx = 1,size( this%spectral_weights_ )
+        if( associated( this%spectral_weights_( ndx )%val_ ) ) then
+          deallocate( this%spectral_weights_( ndx )%val_ )
         endif
       enddo
-      deallocate( this%spectral_wghts_ )
+      deallocate( this%spectral_weights_ )
     end if
 
     if( allocated( this%handles_ ) ) deallocate( this%handles_ )

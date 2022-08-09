@@ -66,7 +66,7 @@ contains
     character(len=512)                 :: IoMsg
     type(string_t)                     :: defaultInterpolator
     type(string_t), allocatable        :: Filespec(:), Interpolator(:)
-    class(abs_interpolator_t), pointer :: theInterpolator
+    class(interpolator_t), pointer :: theInterpolator
 
     allocate( this )
 
@@ -204,7 +204,7 @@ contains
 
       ! interpolate from source to model wavelength grid
       interpolatedEtfl = theInterpolator%interpolate( &
-        lambdaGrid%edge_, inputGrid, inputData, FoldIn=0 &
+        lambdaGrid%edge_, inputGrid, inputData, fold_in=0 &
       )
       if( .not. allocated( this%mid_val_ ) ) then
         allocate( this%mid_val_,mold=interpolatedEtfl )

@@ -37,7 +37,7 @@ contains
     use musica_config,                 only : config_t
     use tuvx_constants,                only : nzero, pzero
     use tuvx_diagnostic_util,          only : diagout
-    use tuvx_interpolate,              only : abs_interpolator_t, interp3_t
+    use tuvx_interpolate,              only : interpolator_t, interp3_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
 
@@ -60,7 +60,7 @@ contains
     type(string_t)                :: required_keys(5), optional_keys(1)
     type(config_t)                :: Aerosol_config
     class(grid_t),             pointer :: zGrid, lambdaGrid
-    class(abs_interpolator_t), pointer :: theInterpolator
+    class(interpolator_t), pointer :: theInterpolator
 
     required_keys(1) = "type"
     required_keys(2) = "optical depths"

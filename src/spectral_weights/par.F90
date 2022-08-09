@@ -1,39 +1,34 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 !
-!> \file
-!> This par_spectral_wght module
+module tuvx_spectral_weight_par
+  ! The par spectral weight type and related functions
 
-!> The par type and related functions
-module tuvx_spectral_wght_par
-
-  use tuvx_spectral_wght,    only : spectral_wght_t
+  use tuvx_spectral_weight,    only : spectral_weight_t
   use musica_constants,      only : dk => musica_dk
 
   implicit none
 
   private
-  public :: spectral_wght_par_t
+  public :: spectral_weight_par_t
 
-  !> Calculator for par_spectral_wght
-  type, extends(spectral_wght_t) :: spectral_wght_par_t
+  type, extends(spectral_weight_t) :: spectral_weight_par_t
+    ! Calculator for par spectral weight
   contains
-    !> Calculate the spectral wght
     procedure :: calculate => run
-  end type spectral_wght_par_t
+  end type spectral_weight_par_t
 
-  !> Constructor
-  interface spectral_wght_par_t
+  interface spectral_weight_par_t
     module procedure constructor
-  end interface spectral_wght_par_t
+  end interface spectral_weight_par_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize the spectral wght
   function constructor( config, grid_warehouse, profile_warehouse )           &
       result ( this )
+    ! Initialize the par spectral weight
 
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
@@ -41,14 +36,12 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    !> Arguments
-    class(spectral_wght_t),    pointer       :: this
+    class(spectral_weight_t),  pointer       :: this
     type(config_t),            intent(inout) :: config
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse
     type(profile_warehouse_t), intent(inout) :: profile_warehouse
 
-    !> Local variables
-    character(len=*), parameter :: Iam = 'par constructor: '
+    ! Local variables
     type(string_t) :: required_keys(1), optional_keys(1)
 
     required_keys(1) = "type"
@@ -58,48 +51,46 @@ contains
                      "Bad configuration data format for "//                   &
                      "par spectral wght." )
 
-    allocate (spectral_wght_par_t :: this )
+    allocate (spectral_weight_par_t :: this )
 
   end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Calculate the spectral weight
-  function run( this, grid_warehouse, profile_warehouse ) result( spectral_wght )
+  function run( this, grid_warehouse, profile_warehouse )                     &
+      result( spectral_weight )
+    ! Calculate the par spectral weight
 
-    use musica_string,          only  :  string_t
-    use tuvx_grid_warehouse,    only  :  grid_warehouse_t
-    use tuvx_profile_warehouse, only  :  profile_warehouse_t
-    use tuvx_grid,              only  :  grid_t
+    use musica_string,                 only : string_t
+    use tuvx_grid,                     only : grid_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    !> Arguments
-    class(spectral_wght_par_t), intent(in) :: this
-    !> Warehouses
-    type(grid_warehouse_t), intent(inout)              :: grid_warehouse
-    type(profile_warehouse_t), intent(inout)           :: profile_warehouse
-    !> Calculated spectral wght
-    real(kind=dk), allocatable                         :: spectral_wght(:)
+    class(spectral_weight_par_t), intent(in)    :: this
+    type(grid_warehouse_t),       intent(inout) :: grid_warehouse
+    type(profile_warehouse_t),    intent(inout) :: profile_warehouse
+    real(kind=dk), allocatable                  :: spectral_weight(:)
 
-    !> Local variables
+    ! Local variables
     real(dk), parameter         :: rZERO = 0.0_dk
     real(dk), parameter         :: rONE  = 1.0_dk
-    character(len=*), parameter :: Iam = 'par calculate: '
-
     class(grid_t), pointer      :: lambdaGrid => null()
 
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
 
-    allocate( spectral_wght(lambdaGrid%ncells_) )
+    allocate( spectral_weight( lambdaGrid%ncells_ ) )
 
     where( 400._dk < lambdaGrid%mid_ .and. &
                      lambdaGrid%mid_ < 700._dk )
-      spectral_wght = 8.36e-3_dk*lambdaGrid%mid_
+      spectral_weight = 8.36e-3_dk * lambdaGrid%mid_
     elsewhere
-      spectral_wght = rZERO
+      spectral_weight = rZERO
     endwhere
 
     if( associated( lambdaGrid ) ) deallocate( lambdaGrid )
 
   end function run
 
-end module tuvx_spectral_wght_par
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+end module tuvx_spectral_weight_par

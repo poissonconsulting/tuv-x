@@ -4,95 +4,89 @@
 module tuvx_radiative_transfer
 ! A calculator for atmospheric radiation
 
-
   use musica_config,                   only : config_t
-  use musica_constants,                only : dk => musica_dk, ik => musica_ik
-  use musica_string,                   only : string_t
-  use tuvx_grid_warehouse,             only : grid_warehouse_t
-  use tuvx_profile_warehouse,          only : Profile_warehouse_t
+  use musica_constants,                only : dk => musica_dk
   use tuvx_cross_section_warehouse,    only : cross_section_warehouse_t
   use tuvx_radiator_warehouse,         only : radiator_warehouse_t
-  use tuvx_radiative_transfer_solver,  only : abstract_radXfer_t
-  use tuvx_delta_eddington,            only : delta_eddington_t
-  use tuvx_la_sr_bands,                only : la_srb_t
+  use tuvx_radiative_transfer_solver,  only : radiative_transfer_solver_t
 
   implicit none
   private
 
-  public :: radXfer_component_core_t
+  public :: radiative_transfer_t
 
-  type radXfer_component_core_t
+  type radiative_transfer_t
     ! radXfer component core
     !
     ! Calculates the atmospheric radiation field
-
     private
-    integer(ik)                              :: nStreams_ = 0_ik
-    class(abstract_radXfer_t), pointer       :: radXferSolver_ => null()
-    type(config_t)                           :: config_ ! Copy of the original radiative transfer component configuration
-    type(cross_section_warehouse_t), pointer :: radXferXsectWareHouse_ => null() ! Copy of original radiative transfer :f:type:`~tuvx_cross_section_warehouse/cross_section_warehouse_t`
-    type(radiator_warehouse_t), public, pointer :: RadiatorWareHouse_ => null() ! Copy of original :f:type:`~tuvx_radiator/radiator_warehouse_t`
+    integer                                     :: n_streams_ = 0
+    class(radiative_transfer_solver_t), pointer :: solver_ => null()
+    type(config_t)                              :: config_        ! Copy of the original radiative transfer component configuration
+    type(cross_section_warehouse_t),    pointer :: cross_section_warehouse_   &
+                                                       => null( ) ! Copy of original radiative transfer :f:type:`~tuvx_cross_section_warehouse/cross_section_warehouse_t`
+    type(radiator_warehouse_t), public, pointer :: radiator_warehouse_        &
+                                                       => null( ) ! Copy of original :f:type:`~tuvx_radiator/radiator_warehouse_t`
   contains
-    !> Returns the name of the component
     procedure :: name => component_name
-    !> Returns a description of the component purpose
     procedure :: description
-    !> Calculate the radiation field at given solar zenith angle
-    procedure :: upDate
-    !> Finalize the radXfer core
+    procedure :: calculate
     final :: finalize
-  end type radXfer_component_core_t
+  end type radiative_transfer_t
 
-  interface radXfer_component_core_t
+  interface radiative_transfer_t
     ! Constructor
     module procedure constructor
-  end interface radXfer_component_core_t
+  end interface radiative_transfer_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function constructor( config, gridWareHouse, ProfileWareHouse ) & 
-    result( radXfer_component )
+  function constructor( config, grid_warehouse, profile_warehouse )           &
+      result( new_radiative_transfer )
     ! Initializes the components necessary to solve radiative transfer
 
     use musica_assert,                 only : die_msg
-    ! radXfer component core constructor
-    !
-    ! Sets up radXfer solver objects
+    use musica_string,                 only : string_t
+    use tuvx_delta_eddington,          only : delta_eddington_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    type(radXfer_component_core_t), pointer :: radXfer_component ! New :f:type:`~tuvx_radiative_transfer/radxfer_component_core_t`
-    type(config_t), intent(inout) :: config ! radXfer configuration data
-    type(grid_warehouse_t), intent(inout)    :: gridWareHouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
-    type(Profile_warehouse_t), intent(inout) :: ProfileWareHouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    type(radiative_transfer_t), pointer      :: new_radiative_transfer ! New :f:type:`~tuvx_radiative_transfer/radxfer_component_core_t`
+    type(config_t),            intent(inout) :: config                 ! radXfer configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse         ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse      ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
-    character(len=*), parameter :: Iam = 'radXfer component constructor: '
+    character(len=*), parameter :: Iam = 'radiative transfer constructor: '
     type(string_t)       :: solver
     type(config_t) :: child_config
 
-    allocate( radXfer_component )
+    allocate( new_radiative_transfer )
 
     ! instantiate and initialize the radXfer cross section warehouse
     call config%get( "cross sections", child_config, Iam )
-    radXfer_component%radXferXsectWareHouse_ =>                               &
-        cross_section_warehouse_t( child_config, gridWareHouse,               &
-                                   ProfileWareHouse )
+    new_radiative_transfer%cross_section_warehouse_ =>                        &
+        cross_section_warehouse_t( child_config, grid_warehouse,              &
+                                   profile_warehouse )
 
     ! instantiate and initialize the radiator warehouse
     call config%get( "radiators", child_config, Iam )
-    radXfer_component%radiatorWareHouse_ =>                                   &
-        radiator_warehouse_t( child_config, gridWareHouse )
+    new_radiative_transfer%radiator_warehouse_ =>                             &
+        radiator_warehouse_t( child_config, grid_warehouse )
 
     ! save the configuration (used for preprocessing input data only)
-    radXfer_component%config_ = config
+    new_radiative_transfer%config_ = config
 
     ! get the radiative transfer solver
     call config%get( "Solver", solver, Iam, default="Delta Eddington" )
     if( solver == 'Discrete Ordinants' ) then
-      call config%get( "nStreams", radXfer_component%nStreams_, Iam, default=4_ik )
-      call die_msg( 900569062, "Discrete Ordinants method is not currently available" )
+      call config%get( "n_streams", new_radiative_transfer%n_streams_, Iam,   &
+                       default = 4 )
+      call die_msg( 900569062,                                                &
+                    "Discrete Ordinants method is not currently available" )
     else
-      allocate( delta_eddington_t :: radXfer_component%radXferSolver_ )
+      allocate( delta_eddington_t :: new_radiative_transfer%solver_ )
     endif
 
   end function constructor
@@ -102,9 +96,11 @@ contains
   type(string_t) function component_name( this )
     ! Model component name
 
-    class(radXfer_component_core_t), intent(in) :: this ! A :f:type:`~tuvx_radiative_transfer/radxfer_component_core_t`
+    use musica_string,                 only : string_t
 
-    component_name = "radXfer component"
+    class(radiative_transfer_t), intent(in) :: this ! A :f:type:`~tuvx_radiative_transfer/radxfer_component_core_t`
+
+    component_name = "radiative transfer"
 
   end function component_name
 
@@ -113,97 +109,102 @@ contains
   type(string_t) function description( this )
     ! Model component description
 
-    class(radXfer_component_core_t), intent(in) :: this ! A :f:type:`~tuvx_radiative_transfer/radxfer_component_core_t`
+    use musica_string,                 only : string_t
 
-    description = "calculate the radiation field"
+    class(radiative_transfer_t), intent(in) :: this ! A :f:type:`~tuvx_radiative_transfer/radxfer_component_core_t`
+
+    description = "calculates the radiation field"
 
   end function description
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine upDate( this, la_srb, SphericalGeom, GridWareHouse, ProfileWareHouse, radiationFld )
+  subroutine calculate( this, la_srb, spherical_geometry, grid_warehouse,     &
+      profile_warehouse, radiation_field )
     ! Calculate the radiation field
 
     use musica_assert,                 only : die_msg
-    use musica_string,                 only : to_char
-    use tuvx_grid,                  only : grid_t
+    use musica_string,                 only : string_t, to_char
+    use tuvx_grid,                     only : grid_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_radiator_warehouse,       only : warehouse_iterator_t
-    use tuvx_radiator,        only : radiator_t
-    use tuvx_radiator,        only : radiator_state_t
+    use tuvx_radiator,                 only : radiator_t
+    use tuvx_radiator,                 only : radiator_state_t
     use tuvx_profile,                  only : profile_t
-    use tuvx_spherical_geometry,           only : spherical_geom_t
-    use tuvx_la_sr_bands,                   only : la_srb_t
-    use tuvx_radiative_transfer_solver,         only : radField_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
+    use tuvx_spherical_geometry,       only : spherical_geometry_t
+    use tuvx_la_sr_bands,              only : la_sr_bands_t
+    use tuvx_radiative_transfer_solver,only : radiation_field_t
 
-    class(radXfer_component_core_t), intent(inout) :: this ! A :f:type:`~tuvx_radiative_transfer/radxfer_component_core_t`
-    type(grid_warehouse_t), intent(inout)          :: GridWareHouse ! :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
-    type(Profile_warehouse_t), intent(inout)       :: ProfileWareHouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
-    type(spherical_geom_t), intent(inout)          :: SphericalGeom ! A :f:type:`~tuvx_spherical_geometry/spherical_geom_t`
-    type(la_srb_t), intent(inout)                  :: la_srb ! A :f:type:`~tuvx_la_sr_bands/la_srb_t`
+    class(radiative_transfer_t),       intent(inout) :: this               ! A :f:type:`~tuvx_radiative_transfer/radxfer_component_core_t`
+    type(grid_warehouse_t),            intent(inout) :: grid_warehouse     ! :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t),         intent(inout) :: profile_warehouse  ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    type(spherical_geometry_t),        intent(inout) :: spherical_geometry ! A :f:type:`~tuvx_spherical_geometry/spherical_geometry_t`
+    type(la_sr_bands_t),               intent(inout) :: la_srb             ! A :f:type:`~tuvx_la_sr_bands/la_sr_bands_t`
 
-    class(radField_t), pointer, intent(out)        :: radiationFld
+    class(radiation_field_t), pointer, intent(out)   :: radiation_field
 
-    !> Local variables
-    character(len=*), parameter          :: Iam = 'radXfer component upDate: '
+    ! Local variables
+    character(len=*), parameter          :: Iam = 'radXfer component calculate: '
 
-    integer(ik)                          :: nlyr
-    integer(ik)                          :: radNdx
+    integer                              :: nlyr
+    integer                              :: radNdx
     real(dk)                             :: zenithAngle
     real(dk), allocatable                :: airVcol(:), airScol(:)
     type(string_t)                       :: Handle
     type(warehouse_iterator_t), pointer  :: iter => null( )
     class(radiator_t),          pointer  :: aRadiator => null()
-    class(profile_t),           pointer  :: airProfile => null()
+    class(profile_t),           pointer  :: airprofile => null()
 
-    write(*,*) ' '
-    write(*,*) Iam // 'entering'
-
-    !> iterate over radiators
-    iter => this%RadiatorWareHouse_%get_iterator()
-    do while( iter%next() )
-      aRadiator => this%RadiatorWareHouse_%get_radiator( iter )
-      write(*,*) Iam // 'radiator handle = ',aRadiator%handle_%to_char()
-      call aRadiator%update_state( GridWareHouse, ProfileWareHouse, this%radXferXsectWareHouse_ )
+    ! iterate over radiators
+    iter => this%radiator_warehouse_%get_iterator( )
+    do while( iter%next( ) )
+      aRadiator => this%radiator_warehouse_%get_radiator( iter )
+      call aRadiator%update_state( grid_warehouse, profile_warehouse,         &
+                                   this%cross_section_warehouse_ )
     enddo
     deallocate( iter )
 
-    !> look for O2 radiator; Lyman Alpha and SR bands
+    ! look for O2 radiator; Lyman Alpha and SR bands
     Handle = 'O2'
-    radNdx = this%RadiatorWareHouse_%get_radiator_ndx_from_handle( Handle )
+    radNdx = this%radiator_warehouse_%get_radiator_ndx_from_handle( Handle )
     if( radNdx > 0 ) then
-      aRadiator => this%RadiatorWareHouse_%get_radiator( Handle )
-      airProfile => ProfileWareHouse%get_Profile( "air", "molecule cm-3" )
-      allocate( airVcol(airProfile%ncells_),airScol(airProfile%ncells_+1_ik) )
-      call SphericalGeom%airmas( airProfile%exo_layer_dens_, airVcol, airScol )
-      call la_srb%calculate_OD( gridWareHouse, ProfileWareHouse, airVcol, airScol, aRadiator%state_%layer_OD_ )
+      aRadiator => this%radiator_warehouse_%get_radiator( Handle )
+      airprofile => profile_warehouse%get_profile( "air", "molecule cm-3" )
+      allocate( airVcol( airprofile%ncells_ ),                                &
+                airScol( airprofile%ncells_ + 1 ) )
+      call spherical_geometry%airmas( airprofile%exo_layer_dens_, airVcol,    &
+                                      airScol )
+      call la_srb%optical_depth( grid_warehouse, profile_warehouse, airVcol,  &
+                                 airScol, aRadiator%state_%layer_OD_ )
       deallocate( airVcol,airScol )
-      deallocate( airProfile )
+      deallocate( airprofile )
     endif
 
-    nlyr = size( aRadiator%state_%layer_OD_,dim=1 )
+    nlyr = size( aRadiator%state_%layer_OD_, dim = 1 )
 
-    zenithAngle = SphericalGeom%SolarZenithAngle_ 
-    associate( theSolver => this%radXferSolver_ )
-    radiationFld => theSolver%upDateRadField( &
-                     zenithAngle, this%nStreams_, nlyr, SphericalGeom, &
-                     GridWareHouse, ProfileWareHouse, this%RadiatorWareHouse_ )
+    zenithAngle = spherical_geometry%solar_zenith_angle_
+    associate( theSolver => this%solver_ )
+    radiation_field => theSolver%update_radiation_field(                      &
+                     zenithAngle, this%n_streams_, nlyr, spherical_geometry,  &
+                     grid_warehouse, profile_warehouse,                       &
+                     this%radiator_warehouse_ )
     end associate
 
-    write(*,*) ' '
-    write(*,*) Iam // 'exiting'
-
-  end subroutine upDate
+  end subroutine calculate
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine finalize( this )
     ! Frees the warehouse and solver data associated with this class
 
-    type(radXfer_component_core_t), intent(inout) :: this ! This :f:type:`~tuvx_radiative_transfer/radxfer_component_core_t`
+    type(radiative_transfer_t), intent(inout) :: this ! This :f:type:`~tuvx_radiative_transfer/radxfer_component_core_t`
 
-    if( associated( this%radXferXsectWareHouse_ ) ) deallocate( this%radXferXsectWareHouse_ )
-    if( associated( this%RadiatorWareHouse_ ) ) deallocate( this%RadiatorWareHouse_ )
-    if( associated( this%radXferSolver_ ) ) deallocate( this%radXferSolver_ )
+    if( associated( this%cross_section_warehouse_ ) )                         &
+        deallocate( this%cross_section_warehouse_ )
+    if( associated( this%radiator_warehouse_ ) )                              &
+        deallocate( this%radiator_warehouse_ )
+    if( associated( this%solver_ ) ) deallocate( this%solver_ )
 
   end subroutine finalize
 

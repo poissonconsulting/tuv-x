@@ -139,26 +139,26 @@ contains
     use musica_assert,                 only : die_msg
     use tuvx_constants,                only : hc
     use tuvx_diagnostic_util,          only : diagout
-    use tuvx_la_sr_bands,              only : la_srb_t
-    use tuvx_radiative_transfer_solver,only : radField_t
-    use tuvx_spherical_geometry,       only : spherical_geom_t
+    use tuvx_la_sr_bands,              only : la_sr_bands_t
+    use tuvx_radiative_transfer_solver,only : radiation_field_t
+    use tuvx_spherical_geometry,       only : spherical_geometry_t
 
     !> Photolysis rate constant calculator
-    class(photolysis_rates_t), intent(inout) :: this
+    class(photolysis_rates_t),  intent(inout) :: this
     !> Spherical geometry
-    type(spherical_geom_t),    intent(inout) :: spherical_geometry
+    type(spherical_geometry_t), intent(inout) :: spherical_geometry
     !> Lyman Alpha, Schumann-Runge bands
-    type(la_srb_t),            intent(inout) :: la_srb
+    type(la_sr_bands_t),        intent(inout) :: la_srb
     !> Grid warehouse
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
+    type(grid_warehouse_t),     intent(inout) :: grid_warehouse
     !> Profile warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
+    type(profile_warehouse_t),  intent(inout) :: profile_warehouse
     !> Actinic flux
-    type(radField_t),          intent(in)    :: radiation_field
+    type(radiation_field_t),    intent(in)    :: radiation_field
     !> Tag used in file name of output data
-    character(len=*),          intent(in)    :: file_tag
+    character(len=*),           intent(in)    :: file_tag
     !> Calculated photolysis rate constants
-    real(dk), allocatable,     intent(inout) :: photolysis_rates(:,:)
+    real(dk), allocatable,      intent(inout) :: photolysis_rates(:,:)
 
     !> Local variables
     character(len=*), parameter :: Iam = "photolysis rates calculator"
@@ -221,7 +221,7 @@ rate_loop:                                                                    &
                   airScol( airProfile%ncells_ + 1 ) )
         call spherical_geometry%airmas( airProfile%exo_layer_dens_, airVcol,  &
                                         airScol )
-        call la_srb%calculate_xs( grid_warehouse, profile_warehouse, airVcol, &
+        call la_srb%cross_section( grid_warehouse, profile_warehouse, airVcol, &
                                   airScol, cross_section )
         deallocate( airVcol, airScol )
         deallocate( airProfile )

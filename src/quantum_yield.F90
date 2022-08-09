@@ -61,7 +61,7 @@ contains
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_netcdf_util,              only : netcdf_t
+    use tuvx_netcdf,                   only : netcdf_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_util,                     only : inter2
 
@@ -105,7 +105,8 @@ file_loop: &
         allocate( netcdf_obj )
         ! read netcdf file quantum yield data
         call netcdf_obj%read_netcdf_file(                                     &
-                     filespec = netcdfFiles( fileNdx )%to_char( ), Hdr = Hdr )
+                     file_path = netcdfFiles( fileNdx )%to_char( ),           &
+                     variable_name = Hdr )
         nParms = size( netcdf_obj%parameters, dim = 2 )
         if( nParms < 1 ) then
           write(msg,*) Iam//'File: ',                                         &

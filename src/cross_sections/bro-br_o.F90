@@ -32,7 +32,7 @@ contains
     use musica_config,                 only : config_t
     use musica_constants,              only : dk => musica_dk
     use musica_string,                 only : string_t
-    use tuvx_netcdf_util,              only : netcdf_t
+    use tuvx_netcdf,                   only : netcdf_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
@@ -85,7 +85,8 @@ file_loop: &
 
         ! read netcdf cross section parameters
         call netcdf_obj%read_netcdf_file(                                     &
-                     filespec = netcdfFiles( fileNdx )%to_char( ), Hdr = Hdr )
+                     file_path = netcdfFiles( fileNdx )%to_char( ),           &
+                     variable_name = Hdr )
         nParms = size( netcdf_obj%parameters, dim = 2 )
         if( nParms < 1 ) then
           write(msg,*) Iam//'File: ',                                         &
@@ -108,7 +109,7 @@ file_loop: &
                          yto = this%cross_section_parms(                      &
                                                 fileNdx )%array( :, parmNdx ),&
                          xfrom = data_lambda,                                 &
-                         yfrom = data_parameter, Foldin = 1 )
+                         yfrom = data_parameter, fold_in = 1 )
           enddo
         else
           this%cross_section_parms( fileNdx )%array = netcdf_obj%parameters

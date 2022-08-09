@@ -15,14 +15,14 @@ module tuvx_cross_section
   type cross_section_parms_t
     ! local working type for holding cross section parameters
     real(dk), allocatable :: temperature(:) ! in kelvin
-    real(dk), allocatable :: deltaT(:) 
+    real(dk), allocatable :: deltaT(:)
     real(dk), allocatable :: array(:,:)
   end type cross_section_parms_t
 
   type cross_section_t
     ! Calculator for cross_section
-    ! The cross section array 
-  
+    ! The cross section array
+
     ! \todo what axis are these on? add to the comment block above
     type(cross_section_parms_t), allocatable :: cross_section_parms(:)
   contains
@@ -88,7 +88,7 @@ contains
 
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
-    use tuvx_netcdf_util,              only : netcdf_t
+    use tuvx_netcdf,                   only : netcdf_t
     use tuvx_util,                     only : inter2
     use musica_assert,                 only : die_msg
     use tuvx_grid_warehouse,           only : grid_warehouse_t
@@ -129,8 +129,9 @@ file_loop: &
       do fileNdx = 1, size( new_obj%cross_section_parms )
         allocate( netcdf_obj )
         ! read netcdf cross section parameters
-        call netcdf_obj%read_netcdf_file( filespec =                          &
-                                netcdfFiles( fileNdx )%to_char( ), Hdr = Hdr )
+        call netcdf_obj%read_netcdf_file(                                     &
+                          file_path = netcdfFiles( fileNdx )%to_char( ),      &
+                          variable_name = Hdr )
         nParms = size( netcdf_obj%parameters, dim = 2 )
         if( nParms < 1 ) then
           msg = Iam//'File: '//trim( netcdfFiles( fileNdx )%to_char( ) )//    &

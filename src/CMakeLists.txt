@@ -16,7 +16,7 @@ set(TUVX_SRC constants.F90
              la_sr_bands.F90
              linear_algebra.F90
              linear_algebra_linpack.F90
-             netcdf_util.F90
+             netcdf.F90
              photolysis_rates.F90
              profile.F90
              profile_factory.F90
@@ -28,8 +28,8 @@ set(TUVX_SRC constants.F90
              radiator.F90
              radiator_factory.F90
              radiator_warehouse.F90
-             spectral_wght.F90
-             spectral_wght_factory.F90
+             spectral_weight.F90
+             spectral_weight_factory.F90
              spherical_geometry.F90
              tuvx.F90
              util.F90
@@ -40,7 +40,7 @@ add_subdirectory(grids)
 add_subdirectory(profiles)
 add_subdirectory(quantum_yields)
 add_subdirectory(radiators)
-add_subdirectory(spectral_wghts)
+add_subdirectory(spectral_weights)
 
 file(GLOB LITTLE_F_SRC *.f)
 set_property(SOURCE ${LITTLE_F_SRC} APPEND PROPERTY COMPILE_OPTIONS "-fdefault-real-8")

@@ -12,9 +12,9 @@ module tuvx_core
   use tuvx_grid_warehouse,             only : grid_warehouse_t
   use tuvx_grid,                       only : grid_t
   use tuvx_profile_warehouse,          only : profile_warehouse_t
-  use tuvx_spherical_geometry,         only : spherical_geom_t
-  use tuvx_la_sr_bands,                only : la_srb_t
-  use tuvx_radiative_transfer,         only : radXfer_component_core_t
+  use tuvx_spherical_geometry,         only : spherical_geometry_t
+  use tuvx_la_sr_bands,                only : la_sr_bands_t
+  use tuvx_radiative_transfer,         only : radiative_transfer_t
   use tuvx_photolysis_rates,           only : photolysis_rates_t
   use tuvx_dose_rates,                 only : dose_rates_t
 
@@ -24,14 +24,14 @@ module tuvx_core
   public :: photolysis_core_t
 
   type :: photolysis_core_t
-    type(grid_warehouse_t),          pointer :: grid_warehouse_ => null()
-    type(profile_warehouse_t),       pointer :: profile_warehouse_ => null()
-    type(spherical_geom_t),          pointer :: spherical_geometry_ => null()
-    type(la_srb_t),                  pointer :: la_sr_bands_ => null()
-    type(string_t),              allocatable :: diagnostics_(:)
-    type(radXfer_component_core_t),  pointer :: radiative_transfer_ => null()
-    type(photolysis_rates_t),        pointer :: photolysis_rates_ => null()
-    type(dose_rates_t),              pointer :: dose_rates_ => null()
+    type(grid_warehouse_t),      pointer :: grid_warehouse_ => null()
+    type(profile_warehouse_t),   pointer :: profile_warehouse_ => null()
+    type(spherical_geometry_t),      pointer :: spherical_geometry_ => null()
+    type(la_sr_bands_t),         pointer :: la_sr_bands_ => null()
+    type(string_t),          allocatable :: diagnostics_(:)
+    type(radiative_transfer_t),  pointer :: radiative_transfer_ => null()
+    type(photolysis_rates_t),    pointer :: photolysis_rates_ => null()
+    type(dose_rates_t),          pointer :: dose_rates_ => null()
   contains
     procedure :: run
     procedure :: output
@@ -111,7 +111,7 @@ contains
     ! Set up radiative transfer calculator
     call core_config%get( "radiative transfer", child_config, Iam )
     new_core%radiative_transfer_ => &
-        radXfer_component_core_t( child_config,                               &
+        radiative_transfer_t( child_config,                                   &
                                   new_core%grid_warehouse_,                   &
                                   new_core%profile_warehouse_ )
 
@@ -142,9 +142,9 @@ contains
 
     ! instantiate and initialize spherical geometry type
     new_core%spherical_geometry_ =>                                           &
-        spherical_geom_t( new_core%grid_warehouse_ )
+        spherical_geometry_t( new_core%grid_warehouse_ )
     ! instantiate and initialize lyman alpha, srb type
-    new_core%la_sr_bands_ => la_srb_t( new_core%grid_warehouse_ )
+    new_core%la_sr_bands_ => la_sr_bands_t( new_core%grid_warehouse_ )
 
   end function constructor
 
@@ -157,23 +157,23 @@ contains
     use tuvx_profile,                    only : profile_t
     use tuvx_radiator_warehouse,         only : radiator_warehouse_t
     use tuvx_radiator,                   only : radiator_t
-    use tuvx_radiative_transfer_solver,  only : radField_t
+    use tuvx_radiative_transfer_solver,  only : radiation_field_t
     use tuvx_diagnostic_util,            only : diagout
 
     !> Photolysis core
     class(photolysis_core_t), intent(inout)  :: this
 
     ! Local variables
-    character(len=*), parameter     :: Iam = 'Photolysis core run: '
-    integer                         :: i_ndx, i_diag
+    character(len=*), parameter       :: Iam = 'Photolysis core run: '
+    integer                           :: i_ndx, i_diag
     ! photolysis rate constants (time, vertical level, reaction)
-    real(dk), allocatable           :: all_photo_rates(:,:,:)
-    real(dk), allocatable           :: photo_rates(:,:)
-    real(dk), allocatable           :: dose_rates(:,:)
-    character(len=2)                :: number
-    class(profile_t),       pointer :: solar_zenith_angles => null( )
-    class(radiator_t),      pointer :: radiator => null()
-    class(radField_t),      pointer :: radiation_field => null( )
+    real(dk), allocatable             :: all_photo_rates(:,:,:)
+    real(dk), allocatable             :: photo_rates(:,:)
+    real(dk), allocatable             :: dose_rates(:,:)
+    character(len=2)                  :: number
+    class(profile_t),         pointer :: solar_zenith_angles => null( )
+    class(radiator_t),        pointer :: radiator => null()
+    class(radiation_field_t), pointer :: radiation_field => null( )
 
     ! get the solar zenith angles
     solar_zenith_angles =>                                                    &
@@ -182,14 +182,14 @@ contains
     ! calculate the radiation field
     sza_loop: do i_ndx = 1,size(solar_zenith_angles%edge_val_)
       if( associated( this%spherical_geometry_ ) ) then
-        call this%spherical_geometry_%setSphericalParams(                     &
+        call this%spherical_geometry_%set_parameters(                         &
             solar_zenith_angles%edge_val_(i_ndx), this%grid_warehouse_ )
       endif
-      call this%radiative_transfer_%update( this%la_sr_bands_,                &
-                                            this%spherical_geometry_,         &
-                                            this%grid_warehouse_,             &
-                                            this%profile_warehouse_,          &
-                                            radiation_field )
+      call this%radiative_transfer_%calculate( this%la_sr_bands_,             &
+                                               this%spherical_geometry_,      &
+                                               this%grid_warehouse_,          &
+                                               this%profile_warehouse_,       &
+                                               radiation_field )
       write(number,'(i2.2)') i_ndx
       call diagout( 'radField.' // number // '.new',                          &
                     radiation_field%fdr_ + radiation_field%fup_ +             &
@@ -233,7 +233,7 @@ contains
     do i_diag = 1, size( this%diagnostics_ )
       associate( diagnostic => this%diagnostics_( i_diag ) )
         radiator =>                                                           &
-            this%radiative_transfer_%RadiatorWareHouse_%get_radiator(         &
+            this%radiative_transfer_%radiator_warehouse_%get_radiator(        &
                                                                   diagnostic )
         ! Diagnostics for testing
         if( diagnostic == 'air' ) then

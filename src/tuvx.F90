@@ -1,11 +1,8 @@
 ! Copyright (C) 2021 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 !
-!> \file
-!> The photolysis program
-
-!> Driver for the photolysis utility
 program tuvx
+  ! Driver for the photolysis utility
 
   use musica_string,                   only : string_t
   use tuvx_core,                       only : photolysis_core_t
@@ -14,7 +11,7 @@ program tuvx
 
   class(photolysis_core_t), pointer :: photolysis_core
 
-  !> Command-line options
+  ! Command-line options
   character(len=256) :: argument
   type(string_t)     :: configFileSpec
 
@@ -38,8 +35,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Fail run and print usage info
   subroutine fail_run( )
+    ! Fail run and print usage info
 
     write(*,*) "Usage: ./photolysis configuration_file.json"
     stop 3

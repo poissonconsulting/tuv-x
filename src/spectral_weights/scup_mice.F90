@@ -36,10 +36,10 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    class(spectral_weight_t),  pointer       :: this
-    type(config_t),            intent(inout) :: config
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
+    class(spectral_weight_t),  pointer       :: this   ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
+    type(config_t),            intent(inout) :: config ! Spectral weight configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     ! Local variables
     type(string_t) :: required_keys(1), optional_keys(1)
@@ -66,10 +66,10 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    class(spectral_weight_scup_mice_t), intent(in)    :: this
-    type(grid_warehouse_t),             intent(inout) :: grid_warehouse
-    type(profile_warehouse_t),          intent(inout) :: profile_warehouse
-    real(kind=dk), allocatable                        :: spectral_weight(:)
+    class(spectral_weight_scup_mice_t),  intent(in)     :: this ! This :f:type:`~tuvx_spectral_weight_scup_mice/spectral_weight_scup_mice_t`
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    real(kind=dk), allocatable               :: spectral_weight(:) ! The calculated spectral weights /todo units
 
     ! Local variables
     real(dk), allocatable       :: factor(:)
@@ -87,13 +87,16 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   function sw_futr( w ) result( futr )
-    !  Calculate the action spectrum value for skin cancer of albino hairless
-    !  mice at a given wavelength according to:  deGRuijl, F.R., H.J.C.M.Steren-
-    !  borg, P.D.Forbes, R.E.Davies, C.Colse, G.Kelfkens, H.vanWeelden,
-    !  and J.C.van der Leun, Wavelength dependence of skin cancer induction by
-    !  ultraviolet irradiation of albino hairless mice, Cancer Research, vol 53,
-    !  pp. 53-60, 1993
-    !  (Action spectrum for carcinomas)
+    ! Calculate the action spectrum value for skin cancer of albino hairless
+    ! mice at a given wavelength according to:  deGRuijl, F.R., H.J.C.M.Steren-
+    ! borg, P.D.Forbes, R.E.Davies, C.Colse, G.Kelfkens, H.vanWeelden,
+    ! and J.C.van der Leun, Wavelength dependence of skin cancer induction by
+    ! ultraviolet irradiation of albino hairless mice, Cancer Research, vol 53,
+    ! pp. 53-60, 1993
+    ! (Action spectrum for carcinomas)
+    !
+    ! `Link to the article
+    ! <https://aacrjournals.org/cancerres/article/53/1/53/498742/Wavelength-Dependence-of-Skin-Cancer-Induction-by>`_
 
     real(dk), intent(in)  :: w(:)    ! Wavelength [nm]
     real(dk), allocatable :: futr(:) ! Calculated action spectrum

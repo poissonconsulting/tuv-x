@@ -49,10 +49,11 @@ contains
     use musica_assert,                 only : assert_msg
     use musica_string,                 only : string_t
 
-    class(spectral_weight_t),  pointer       :: new_spectral_weight  ! New spectral weight object
-    type(config_t),            intent(inout) :: config               ! Spectral weight configuration data
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse       ! Grid warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse    ! Profile warehouse
+    class(spectral_weight_t),  pointer       :: new_spectral_weight  ! New :f:type:`~tuvx_spectral_weight/spectral_weight_t`
+    type(config_t),            intent(inout) :: config ! Spectral weight configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+
 
     ! Local variables
     type(string_t) :: required_keys(1), optional_keys(4)
@@ -77,6 +78,8 @@ contains
 
   subroutine base_constructor( this, config, grid_warehouse,                  &
       profile_warehouse )
+      ! The base constructor, used by any class that doesn't need special
+      ! initialization
 
     use musica_assert,                 only : assert_msg
     use musica_string,                 only : string_t
@@ -85,10 +88,10 @@ contains
     use tuvx_profile,                  only : profile_t
     use tuvx_util,                     only : inter2
 
-    class(spectral_weight_t),  pointer       :: this              ! New spectral weight object
-    type(config_t),            intent(inout) :: config            ! Spectral weight configuration data
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse    ! Grid warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! Profile warehouse
+    class(spectral_weight_t),  pointer       :: this   ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
+    type(config_t),            intent(inout) :: config ! Spectral weight configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     ! Local variables
     real(dk), parameter    :: rZERO = 0.0_dk
@@ -166,10 +169,10 @@ contains
     use musica_string,                   only : string_t
     use tuvx_grid,                       only : grid_t
 
-    class(spectral_weight_t),  intent(in)     :: this
-    type(grid_warehouse_t),    intent(inout)  :: grid_warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
-    real(kind=dk), allocatable               :: spectral_weight(:)
+    class(spectral_weight_t),  intent(in)     :: this ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    real(kind=dk), allocatable               :: spectral_weight(:) ! The calculated spectral weights /todo units
 
     ! Local variables
     character(len=*), parameter :: Iam = 'spectral weight calculate: '
@@ -187,10 +190,10 @@ contains
     use musica_assert,                 only : assert_msg, die_msg
     use tuvx_util,                     only : addpnt
 
-    class(spectral_weight_t), intent(in)    :: this
-    type(config_t),           intent(inout) :: config
-    real(dk), allocatable,    intent(inout) :: data_lambda(:)
-    real(dk), allocatable,    intent(inout) :: data_parameter(:)
+    class(spectral_weight_t), intent(in)    :: this ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
+    type(config_t),            intent(inout) :: config ! Spectral weight configuration data
+    real(dk), allocatable,    intent(inout) :: data_lambda(:) ! /todo units?
+    real(dk), allocatable,    intent(inout) :: data_parameter(:) ! /todo units? What is this?
 
     ! Local variables
     real(dk), parameter :: rZERO = 0.0_dk
@@ -267,7 +270,7 @@ contains
   subroutine finalize( this )
     ! Finalizes the spectral wght type
 
-    type(spectral_weight_t), intent(inout) :: this
+    type(spectral_weight_t), intent(inout) :: this! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
 
     ! Local variables
     integer :: ndx

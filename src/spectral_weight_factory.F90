@@ -1,11 +1,8 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> The tuvx_spectral_weight_factory module
 
-!> Build spectral weight calculators
 module tuvx_spectral_weight_factory
+  ! Builds spectral weight calculators
 
   use tuvx_spectral_weight,            only : spectral_weight_t
   use tuvx_spectral_weight_notch_filter,                                      &
@@ -46,10 +43,10 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    class(spectral_weight_t),  pointer       :: new_spectral_weight ! New spectral weight object
-    type(config_t),            intent(inout) :: config              ! Spectral weight configuration data
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse      ! Grid warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse   ! Profile warehouse
+    class(spectral_weight_t),  pointer       :: new_spectral_weight   ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
+    type(config_t),            intent(inout) :: config ! Spectral weight configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     type(string_t) :: spectral_weight_type
     character(len=*), parameter :: Iam = 'spectral weight builder: '

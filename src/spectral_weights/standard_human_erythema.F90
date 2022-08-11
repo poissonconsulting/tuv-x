@@ -1,6 +1,6 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
+
 module tuvx_spectral_weight_standard_human_erythema
   ! The standard human erythema spectral weight type and related functions
 
@@ -37,10 +37,10 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    class(spectral_weight_t),  pointer       :: this
-    type(config_t),            intent(inout) :: config
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
+    class(spectral_weight_t),  pointer       :: this   ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
+    type(config_t),            intent(inout) :: config ! Spectral weight configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     ! Local variables
     type(string_t) :: required_keys(1), optional_keys(1)
@@ -66,10 +66,10 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    class(spectral_weight_standard_human_erythema_t), intent(in)    :: this
-    type(grid_warehouse_t),            intent(inout) :: grid_warehouse
-    type(profile_warehouse_t),         intent(inout) :: profile_warehouse
-    real(kind=dk), allocatable                       :: spectral_weight(:)
+    class(spectral_weight_standard_human_erythema_t),  intent(in)     :: this ! This :f:type:`~tuvx_spectral_weight_standard_human_erythema/spectral_weight_standard_human_erythema_t`
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    real(kind=dk), allocatable               :: spectral_weight(:) ! The calculated spectral weights /todo units
 
     ! Local variables
     class(grid_t), pointer      :: lambdaGrid => null()
@@ -91,6 +91,9 @@ contains
     ! Photochem. Photobiol. 87, 483-486, 2011.
     !
     ! Value at 300 nm = 0.6486
+    ! 
+    ! `doi:10.1111/j.1751-1097.2010.00871.x
+    ! <https://doi.org/10.1111/j.1751-1097.2010.00871.x>`_
 
     real(dk), intent(in)  :: w(:)    ! Wavelength [nm]
     real(dk), allocatable :: fery(:) ! Action spectrum

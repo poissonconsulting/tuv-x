@@ -12,6 +12,7 @@ API
    profiles
    quantum_yield
    radiative_transfer
+   spectral_weights
    spherical_geom
 
 

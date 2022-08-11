@@ -85,5 +85,7 @@ fortran_src = [
     '../src/radiative_transfer*.F90',
     '../src/radiator*.F90',
     '../src/radiators/*.F90',
+    '../src/spectral_weight*.F90',
+    '../src/spectral_weights/*.F90',
     '../src/spherical_geometry.F90',
 ]

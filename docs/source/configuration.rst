@@ -48,3 +48,11 @@ Dose Rates
 ----------
 
 <describe dose rates>
+
+
+.. _configuration-spectral-weights:
+
+Spectral Weight
+---------------
+
+<describe dose rates>

@@ -1,11 +1,7 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> This tint quantum yield module
-
-!> The tint quantum yield type and related functions
 module tuvx_quantum_yield_tint
+  ! The temperature interpolation quantum yield type and related functions
 
   use musica_constants,                only : dk => musica_dk
   use tuvx_quantum_yield,              only : quantum_yield_t, base_constructor
@@ -21,17 +17,14 @@ module tuvx_quantum_yield_tint
     real(dk), allocatable :: array(:,:)
   end type quantum_yield_data_t
 
-  !> Calculator for tint quantum yield
   type, extends(quantum_yield_t) :: quantum_yield_tint_t
+    ! Calculator for tint quantum yield
     type(quantum_yield_data_t), allocatable :: quantum_yield_data(:)
   contains
-    !> Calculate the quantum yield
     procedure :: calculate => run
-    !> clean up
     final     :: finalize
   end type quantum_yield_tint_t
 
-  !> Constructor
   interface quantum_yield_tint_t
     module procedure constructor
   end interface quantum_yield_tint_t
@@ -42,6 +35,7 @@ contains
 
   function constructor( config, grid_warehouse, profile_warehouse )           &
       result( this )
+    ! Constructor
 
     use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
@@ -53,9 +47,9 @@ contains
     use tuvx_util,                     only : inter2
 
     class(quantum_yield_tint_t), pointer :: this
-    type(config_t),              intent(inout) :: config
-    type(grid_warehouse_t),      intent(inout) :: grid_warehouse
-    type(profile_warehouse_t),   intent(inout) :: profile_warehouse
+    type(config_t),            intent(inout) :: config ! Quantum yield configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     !> Local variables
     character(len=*), parameter :: Iam = 'tint quantum yield constructor'
@@ -180,9 +174,9 @@ file_loop: &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Calculate the quantum yield for the environmental conditions
   function run( this, grid_warehouse, profile_warehouse )                     &
       result( quantum_yield )
+    ! Calculate the quantum yield for the environmental conditions
 
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
@@ -190,11 +184,10 @@ file_loop: &
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_profile,                  only : profile_t
 
-    class(quantum_yield_tint_t),    intent(in) :: this
-    type(grid_warehouse_t),      intent(inout) :: grid_warehouse
-    type(profile_warehouse_t),   intent(inout) :: profile_warehouse
-    !> Calculated quantum yield
-    real(dk), allocatable                      :: quantum_yield(:,:)
+    class(quantum_yield_tint_t),    intent(in) :: this ! This :f:type:`~tuvx_quantum_yield_tint/quantum_yield_tint_t`
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    real(kind=dk), allocatable               :: quantum_yield(:,:) ! Calculated quantum_yield
 
     ! Local variables
     character(len=*), parameter :: Iam = 'tint quantum yield calculate'
@@ -247,29 +240,29 @@ file_loop: &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> finalize the quantum yield type
   subroutine finalize( this )
+    ! finalize the quantum yield type
 
-  type(quantum_yield_tint_t), intent(inout) :: this
+    type(quantum_yield_tint_t), intent(inout) :: this
 
-  integer     :: ndx
+    integer     :: ndx
 
-  if( allocated( this%quantum_yield_data ) ) then
-    do ndx = 1,size( this%quantum_yield_data )
-      associate( Qyield => this%quantum_yield_data( ndx ) )
-      if( allocated( Qyield%array ) ) then
-        deallocate( Qyield%array )
-      endif
-      if( allocated( Qyield%temperature ) ) then
-        deallocate( Qyield%temperature )
-      endif
-      if( allocated( Qyield%deltaT ) ) then
-        deallocate( Qyield%deltaT )
-      endif
-      end associate
-    enddo
-    deallocate( this%quantum_yield_data )
-  endif
+    if( allocated( this%quantum_yield_data ) ) then
+      do ndx = 1,size( this%quantum_yield_data )
+        associate( Qyield => this%quantum_yield_data( ndx ) )
+        if( allocated( Qyield%array ) ) then
+          deallocate( Qyield%array )
+        endif
+        if( allocated( Qyield%temperature ) ) then
+          deallocate( Qyield%temperature )
+        endif
+        if( allocated( Qyield%deltaT ) ) then
+          deallocate( Qyield%deltaT )
+        endif
+        end associate
+      enddo
+      deallocate( this%quantum_yield_data )
+    endif
 
   end subroutine finalize
 

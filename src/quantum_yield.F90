@@ -1,11 +1,9 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> This base quantum yield module
 
-!> The base quantum yield type and related functions
 module tuvx_quantum_yield
+  ! This base quantum yield module
+  ! The base quantum yield type and related functions
 
   use musica_constants,                only : dk => musica_dk
 
@@ -15,14 +13,12 @@ module tuvx_quantum_yield
   public :: quantum_yield_t, quantum_yield_ptr, base_constructor
 
   type quantum_yield_parms_t
-    !> temperature \todo include units - what is this used for?
-    real(dk), allocatable :: temperature(:)
-    !> Parameters for calculating quantum yields (wavelength, parameter)
-    real(dk), allocatable :: array(:,:)
+    real(dk), allocatable :: temperature(:) ! temperature in Kelvin
+    real(dk), allocatable :: array(:,:) ! Parameters for calculating quantum yields (wavelength, parameter)
   end type quantum_yield_parms_t
 
-  !> Calculator for base quantum yield
-  type :: quantum_yield_t
+  type quantum_yield_t
+    ! Calculator for base quantum yield
     type(quantum_yield_parms_t), allocatable :: quantum_yield_parms(:)
   contains
     procedure :: calculate => run
@@ -30,8 +26,8 @@ module tuvx_quantum_yield
     final     :: finalize
   end type quantum_yield_t
 
-  !> Pointer type for building sets of quantum yields
-  type :: quantum_yield_ptr
+  type quantum_yield_ptr
+    ! Pointer type for building sets of quantum yields
     class(quantum_yield_t), pointer :: val_ => null( )
   end type quantum_yield_ptr
 
@@ -39,22 +35,22 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Performs default initialization for quantum yield_t object
-  !!
-  !! Should only be called by sub-class constructors. Sub-classes can decide
-  !! whether to call this function during construction to load standard
-  !! NetCDF files and configuration options.
-  !!
-  !! Reads NetCDF files specified in configuration array 'netcdf files'.
-  !! Data from each NetCDF file will be loaded into an element of the
-  !! \c quantum_yield_parms data member. If a NetCDF variable named
-  !! \c quantum_yield_parameters is present, it will be used to populate
-  !! the \c array data member of the \c quantum_yield_parms_t object.
-  !! If a NetCDF variable named \c temperature is present, it will be
-  !! used to populate the \c temperature data member of the
-  !! \c quantum_yield_parms_t object.
   subroutine base_constructor( this, config, grid_warehouse,                  &
       profile_warehouse )
+    ! Performs default initialization for 
+    ! :f:type:`~tuvx_quantum_yield/quantum_yield_t` object
+    ! Should only be called by sub-class constructors. Sub-classes can decide
+    ! whether to call this function during construction to load standard
+    ! NetCDF files and configuration options.
+    !
+    ! Reads NetCDF files specified in configuration array 'netcdf files'.
+    ! Data from each NetCDF file will be loaded into an element of the
+    ! quantum_yield_parms data member. If a NetCDF variable named
+    ! quantum_yield_parameters is present, it will be used to populate
+    ! the array data member of the :f:type:`~tuvx_quantum_yield/quantum_yield_parms_t` object.
+    ! If a NetCDF variable named temperature is present, it will be
+    ! used to populate the temperature data member of the
+    ! :f:type:`~tuvx_quantum_yield/quantum_yield_parms_t` object.
 
     use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
@@ -65,14 +61,10 @@ contains
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_util,                     only : inter2
 
-    !> Quantum yield calculator
-    class(quantum_yield_t),    intent(inout) :: this
-    !> Configuration data
-    type(config_t),            intent(inout) :: config
-    !> Grid warehouse
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
-    !> Profile warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
+    class(quantum_yield_t),    intent(inout) :: this ! This :f:type:`~tuvx_quantum_yield/quantum_yield_t` calculator
+    type(config_t),            intent(inout) :: config ! Quantum yield configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     ! Local variables
     character(len=*), parameter :: Iam = 'base quantum yield constructor'
@@ -156,26 +148,22 @@ file_loop: &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Calculates the quantum yield
-  !!
-  !! Uses the interpolated first quantum yield parameter as the quantum
-  !! yield.
   function run( this, grid_warehouse, profile_warehouse )                     &
       result( quantum_yield )
+    ! Calculates the quantum yield
+    !
+    ! Uses the interpolated first quantum yield parameter as the quantum
+    ! yield.
 
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    !> Quantum yield calculator
-    class(quantum_yield_t),    intent(in)    :: this
-    !> Grid warehouse
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
-    !> Profile warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
-    !> Calculated quantum yield
-    real(dk), allocatable                    :: quantum_yield(:,:)
+    class(quantum_yield_t),    intent(in) :: this ! This :f:type:`~tuvx_quantum_yield/quantum_yield_t` calculator
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    real(dk), allocatable                    :: quantum_yield(:,:) ! /todo what are the units of this?
 
     ! Local variables
     character(len=*), parameter :: Iam = 'base quantum yield calculate'
@@ -202,19 +190,19 @@ file_loop: &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Addw points to the cross-section gridded data based on configuration
-  !! options
   subroutine add_points( this, config, data_lambda, data_parameter )
+    ! Add points to the cross-section gridded data based on configuration
+    ! options
 
     use musica_assert,                 only : assert_msg, die_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
     use tuvx_util,                     only : addpnt
 
-    class(quantum_yield_t), intent(in)    :: this
-    type(config_t),         intent(inout) :: config
-    real(dk), allocatable,  intent(inout) :: data_lambda(:)
-    real(dk), allocatable,  intent(inout) :: data_parameter(:)
+    class(quantum_yield_t), intent(in)    :: this ! This :f:type:`~tuvx_quantum_yield/quantum_yield_t` calculator
+    type(config_t),         intent(inout) :: config ! Quantum yield configuration data
+    real(dk), allocatable,  intent(inout) :: data_lambda(:) ! wavelength, /todo what are the units?
+    real(dk), allocatable,  intent(inout) :: data_parameter(:) ! /todo, what is this?
 
     real(dk), parameter :: rZERO = 0.0_dk
     real(dk), parameter :: rONE  = 1.0_dk
@@ -284,9 +272,10 @@ file_loop: &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Finalizes the quantum yield object
   subroutine finalize( this )
-    type(quantum_yield_t), intent(inout) :: this
+    ! Finalizes the quantum yield object
+
+    type(quantum_yield_t), intent(inout) :: this ! This :f:type:`~tuvx_quantum_yield/quantum_yield_t` calculator
 
     integer :: ndx
 

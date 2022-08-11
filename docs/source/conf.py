@@ -75,12 +75,15 @@ html_static_path = ['_static']
 
 # -- Options for sphinx-fortran
 fortran_src = [
-    '../src/grid*.F90',
-    '../src/grids/*.F90',
     '../src/cross_section*.F90',
     '../src/cross_sections/*.F90',
-    '../src/radiator*.F90',
+    '../src/grid*.F90',
+    '../src/grids/*.F90',
+    '../src/quantum_yield.F90',
+    '../src/quantum_yield_factory.F90',
+    '../src/quantum_yields/*.F90',
     '../src/radiative_transfer*.F90',
+    '../src/radiator*.F90',
     '../src/radiators/*.F90',
     '../src/spherical_geometry.F90',
 ]

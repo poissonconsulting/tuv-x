@@ -1,11 +1,8 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> This ch3coch3+hv->ch3co_ch3 quantum_yield module
 
-!> The ch3coch3+hv->ch3co+ch3_quantum_yield type and related functions
 module tuvx_quantum_yield_ch3coch3_ch3co_ch3
+  ! This calculates the quantum_yield for acetone   
 
   use tuvx_quantum_yield,              only : quantum_yield_t, base_constructor
 
@@ -14,14 +11,13 @@ module tuvx_quantum_yield_ch3coch3_ch3co_ch3
   private
   public :: quantum_yield_ch3coch3_ch3co_ch3_t
 
-  !> Calculator for acetone quantum_yield
   type, extends(quantum_yield_t) :: quantum_yield_ch3coch3_ch3co_ch3_t
+    ! Calculator for acetone quantum_yield
   contains
     !> Initialize the quantum_yield
     procedure :: calculate => run
   end type quantum_yield_ch3coch3_ch3co_ch3_t
 
-  !> Constructor
   interface quantum_yield_ch3coch3_ch3co_ch3_t
     module procedure constructor
   end interface quantum_yield_ch3coch3_ch3co_ch3_t
@@ -32,6 +28,7 @@ contains
 
   function constructor( config, grid_warehouse, profile_warehouse )           &
       result( this )
+    ! Build the quantum yield
 
     use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
@@ -42,11 +39,10 @@ contains
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_util,                     only : inter2
 
-    class(quantum_yield_t),    pointer :: this
-    !> quantum yield configuration data
-    type(config_t),            intent(inout) :: config
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
+    class(quantum_yield_t), pointer :: this ! This :f:type:`~tuvx_quantum_yield/quantum_yield_t` calculator
+    type(config_t),            intent(inout) :: config ! Quantum yield configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     allocate ( quantum_yield_ch3coch3_ch3co_ch3_t :: this )
 
@@ -56,17 +52,18 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Calculate the photorate quantum_yield for a given set of environmental
-  !! conditions
-  !!     qyacet - q.y. for acetone, based on Blitz et al. (2004)
-  !! Compute acetone quantum yields according to the parameterization of:
-  !! Blitz, M. A., D. E. Heard, M. J. Pilling, S. R. Arnold, and
-  !! M. P. Chipperfield
-  !!       (2004), Pressure and temperature-dependent quantum yields for the
-  !!       photodissociation of acetone between 279 and 327.5 nm, Geophys.
-  !!       Res. Lett., 31, L06111, doi:10.1029/2003GL018793.
   function run( this, grid_warehouse, profile_warehouse )                     &
       result( quantum_yield )
+    ! Calculate the photorate quantum_yield for a given set of environmental
+    ! conditions
+    ! qyacet - q.y. for acetone, based on Blitz et al. (2004)
+    ! Compute acetone quantum yields according to the parameterization of:
+    ! Blitz, M. A., D. E. Heard, M. J. Pilling, S. R. Arnold, and
+    ! M. P. Chipperfield
+    ! (2004), Pressure and temperature-dependent quantum yields for the
+    ! photodissociation of acetone between 279 and 327.5 nm, Geophys.
+    ! Res. Lett., 31, L06111, `doi:10.1029/2003GL018793. 
+    ! <https://doi.org/10.1029/2003GL018793>`_
 
     use musica_constants,              only : dk => musica_dk
     use musica_string,                 only : string_t
@@ -75,11 +72,10 @@ contains
     use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    class(quantum_yield_ch3coch3_ch3co_ch3_t), intent(in) :: this
-    type(grid_warehouse_t), intent(inout)    :: grid_warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
-    !> Calculated quantum_yield
-    real(kind=dk), allocatable               :: quantum_yield(:,:)
+    class(quantum_yield_ch3coch3_ch3co_ch3_t), intent(in) :: this ! This :f:type:`~tuvx_quantum_yield_ch3coch3_ch3co_ch3/quantum_yield_ch3coch3_ch3co_ch3_t`
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    real(kind=dk), allocatable               :: quantum_yield(:,:) ! Calculated quantum_yield
 
     character(len=*), parameter :: Iam =                                      &
       'ch3coch3+hv->ch3co+ch3 quantum_yield calculate'

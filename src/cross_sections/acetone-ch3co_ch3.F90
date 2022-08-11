@@ -1,8 +1,8 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
+
 module tuvx_cross_section_ch3coch3_ch3co_ch3
-! Computes the cross section for acetone
+  ! Computes the cross section for acetone
 
   use tuvx_cross_section,              only : cross_section_t
 

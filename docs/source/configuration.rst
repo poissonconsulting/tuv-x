@@ -37,6 +37,13 @@ Photolysis Reactions
 
 <describe photolysis reactions>
 
+.. _configuration-quantum-yields:
+
+Quantum Yields
+--------------
+
+<describe quantum yield configuration>
+
 Dose Rates
 ----------
 

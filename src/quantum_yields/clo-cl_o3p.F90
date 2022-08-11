@@ -1,11 +1,8 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> This clo+hv->cl+o3p quantum yield module
 
-!> The clo+hv->cl+o3p quantum yield type and related functions
 module tuvx_quantum_yield_clo_cl_o3p
+  ! The clo+hv->cl+o3p quantum yield type and related functions
 
   use tuvx_quantum_yield,              only : quantum_yield_t, base_constructor
 
@@ -14,14 +11,12 @@ module tuvx_quantum_yield_clo_cl_o3p
   private
   public :: quantum_yield_clo_cl_o3p_t
 
-  !> Calculator for clo+hv->cl+o3p quantum yield
   type, extends(quantum_yield_t) :: quantum_yield_clo_cl_o3p_t
+    ! Calculator for clo+hv->cl+o3p quantum yield
   contains
-    !> Calculate the quantum yield
     procedure :: calculate => run
   end type quantum_yield_clo_cl_o3p_t
 
-  !> Constructor
   interface quantum_yield_clo_cl_o3p_t
     module procedure constructor
   end interface quantum_yield_clo_cl_o3p_t
@@ -32,6 +27,7 @@ contains
 
   function constructor( config, grid_warehouse, profile_warehouse )           &
       result( this )
+    ! Constructor
 
     use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
@@ -42,11 +38,10 @@ contains
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_util,                     only : inter2
 
-    class(quantum_yield_t),    pointer :: this
-    !> quantum yield configuration data
-    type(config_t),            intent(inout) :: config
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
+    class(quantum_yield_t), pointer :: this ! This :f:type:`~tuvx_quantum_yield/quantum_yield_t` calculator
+    type(config_t),            intent(inout) :: config ! Quantum yield configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     allocate ( quantum_yield_clo_cl_o3p_t :: this )
 
@@ -68,11 +63,10 @@ contains
     use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    class(quantum_yield_clo_cl_o3p_t), intent(in) :: this
-    type(grid_warehouse_t), intent(inout)    :: grid_warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
-    !> Calculated quantum_yield
-    real(kind=dk), allocatable               :: quantum_yield(:,:)
+    class(quantum_yield_clo_cl_o3p_t), intent(in) :: this ! This :f:type:`~tuvx_quantum_yield_clo_cl_o3p/quantum_yield_clo_cl_o3p_t`
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    real(kind=dk), allocatable               :: quantum_yield(:,:) ! Calculated quantum_yield
 
     ! Local variables
     character(len=*), parameter :: Iam = 'clo+hv->cl+o3p calculate'

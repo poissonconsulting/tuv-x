@@ -1,11 +1,9 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> The quantum_yield_factory module
 
-!> Builder of quantum yield calculators
 module tuvx_quantum_yield_factory
+  ! The quantum_yield_factory module
+  ! Builder of quantum yield calculators
 
   use tuvx_quantum_yield,              only : quantum_yield_t, base_constructor
   use tuvx_quantum_yield_tint,         only : quantum_yield_tint_t
@@ -41,9 +39,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Builds quantum yield calculators
   function quantum_yield_builder( config, grid_warehouse, profile_warehouse ) &
       result( quantum_yield )
+    ! Builds quantum yield calculators based off of the configuration
 
     use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
@@ -51,14 +49,10 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    !> New quantum yield calculator
-    class(quantum_yield_t), pointer :: quantum_yield
-    !> Quantum yield configuration data
-    type(config_t), intent(inout) :: config
-    !> Grid warehouse
-    type(grid_warehouse_t), intent(inout)    :: grid_warehouse
-    !> Profile warehouse
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse
+    class(quantum_yield_t), pointer :: quantum_yield ! New :f:type:`~tuvx_quantum_yield/quantum_yield_t` calculator
+    type(config_t),            intent(inout) :: config ! Quantum yield configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     type(string_t) :: quantum_yield_type
     character(len=*), parameter :: Iam = 'quantum yield builder'

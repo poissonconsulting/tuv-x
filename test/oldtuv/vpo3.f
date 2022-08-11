@@ -93,7 +93,7 @@
 *-----------------------------------------------------------------------------*
       allocate( zd(0),xd(0) )
       WRITE(kout,*) 'ozone profile: USSA, 1976'
-      OPEN(kin,FILE='data/DATAE1/ATM/ussa.ozone',STATUS='old')
+      OPEN(kin,FILE='odat/DATAE1/ATM/ussa.ozone',STATUS='old')
       DO i = 1, 7
         READ(kin,*)
       ENDDO

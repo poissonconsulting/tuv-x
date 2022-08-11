@@ -4,6 +4,8 @@
 set -e
 # turn on command echoing
 set -v
+# copy photolysis rate configuration into template
+sed -e '/#PHOTO_RATES/ {' -e 'r data/photolysis_rate_constants.json' -e 'd' -e '}' -i test/data/photorates.test.config.json
 
 exec_oldtuv() {
   ./oldtuv DO_RAYLEIGH DO_O2 DO_O3 DO_AEROSOLS DO_CLOUDS < test/regression/tuv_scenario_2.in
@@ -12,7 +14,7 @@ exec_newtuv() {
   valgrind --error-exitcode=1 --trace-children=yes --leak-check=full ./tuv-x test/data/photorates.test.config.json
 }
 exec_analysis() {
-  python3 test/regression/photolysis_rates/xsqy.compare.py test/regression/photolysis_rates OUTPUTS
+  python3 test/regression/photolysis_rates/xsqy.compare.py test/regression/photolysis_rates odat/OUTPUTS output
 }
 
 if ! exec_oldtuv; then

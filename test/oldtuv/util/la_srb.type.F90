@@ -757,7 +757,7 @@ has_la_srb: &
       integer(ik) :: in_lun             ! file unit number
       integer(ik) :: i, j, istat
 
-      character(len=*), parameter :: filespec = 'data/DATAE1/O2/effxstex.txt'
+      character(len=*), parameter :: filespec = 'odat/DATAE1/O2/effxstex.txt'
 
       in_lun = 11_ik
 

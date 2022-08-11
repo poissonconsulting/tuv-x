@@ -10,7 +10,7 @@
       "wavelength": {
          "type": "from csv file",
          "units": "nm",
-         "file path": "data/DATAE1/GRIDS/combined.grid"
+         "file path": "data/grids/wavelength/combined.grid"
       },
       "time": {
          "type": "from config file",
@@ -22,22 +22,22 @@
       "O3": {
          "type": "O3",
          "units": "molecule cm-3",
-         "file path": "data/DATAE1/ATM/ussa.ozone"
+         "file path": "data/profiles/atmosphere/ussa.ozone"
       },
       "air": {
          "type": "air",
          "units": "molecule cm-3",
-         "file path": "data/DATAE1/ATM/ussa.dens"
+         "file path": "data/profiles/atmosphere/ussa.dens"
       },
       "O2": {
          "type": "O2",
          "units": "molecule cm-3",
-         "file path": "data/DATAE1/ATM/ussa.dens"
+         "file path": "data/profiles/atmosphere/ussa.dens"
       },
       "temperature": {
          "type": "from csv file",
          "units": "K",
-         "file path": "data/DATAE1/ATM/ussa.temp"
+         "file path": "data/profiles/atmosphere/ussa.temp"
       },
       "solar zenith angle": {
          "type": "solar zenith angle",

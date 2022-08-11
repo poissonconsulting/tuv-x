@@ -22,7 +22,7 @@
 
    write(*,*) 'diagnostic_1d: entering'
 
-   open(unit=44,file='OUTPUTS/'//filename,form='unformatted',iostat=ios)
+   open(unit=44,file='odat/OUTPUTS/'//filename,form='unformatted',iostat=ios)
    if( ios /= 0 ) then
      write(*,*) 'diagnostic_1d: failed to open ',filename,'; error = ',ios
      stop 'OpnErr'
@@ -46,7 +46,7 @@
 
    write(*,*) 'diagnostic_1d_dk: entering'
 
-   open(unit=44,file='OUTPUTS/'//filename,form='unformatted',iostat=ios)
+   open(unit=44,file='odat/OUTPUTS/'//filename,form='unformatted',iostat=ios)
    if( ios /= 0 ) then
      write(*,*) 'diagnostic_1d: failed to open ',filename,'; error = ',ios
      stop 'OpnErr'
@@ -68,7 +68,7 @@
 
    integer :: ios
 
-   open(unit=44,file='OUTPUTS/'//filename,form='unformatted',iostat=ios)
+   open(unit=44,file='odat/OUTPUTS/'//filename,form='unformatted',iostat=ios)
    if( ios /= 0 ) then
      write(*,*) 'diagnostic_2d: failed to open ',filename,'; error = ',ios
      stop 'OpnErr'
@@ -88,7 +88,7 @@
 
    integer :: ios
 
-   open(unit=44,file='OUTPUTS/'//filename,form='unformatted',iostat=ios)
+   open(unit=44,file='odat/OUTPUTS/'//filename,form='unformatted',iostat=ios)
    if( ios /= 0 ) then
      write(*,*) 'diagnostic_2d: failed to open ',filename,'; error = ',ios
      stop 'OpnErr'

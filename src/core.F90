@@ -26,7 +26,7 @@ module tuvx_core
   type :: photolysis_core_t
     type(grid_warehouse_t),      pointer :: grid_warehouse_ => null()
     type(profile_warehouse_t),   pointer :: profile_warehouse_ => null()
-    type(spherical_geometry_t),      pointer :: spherical_geometry_ => null()
+    type(spherical_geometry_t),  pointer :: spherical_geometry_ => null()
     type(la_sr_bands_t),         pointer :: la_sr_bands_ => null()
     type(string_t),          allocatable :: diagnostics_(:)
     type(radiative_transfer_t),  pointer :: radiative_transfer_ => null()
@@ -67,7 +67,7 @@ contains
     type(config_t)              :: core_config, child_config
     class(iterator_t), pointer  :: iter
     class(profile_t),  pointer  :: aprofile
-    type(string_t)              :: required_keys(3), optional_keys(2)
+    type(string_t)              :: required_keys(4), optional_keys(2)
 
     call core_config%from_file( config%to_char() )
 
@@ -75,6 +75,7 @@ contains
     required_keys(1) = "radiative transfer"
     required_keys(2) = "grids"
     required_keys(3) = "profiles"
+    required_keys(4) = "O2 absorption"
     optional_keys(1) = "photolysis reactions"
     optional_keys(2) = "dose rates"
     call assert_msg( 255400232,                                               &
@@ -143,8 +144,11 @@ contains
     ! instantiate and initialize spherical geometry type
     new_core%spherical_geometry_ =>                                           &
         spherical_geometry_t( new_core%grid_warehouse_ )
+
     ! instantiate and initialize lyman alpha, srb type
-    new_core%la_sr_bands_ => la_sr_bands_t( new_core%grid_warehouse_ )
+    call core_config%get( "O2 absorption", child_config, Iam )
+    new_core%la_sr_bands_ => la_sr_bands_t( child_config,                     &
+                                            new_core%grid_warehouse_ )
 
   end function constructor
 

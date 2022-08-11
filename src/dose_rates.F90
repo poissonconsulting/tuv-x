@@ -167,12 +167,12 @@ rate_loop:                                                                    &
       if( allocated( spectral_weight ) ) deallocate( spectral_weight )
     end do rate_loop
 
-    open( unit = 33, file = 'OUTPUTS/annotatedslabels.new' )
+    open( unit = 33, file = 'output/annotatedslabels.new' )
     do rateNdx = 1, nRates
       write(33,'(a)') this%handles_( rateNdx )%to_char( )
     enddo
     close( unit = 33 )
-    open( unit = 33, file = 'OUTPUTS/sw.'//file_tag//'.new',                  &
+    open( unit = 33, file = 'output/sw.'//file_tag//'.new',                   &
           form = 'unformatted' )
     write(33) tmp_spectral_weight
     close( unit = 33 )

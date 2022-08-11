@@ -6,6 +6,7 @@ program tuvx
 
   use musica_string,                   only : string_t
   use tuvx_core,                       only : photolysis_core_t
+  use tuvx_diagnostic_util,            only : prepare_diagnostic_output
 
   implicit none
 
@@ -22,6 +23,9 @@ program tuvx
   call get_command_argument( 1, argument )
 
   configFileSpec = argument
+
+  ! set up diagnostic output
+  call prepare_diagnostic_output( )
 
   ! instatiate and initialize photolysis core object
   photolysis_core => photolysis_core_t( configFileSpec )

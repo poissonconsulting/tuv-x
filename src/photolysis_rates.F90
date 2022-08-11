@@ -247,13 +247,13 @@ rate_loop:                                                                    &
       if( allocated( quantum_yield ) ) deallocate( quantum_yield )
     end do rate_loop
 
-    open( unit = 33, file = 'OUTPUTS/annotatedjlabels.new' )
+    open( unit = 33, file = 'output/annotatedjlabels.new' )
     do rateNdx = 1, nRates
       jlabel = this%handles_( rateNdx )%to_char( )
       write(33,*) this%handles_( rateNdx )%to_char( )
     enddo
     close( unit = 33 )
-    open( unit = 33, file = 'OUTPUTS/xsqy.'//file_tag//'.new',                &
+    open( unit = 33, file = 'output/xsqy.'//file_tag//'.new',                 &
           form = 'unformatted' )
       write(33) xsqyWrk
     close( unit = 33 )

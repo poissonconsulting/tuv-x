@@ -64,24 +64,27 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function constructor( grid_warehouse ) result( new_la_sr_bands )
+  function constructor( config, grid_warehouse ) result( new_la_sr_bands )
     ! Checks that the user wavelength grid, WL(IW), is compatible
     ! with the wavelengths for the parameterizations of the Lyman-alpha and
     ! SRB.
     ! Also computes and saves corresponding grid indices (ILA, ISRB)
 
     use musica_assert,                 only : die_msg
+    use musica_config,                 only : config_t
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
 
     type(la_sr_bands_t),    pointer       :: new_la_sr_bands
+    type(config_t),         intent(inout) :: config         ! Lyman-Alpha Shumann Runge configuration
     type(grid_warehouse_t), intent(inout) :: grid_warehouse ! Grid warehouse
 
     character(len=*), parameter :: Iam = 'la_srb initialize: '
 
     integer :: iw, nw
-    class(grid_t), pointer      :: lambdaGrid
+    type(string_t)         :: file_path
+    class(grid_t), pointer :: lambdaGrid
 
     allocate( new_la_sr_bands )
 
@@ -145,7 +148,8 @@ contains
           endif
         enddo
         ! Loads Chebyshev polynomial Coeff.
-        call new_la_sr_bands%init_srb_xs
+        call config%get( 'cross section parameters file', file_path, Iam )
+        call new_la_sr_bands%init_srb_xs( file_path )
       endif
     endif has_la_srb
 
@@ -667,37 +671,36 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine init_srb_xs( this )
+  subroutine init_srb_xs( this, file_path )
     !	polynomial coeffs necessary to calculate O2 effective cross-sections
 
-    use musica_assert,                 only : die_msg
+    use musica_assert,                 only : assert_msg
+    use musica_string,                 only : string_t
 
     class(la_sr_bands_t), intent(inout)  :: this
+    type(string_t),       intent(in)     :: file_path ! Path to cross section parameters file
 
     integer :: in_lun ! file unit number
     integer :: i, j, istat
-    character(len=*), parameter :: filespec = 'data/DATAE1/O2/effxstex.txt'
 
     in_lun = 11
 
-    open( unit = in_lun, file = filespec, form = 'formatted', iostat = istat )
-    if( istat /= 0 ) then
-      call die_msg( 245202775, 'failed to open ' // trim( filespec ) )
-    endif
+    open( unit = in_lun, file = file_path%to_char( ), form = 'formatted',     &
+          iostat = istat )
+    call assert_msg( 245202775, istat == 0,                                   &
+                     'failed to open ' // file_path )
 
     read( in_lun, 901 )
     do I = iONE, nPoly
       read( in_lun, 903, iostat = istat ) ( this%AC( I, J ), J = 1, nsrb )
-      if( istat /= 0 ) then
-        call die_msg( 176835602, 'failed to read ' // trim( filespec ) )
-      endif
+      call assert_msg( 176835602, istat == 0,                                 &
+                       'failed to read ' // file_path )
     enddo
     read( in_lun, 901 )
     do I = iONE, nPoly
       read( in_lun, 903, iostat = istat ) ( this%BC( I, J ), J = 1, nsrb )
-      if( istat /= 0 ) then
-        call die_msg( 685853075, 'failed to read ' // trim( filespec ) )
-      endif
+      call assert_msg( 685853075, istat == 0,                                 &
+                       'failed to read ' // file_path )
     enddo
 
     901  format( / )

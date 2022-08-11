@@ -75,7 +75,7 @@
       jdom = jdom + 1
       dlabel(jdom) = 'Giles PA, 2015'
 
-      OPEN(unit=kin,file='data/DATAE1/Lakes_abs/Giles_dom.abs',
+      OPEN(unit=kin,file='odat/DATAE1/Lakes_abs/Giles_dom.abs',
      &status='old')
       DO i = 1, 4
          READ(kin,*)
@@ -114,7 +114,7 @@
       jdom = jdom + 1
       dlabel(jdom) = 'Tahoe, CA (KR)'
 
-      OPEN(unit=kin,file='data/DATAE1/Lakes_abs/Tahoe.csv',status='old')
+      OPEN(unit=kin,file='odat/DATAE1/Lakes_abs/Tahoe.csv',status='old')
       DO i = 1, 1
          READ(kin,*)
       ENDDO
@@ -142,7 +142,7 @@
       jdom = jdom + 1
       dlabel(jdom) = 'Taupo, NZ (KR)'
 
-      OPEN(unit=kin,file='data/DATAE1/Lakes_abs/Taupo.csv',status='old')
+      OPEN(unit=kin,file='odat/DATAE1/Lakes_abs/Taupo.csv',status='old')
       DO i = 1, 1
          READ(kin,*)
       ENDDO
@@ -170,7 +170,7 @@
       jdom = jdom + 1
       dlabel(jdom) = 'Laguna Negra, Chile'
 
-      OPEN(unit=kin,file='data/DATAE1/Lakes_abs/Negra.abs',status='old')
+      OPEN(unit=kin,file='odat/DATAE1/Lakes_abs/Negra.abs',status='old')
       DO i = 1, 1
          READ(kin,*)
       ENDDO
@@ -198,7 +198,7 @@
       jdom = jdom + 1
       dlabel(jdom) = 'Acton, OH'
 
-      OPEN(unit=kin,file='data/DATAE1/Lakes_abs/Acton.csv',status='old')
+      OPEN(unit=kin,file='odat/DATAE1/Lakes_abs/Acton.csv',status='old')
       DO i = 1, 1
          READ(kin,*)
       ENDDO
@@ -227,7 +227,7 @@
       jdom = jdom + 1
       dlabel(jdom) = 'Crystal (Vilas Co.) WI'
 
-      OPEN(unit=kin,file='data/DATAE1/Lakes_abs/Crystal.abs',
+      OPEN(unit=kin,file='odat/DATAE1/Lakes_abs/Crystal.abs',
      &status='old')
       DO i = 1, 1
          READ(kin,*)
@@ -256,7 +256,7 @@
       jdom = jdom + 1
       dlabel(jdom) = 'Mystic, MT'
 
-      OPEN(unit=kin,file='data/DATAE1/Lakes_abs/Mystic.csv',
+      OPEN(unit=kin,file='odat/DATAE1/Lakes_abs/Mystic.csv',
      &status='old')
       DO i = 1, 1
          READ(kin,*)
@@ -283,7 +283,7 @@
 * Lake Tahoe, specific days of 2014, from Erin Overholt
 * label different days by Julian Date.
 
-      OPEN(unit=kin,file='data/DATAE1/Lakes_abs/Tahoe_eo.abs',
+      OPEN(unit=kin,file='odat/DATAE1/Lakes_abs/Tahoe_eo.abs',
      &status='old')
       DO i = 1, 4
          READ(kin,*)
@@ -410,7 +410,7 @@
 
 
       OPEN(unit=kin,file=
-     $     'data/DATAE1/Lakes_abs/GreatLakes_Names.abs',
+     $     'odat/DATAE1/Lakes_abs/GreatLakes_Names.abs',
      $     status='old')
       READ(kin,*)
       DO j = 1, 59
@@ -419,7 +419,7 @@
       CLOSE(kin)
 
       OPEN(unit=kin,file=
-     $     'data/DATAE1/Lakes_abs/GreatLakesUVDOCData2011_2015.abs'
+     $     'odat/DATAE1/Lakes_abs/GreatLakesUVDOCData2011_2015.abs'
      $     ,status='old')
       n = 261
       DO i = 1, n
@@ -448,7 +448,7 @@
 * file Seasonal_
 
       OPEN(unit=kin,file=
-     $     'data/DATAE1/Lakes_abs/Seasonal_GAA.abs',
+     $     'odat/DATAE1/Lakes_abs/Seasonal_GAA.abs',
      $     status='old')
       READ(kin,*)
       READ(kin,*) (idate(j), j = 1, 45) 
@@ -482,7 +482,7 @@ c         write(*,*) j, idate(j), aname(j)
 * Lake Tahoe at different locations, from  Erin Overholt
 * 
       OPEN(unit=kin,file=
-     $     'data/DATAE1/Lakes_abs/Tahoe_locations.csv',
+     $     'odat/DATAE1/Lakes_abs/Tahoe_locations.csv',
      $     status='old')
       DO j = 1, 17
          READ(kin,'(a20)') aname(j)
@@ -490,7 +490,7 @@ c         write(*,*) j, idate(j), aname(j)
       CLOSE(kin)
 
       OPEN(unit=kin,file=
-     $     'data/DATAE1/Lakes_abs/Tahoe_2008.abs',
+     $     'odat/DATAE1/Lakes_abs/Tahoe_2008.abs',
      $     status='old')
       READ(kin,*)
       READ(kin,*)

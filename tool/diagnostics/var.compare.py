@@ -5,7 +5,8 @@ from scipy.io import FortranFile
 import os
 import json
 
-data_path = os.path.relpath("OUTPUTS")
+new_data_path = os.path.relpath("output")
+old_data_path = os.path.relpath("odat/OUTPUTS")
 n_vertical_bins = 120
 n_wavelength_bins = 156
 arrays_2D = [ "dtrl", "radField" ]
@@ -33,8 +34,8 @@ def compare_var(var_name):
     global n_wavelength_bins
     global arrays_2D
 
-    var_old = get_variable_from_file(os.path.join(data_path,var_name + ".old"), numpy.float64)
-    var_new = get_variable_from_file(os.path.join(data_path,var_name + ".new"), numpy.float64)
+    var_old = get_variable_from_file(os.path.join(old_data_path,var_name + ".old"), numpy.float64)
+    var_new = get_variable_from_file(os.path.join(new_data_path,var_name + ".new"), numpy.float64)
 
     # compare array sizes
     if var_old.size != var_new.size :

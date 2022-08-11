@@ -359,7 +359,7 @@
 
 * Open log file:
 
-      OPEN(UNIT=kout,FILE='OUTPUTS/'//'tuvlog'//'.txt',
+      OPEN(UNIT=kout,FILE='odat/OUTPUTS/'//'tuvlog'//'.txt',
      &     STATUS='UNKNOWN')
 
 * ___ SECTION 1: SIMPLE INPUT VARIABLES --------------------------------
@@ -629,7 +629,7 @@
 *       CALL rdno2xs(nz,tlay,nw,wl, no2xs)
         CALL rdso2xs(nw,wl, so2xs)
         call diagout( 'o3xs.old',o3xs )
-        OPEN(unit=44,file='OUTPUTS/o3xs_old',form='unformatted')
+        OPEN(unit=44,file='odat/OUTPUTS/o3xs_old',form='unformatted')
         WRITE(unit=44) o3xs
         CLOSE(unit=44)
 *    new cross section objects
@@ -659,7 +659,7 @@
 *    $       real( radXfer_xsect_warehouse%cross_section_values_(:,3),
 *    $             kind=musica_rk )
 *       enddo
-*       OPEN(unit=44,file='OUTPUTS/o3xs_new',form='unformatted')
+*       OPEN(unit=44,file='odat/OUTPUTS/o3xs_new',form='unformatted')
 *       WRITE(unit=44) o3xs
 *       CLOSE(unit=44)
 *     endif
@@ -683,7 +683,8 @@
 
       CALL swphys(nw,wl,wc, ns,sw,slabel)
       CALL swbiol(nw,wl,wc, ns,sw,slabel)
-      OPEN(unit=33,file='OUTPUTS/annotatedslabels.old',form='formatted')
+      OPEN(unit=33,file='odat/OUTPUTS/annotatedslabels.old',
+     &form='formatted')
       DO IS = 1,NS
         WRITE(33,'(a)') trim(slabel(is))
       ENDDO
@@ -694,7 +695,7 @@
       ENDIF
 
 * output spectral weights
-      OPEN(unit=44,file='OUTPUTS/sw_org',form='unformatted')
+      OPEN(unit=44,file='odat/OUTPUTS/sw_org',form='unformatted')
       do is = 1,ns
         header = slabel(is)
         WRITE(44) header
@@ -885,7 +886,7 @@ C      CALL setany(nz,z,nw,wl,aircol, dt_any,om_any, g_any)
      $        ,kind=musica_rk )
         enddo
 * output spectral weights
-        OPEN(unit=44,file='OUTPUTS/sw_new',form='unformatted')
+        OPEN(unit=44,file='odat/OUTPUTS/sw_new',form='unformatted')
         do is = 1,nsw
           header = spectral_wght_warehouse%spectral_wght_key(is)
           WRITE(44) header
@@ -938,14 +939,16 @@ C      CALL setany(nz,z,nw,wl,aircol, dt_any,om_any, g_any)
 * Output cross section, quantum yield product for regression testing
          write(number,'(i2.2)') it
          OPEN(unit=33,
-     $        file='OUTPUTS/xsqy.'//number//'.old',form='unformatted')
+     $        file='odat/OUTPUTS/xsqy.'//number//'.old',
+     $        form='unformatted')
          write(unit=33) 
      $     reshape( sj(1:nj,1:nz,1:nbins),(/nz,nbins,nj/),
      $              order=(/3,1,2/) )
          CLOSE(unit=33)
 * Output spectral wgths for regression testing
          OPEN(unit=33,
-     $        file='OUTPUTS/sw.'//number//'.old',form='unformatted')
+     $        file='odat/OUTPUTS/sw.'//number//'.old',
+     $        form='unformatted')
          write(unit=33) transpose( sw(1:ns,1:nbins) )
          CLOSE(unit=33)
 
@@ -1075,7 +1078,7 @@ C      CALL setany(nz,z,nw,wl,aircol, dt_any,om_any, g_any)
 
 * compute photo rate constants
       if( it == 1 .and. Obj_photo_rates ) then
-        OPEN(unit=44,file='OUTPUTS/jval_new',form='unformatted')
+        OPEN(unit=44,file='odat/OUTPUTS/jval_new',form='unformatted')
         jval_ = rZERO
         do ij = 1,nprate
           do iw = 1,nbins

@@ -19,6 +19,15 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  subroutine prepare_diagnostic_output( )
+    ! Creates the folder to hold diagnostic output if it doesn't exist
+
+    call system( "mkdir -p output" )
+
+  end subroutine prepare_diagnostic_output
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   subroutine diagnostic_1d( filename, variable )
     ! Output 1D float diagnostics to a specified file
 
@@ -27,7 +36,7 @@ contains
 
     integer :: ios
 
-    open( unit = 44, file = 'OUTPUTS/'//filename, form = 'unformatted',       &
+    open( unit = 44, file = 'output/'//filename, form = 'unformatted',        &
           iostat = ios)
     if( ios /= 0 ) then
       write(*,*) 'diagnostic_1d: failed to open ', filename, '; error = ', ios
@@ -55,7 +64,7 @@ contains
     integer :: ios
     character(len=256) :: iomsg
 
-    open( unit = 44, file = 'OUTPUTS/'//filename, form = 'unformatted',       &
+    open( unit = 44, file = 'output/'//filename, form = 'unformatted',        &
           iostat = ios, iomsg = iomsg )
     if( ios /= 0 ) then
       write(*,*) 'diagnostic_1d: failed to open ', filename, '; error = ', ios
@@ -82,7 +91,7 @@ contains
 
     integer :: ios
 
-    open( unit = 44, file = 'OUTPUTS/'//filename, form = 'unformatted',       &
+    open( unit = 44, file = 'output/'//filename, form = 'unformatted',        &
           iostat = ios )
     if( ios /= 0 ) then
       write(*,*) 'diagnostic_2d: failed to open ', filename, '; error = ', ios
@@ -108,7 +117,7 @@ contains
     integer :: ios
     character(len=512) :: iomsg
 
-    open( unit = 44, file = 'OUTPUTS/'//filename, form = 'unformatted',       &
+    open( unit = 44, file = 'output/'//filename, form = 'unformatted',        &
           iostat = ios, iomsg = iomsg )
     if( ios /= 0 ) then
       write(*,*) 'diagnostic_2d_dk: failed to open ', filename, '; error = ', &

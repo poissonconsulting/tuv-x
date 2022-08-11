@@ -114,7 +114,7 @@
 c      wlabel = 'isaksen.grid'
       wlabel = 'combined.grid'
 
-      fi = 'data/DATAE1/GRIDS/'//wlabel
+      fi = 'odat/DATAE1/GRIDS/'//wlabel
       OPEN(unit=kin,file=fi,status='old')
       READ(kin,*) nw
       allocate( wl(nw), wc(nw-1), wu(nw-1) )
@@ -153,7 +153,7 @@ c      wlabel = 'isaksen.grid'
         CASE( 4 )
       wlabel = 'fast-TUV tropospheric grid'
       
-      fi = 'data/DATAE1/GRIDS/fast_tuv.grid'
+      fi = 'odat/DATAE1/GRIDS/fast_tuv.grid'
       OPEN(UNIT=kin,FILE=fi,STATUS='old')
       DO iw = 1, 4
          READ(kin,*)
@@ -186,7 +186,7 @@ c      wlabel = 'isaksen.grid'
       allocate( wl(nw), wc(nw-1), wu(nw-1), wn(nw) )
 
       wlabel = 'combined.grid'
-      fi = 'data/DATAE1/GRIDS/'//wlabel
+      fi = 'odat/DATAE1/GRIDS/'//wlabel
       OPEN(unit=kin,file=fi,status='old')
       READ(kin,*) 
       DO iw = 1, 38

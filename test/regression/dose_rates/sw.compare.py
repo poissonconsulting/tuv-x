@@ -50,13 +50,14 @@ def compare_var(var_name,tolerance,var_old,var_new):
 # Returns paths to the script folder and the output folder
 def get_paths():
     argc = len(sys.argv)
-    if( argc == 3 ):
+    if( argc == 4 ):
         script_path = str(sys.argv[1])
-        output_path = str(sys.argv[2])
+        old_output_path = str(sys.argv[2])
+        new_output_path = str(sys.argv[3])
     else:
-        print(f"Usage: python sw.compare.py path/to/scripts path/to/output")
+        print(f"Usage: python sw.compare.py path/to/scripts path/to/old/output path/to/new/output")
         sys.exit(2)
-    return script_path, output_path
+    return script_path, old_output_path, new_output_path
 
 
 # Returns labels for new and old photolysis reactions
@@ -170,7 +171,7 @@ def compare_output(fsw_new_path, fsw_old_path, labels_new, labels_old, config):
 
 
 # main
-script_path, output_path = get_paths()
+script_path, old_output_path, new_output_path  = get_paths()
 labels_new, labels_old = get_labels(script_path)
 
 print("\nslabels.new\n-----------")
@@ -183,8 +184,8 @@ with open(os.path.join(script_path, f"sw.compare.json"),"r") as f :
 file_indices = [ '01', '02', '03', '04', '05' ]
 for file_index in file_indices:
     success = True
-    success = success and compare_output(os.path.join(output_path, f"sw.{file_index}.new"), \
-                                         os.path.join(output_path, f"sw.{file_index}.old"), \
+    success = success and compare_output(os.path.join(new_output_path, f"sw.{file_index}.new"), \
+                                         os.path.join(old_output_path, f"sw.{file_index}.old"), \
                                          labels_new, labels_old, config)
 
 if( not success ):

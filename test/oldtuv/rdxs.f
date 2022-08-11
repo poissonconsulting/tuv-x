@@ -258,7 +258,8 @@
 *=  Malicet et al., J. Atmos. Chem.  v.21, pp.263-273, 1995.                 =*
 *=  over 345.01 - 830.00, use values from Brion, room temperature only
 
-      OPEN(UNIT=kin,FILE='data/DATAE1/O3/1995Malicet_O3.txt',
+      OPEN(UNIT=kin,FILE=
+     &'odat/DATAE1/O3/1995Malicet_O3.txt',
      &STATUS='old')
       DO i = 1, 2
          READ(kin,*)
@@ -278,7 +279,8 @@
 *=  over 345.01 - 830.00, use values from Brion, room temperature only
 * skip datum at 345.00 because already read in from 1995Malicet
 
-      OPEN(UNIT=kin,FILE='data/DATAE1/O3/1998Brion_295.txt',
+      OPEN(UNIT=kin,FILE=
+     &'odat/DATAE1/O3/1998Brion_295.txt',
      &STATUS='old')
       DO i = 1, 15
          READ(kin,*)
@@ -409,7 +411,7 @@
 * cross sections from WMO 1985 Ozone Assessment
 * from 175.439 to 847.500 nm
 
-      OPEN(UNIT=kin,FILE='data/DATAE1/wmo85',STATUS='old')
+      OPEN(UNIT=kin,FILE='odat/DATAE1/wmo85',STATUS='old')
       DO i = 1, 3
          read(kin,*)
       ENDDO
@@ -515,7 +517,8 @@
 
 ***********
 
-      OPEN(UNIT=kin,FILE='data/DATAE1/O3/2006JPL_O3.txt',STATUS='old')
+      OPEN(UNIT=kin,FILE='odat/DATAE1/O3/2006JPL_O3.txt',
+     &STATUS='old')
       DO i = 1, 2
          read(kin,*)
       ENDDO
@@ -620,7 +623,8 @@
 
 *----------------------------------------------------------
 
-      OPEN(UNIT=kin,FILE='data/DATAE1/O3/1986Molina.txt',STATUS='old')
+      OPEN(UNIT=kin,FILE='odat/DATAE1/O3/1986Molina.txt',
+     &STATUS='old')
       DO i = 1, 10
          READ(kin,*)
       ENDDO
@@ -759,7 +763,8 @@
 
 *******************
 
-      OPEN(UNIT=kin,FILE='data/DATAE1/O3/1985Bass_O3.txt',STATUS='old')
+      OPEN(UNIT=kin,FILE='odat/DATAE1/O3/1985Bass_O3.txt',
+     &STATUS='old')
       DO i = 1, 8
          READ(kin,*)
       ENDDO
@@ -878,7 +883,7 @@
 
       n = 0
 
-      OPEN(UNIT=kin,FILE='data/DATAE1/O2/O2_brasseur.abs')
+      OPEN(UNIT=kin,FILE='odat/DATAE1/O2/O2_brasseur.abs')
       DO i = 1, 7
          READ(kin,*)
       ENDDO
@@ -892,7 +897,8 @@
       ENDDO
       CLOSE(kin)
 
-      OPEN(UNIT=kin,FILE='data/DATAE1/O2/O2_yoshino.abs',STATUS='old')
+      OPEN(UNIT=kin,FILE='odat/DATAE1/O2/O2_yoshino.abs',
+     &STATUS='old')
       DO i = 1, 8
          READ(kin,*)
       ENDDO
@@ -1024,7 +1030,7 @@
 * Res., 93, 7105-7112, 1988.
 *  Values at 273K from 263.8 to 648.8 nm in approximately 0.5 nm intervals
 
-      fil = 'data/DATAE1/NO2/NO2_ncar_00.abs'
+      fil = 'odat/DATAE1/NO2/NO2_ncar_00.abs'
       OPEN(UNIT=kin,FILE=fil,STATUS='old')
       n = 750
       DO i = 1, n
@@ -1091,7 +1097,8 @@
 * cross section data from JPL 94 recommendation
 * JPL 97 and JPL 2002 recommendations are identical
 
-      OPEN(UNIT=kin,FILE='data/DATAE1/NO2/NO2_jpl94.abs',STATUS='old')
+      OPEN(UNIT=kin,FILE='odat/DATAE1/NO2/NO2_jpl94.abs',
+     &STATUS='old')
       READ(kin,*) idum, n
       DO i = 1, idum-2
          READ(kin,*)
@@ -1165,7 +1172,8 @@
 
 ***
 
-      OPEN(UNIT=kin,FILE='data/DATAE1/NO2/NO2_Har.abs',status='old')
+      OPEN(UNIT=kin,FILE='odat/DATAE1/NO2/NO2_Har.abs',
+     &status='old')
       DO i = 1, 9
          READ(kin,*)
       ENDDO
@@ -1225,7 +1233,8 @@
 * NO2 absorption cross section from JPL2006
 * with interpolation of bin midpoints
 
-      OPEN(UNIT=kin,FILE='data/DATAE1/NO2/NO2_jpl2006.abs',STATUS='old')
+      OPEN(UNIT=kin,FILE='odat/DATAE1/NO2/NO2_jpl2006.abs',
+     &STATUS='old')
       DO i = 1, 3
          READ(kin,*)
       ENDDO 
@@ -1298,7 +1307,8 @@
       REAL dum1, dum2
       REAL yg1(kw), yg2(kw)
 
-      OPEN(UNIT=kin,FILE='data/DATAE1/NO2/NO2_jpl2006.abs',STATUS='old')
+      OPEN(UNIT=kin,FILE='odat/DATAE1/NO2/NO2_jpl2006.abs',
+     &STATUS='old')
       DO i = 1, 3
          READ(kin,*)
       ENDDO 
@@ -1403,7 +1413,7 @@
 * 37, 165-182, 1987, T. J. McGee and J. Burris Jr.
 * Angstrom vs. cm2/molecule, value at 221 K
 
-      fil = 'data/DATAE1/SO2/SO2xs.all'
+      fil = 'odat/DATAE1/SO2/SO2xs.all'
       OPEN(UNIT=kin,FILE=trim(fil),STATUS='old')
       DO i = 1,3 
          read(kin,*)

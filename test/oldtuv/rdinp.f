@@ -85,7 +85,7 @@
 
 * read headers and help file
          
-      OPEN(UNIT=kin,FILE='INPUTS/helpin', STATUS='OLD')
+      OPEN(UNIT=kin,FILE='odat/INPUTS/helpin', STATUS='OLD')
       READ(kin,*) nhead, nhelp
       DO i = 1, nhelp-1
          READ(kin,110) ahline(i)
@@ -133,7 +133,7 @@ CSM         PAUSE
       IF(inpfil(1:1) .EQ. '5') inpfil = 'defin5'
       
  12   CONTINUE
-      INQUIRE(file='INPUTS/'//inpfil,exist=lexist)
+      INQUIRE(file='odat/INPUTS/'//inpfil,exist=lexist)
       IF(.NOT. lexist) THEN
          WRITE(*,*) '****** file does not exist: ', inpfil
          GO TO 10
@@ -141,9 +141,9 @@ CSM         PAUSE
 
       IF(inpfil .EQ. 'defin1' .OR. inpfil .EQ. 'defin2' .OR. 
      $     inpfil .EQ. 'defin3') THEN
-         OPEN(UNIT=kin,FILE='INPUTS/'//inpfil,STATUS='OLD')
+         OPEN(UNIT=kin,FILE='odat/INPUTS/'//inpfil,STATUS='OLD')
       ELSE
-         OPEN(UNIT=kin,FILE='INPUTS/'//inpfil,STATUS='UNKNOWN')
+         OPEN(UNIT=kin,FILE='odat/INPUTS/'//inpfil,STATUS='UNKNOWN')
       ENDIF   
       READ(kin,130) avar
  130  FORMAT(A7)
@@ -294,7 +294,7 @@ c      finame = tmpfil(1:nlen)
          WRITE(*,*) '****** Cannot overwrite default input files'
          GO TO 70
       ENDIF
-      OPEN(UNIT=20,FILE='INPUTS/'//finame,STATUS='UNKNOWN',ERR=70)
+      OPEN(UNIT=20,FILE='odat/INPUTS/'//finame,STATUS='UNKNOWN',ERR=70)
       GO TO 75
  70   CONTINUE
       CLOSE(20)

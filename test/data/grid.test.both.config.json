@@ -10,7 +10,7 @@
       "wavelength": {
          "type": "from csv file",
          "units": "nm",
-         "file path": "../data/DATAE1/GRIDS/combined.grid"
+         "file path": "../data/grids/wavelength/combined.grid"
       },
       "time": {
          "type": "from config file",

@@ -105,10 +105,6 @@ include_directories(${CMAKE_BINARY_DIR}/libs/musica-core/src)
 
 add_custom_target(copy-data ALL COMMAND ${CMAKE_COMMAND}
   -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/data ${CMAKE_BINARY_DIR}/data)
-add_custom_target(copy-DATAJ1 ALL COMMAND ${CMAKE_COMMAND}
-  -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/test/data/INPUTS ${CMAKE_BINARY_DIR}/INPUTS)
-add_custom_target(copy-OUTPUTS ALL COMMAND ${CMAKE_COMMAND}
-  -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/test/data/OUTPUTS ${CMAKE_BINARY_DIR}/OUTPUTS)
 add_custom_target(copy-tool ALL COMMAND ${CMAKE_COMMAND}
   -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tool ${CMAKE_BINARY_DIR}/tool)
 

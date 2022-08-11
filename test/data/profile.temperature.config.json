@@ -2,6 +2,6 @@
    "temperature": {
       "type": "from csv file",
       "units": "K",
-      "file path": "data/DATAE1/ATM/ussa.temp"
+      "file path": "data/profiles/atmosphere/ussa.temp"
    }
 }

@@ -429,7 +429,7 @@ C-------------------------------------------------------------
       IN_LUN = 11
 
       OPEN (UNIT=IN_LUN, FILE=
-     $       'data/DATAE1/O2/effxstex.txt',FORM='FORMATTED')
+     $  'odat/DATAE1/O2/effxstex.txt',FORM='FORMATTED')
 
       READ( IN_LUN, 901 )
       DO I = 1,20

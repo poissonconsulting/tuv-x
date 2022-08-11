@@ -49,7 +49,7 @@
 
       WRITE(kout,*) 'air temperature: USSA, 1976'
       allocate( zd(0),td(0) )
-      OPEN(kin,FILE='data/DATAE1/ATM/ussa.temp',STATUS='old')
+      OPEN(kin,FILE='odat/DATAE1/ATM/ussa.temp',STATUS='old')
       DO i = 1, 3
          READ(kin,*)
       ENDDO

@@ -178,7 +178,7 @@
       IF(iout /= 6) THEN
          CALL atrim(outfil,finame,nlen)
          OPEN(UNIT=iout,
-     $        FILE='OUTPUTS/'//finame(1:nlen)//'.txt',
+     $        FILE='odat/OUTPUTS/'//finame(1:nlen)//'.txt',
      $        STATUS='UNKNOWN')
       ENDIF
 
@@ -464,7 +464,7 @@
             DO iz = 1, nz
                WRITE(iout,1270) z(iz), (svf_zw(iz,iw), iw = 1, nw - 1)
             ENDDO
-            OPEN(unit=33,file='OUTPUTS/saflux.out',
+            OPEN(unit=33,file='odat/OUTPUTS/saflux.out',
      $           form='unformatted')
             WRITE(unit=33) svf_zw
             CLOSE(unit=33)

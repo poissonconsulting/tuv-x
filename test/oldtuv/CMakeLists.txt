@@ -1,4 +1,10 @@
 ################################################################################
+# Copy test data
+
+add_custom_target(copy_oldtuv_data ALL ${CMAKE_COMMAND} -E copy_directory
+  ${CMAKE_CURRENT_SOURCE_DIR}/../data/old_tuv ${CMAKE_BINARY_DIR}/odat)
+
+################################################################################
 # Photo-decomp tool source
 
 set(PHOTO_SRC abs_linalgebra.f90

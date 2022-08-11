@@ -78,11 +78,11 @@
 * more complex files may be done with longer code in a read#.f subroutine.
 
 
-         WRITE(kout,*) 'data/DATAE1/SUN/susim_hi.flx'
+         WRITE(kout,*) 'odat/DATAE1/SUN/susim_hi.flx'
          CALL read1(nw,wl,yg1)
 
          nhead = 5
-         fil = 'data/DATAE1/SUN/atlas3_1994_317_a.dat'
+         fil = 'odat/DATAE1/SUN/atlas3_1994_317_a.dat'
          write(kout,*) fil
          OPEN(UNIT=kin,FILE=fil,STATUS='old')
          n = 5160
@@ -129,7 +129,7 @@
       write(*,*) 'read1: interpolated Etfl'
       write(*,'(1p10g15.7)') yg2(:nw-1)
 
-         fil = 'data/DATAE1/SUN/neckel.flx'
+         fil = 'odat/DATAE1/SUN/neckel.flx'
          write(kout,*) fil
          OPEN(UNIT=kin,FILE=fil,STATUS='old')
          nhead = 11
@@ -177,7 +177,7 @@
       call diagout( 'neckel.interpolated.old', yg3(:nw-1) )
 
          nhead = 8
-         fil = 'data/DATAE1/SUN/sao2010.solref.converted'
+         fil = 'odat/DATAE1/SUN/sao2010.solref.converted'
          write(kout,*) fil
          OPEN(UNIT=kin,FILE=fil,STATUS='old')
 !        n = 80099 - nhead
@@ -281,7 +281,7 @@
 
 ** high resolution
 
-      fil = 'data/DATAE1/SUN/susim_hi.flx'
+      fil = 'odat/DATAE1/SUN/susim_hi.flx'
       OPEN(UNIT=kin,FILE=fil,STATUS='old')
       DO i = 1, 7
          READ(kin,*)
@@ -384,7 +384,8 @@
 
 *********WMO 85 irradiance
 
-      OPEN(UNIT=kin,FILE='data/DATAE1/SUN/wmo85.flx',STATUS='old')
+      OPEN(UNIT=kin,FILE=
+     $ 'odat/DATAE1/SUN/wmo85.flx',STATUS='old')
       DO i = 1, 3
          READ(kin,*)
       ENDDO

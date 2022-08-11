@@ -86,7 +86,7 @@
 
       allocate( zd(0), air(0) )
 
-      OPEN(kin,FILE='data/DATAE1/ATM/ussa.dens',STATUS='old')
+      OPEN(kin,FILE='odat/DATAE1/ATM/ussa.dens',STATUS='old')
       DO i = 1, 3
          READ(kin,*)
       ENDDO

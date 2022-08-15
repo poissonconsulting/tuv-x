@@ -82,6 +82,6 @@
             "550 nm optical depth": 0.235
          }
       ],
-      "Diagnostics" : [ "aerosols" ]
+      "diagnostics" : [ "aerosols" ]
    }
 }

@@ -23,6 +23,9 @@ module tuvx_profile_warehouse
     ! get a copy of a profile object
     procedure, private :: get_profile_char, get_profile_string
     generic :: get_profile => get_profile_char, get_profile_string
+    ! checks if a profile exists in the warehouse
+    procedure :: exists_char, exists_string
+    generic :: exists => exists_char, exists_string
     ! Finalize the object
     final :: finalize
   end type profile_warehouse_t
@@ -134,6 +137,46 @@ contains
     profile_ptr => this%get_profile_char( name%to_char( ), units%to_char( ) )
 
   end function get_profile_string
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  logical function exists_char( this, name, units ) result( exists )
+    ! checks if a profile exists in the warehouse
+
+    use musica_string,                 only : string_t
+    use tuvx_profile,                  only : profile_t
+
+    class(profile_warehouse_t), intent(inout) :: this
+    character(len=*),           intent(in)    :: name
+    character(len=*),           intent(in)    :: units
+
+    integer :: ndx
+
+    exists = .false.
+    do ndx = 1, size( this%profile_objs_ )
+      if( name .eq. this%profile_objs_( ndx )%val_%handle_ ) then
+        exists  = .true.
+        exit
+      endif
+    end do
+
+  end function exists_char
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  logical function exists_string( this, name, units ) result( exists )
+    ! checks if a profile exists in the warehouse
+
+    use musica_string,                 only : string_t
+    use tuvx_profile,                  only : profile_t
+
+    class(profile_warehouse_t), intent(inout) :: this
+    type(string_t),             intent(in)    :: name
+    type(string_t),             intent(in)    :: units
+
+    exists = this%exists_char( name%to_char( ), units%to_char( ) )
+
+  end function exists_string
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

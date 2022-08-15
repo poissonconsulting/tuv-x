@@ -104,10 +104,12 @@ contains
     call diagout( 'vpair.new', aprofile%edge_val_ )
     deallocate( aprofile )
 
-    aprofile => new_core%profile_warehouse_%get_profile( "O3",                &
-                                                         "molecule cm-3" )
-    call diagout( 'vpco3.new', aprofile%layer_dens_ )
-    deallocate( aprofile )
+    if( new_core%profile_warehouse_%exists( "O3", "molecule cm-3" ) ) then
+      aprofile => new_core%profile_warehouse_%get_profile( "O3",              &
+                                                           "molecule cm-3" )
+      call diagout( 'vpco3.new', aprofile%layer_dens_ )
+      deallocate( aprofile )
+    end if
 
     ! Set up radiative transfer calculator
     call core_config%get( "radiative transfer", child_config, Iam )
@@ -119,7 +121,7 @@ contains
     ! get optical depth diagnostics to output
     !> \todo this should be moved out of the radiative transfer config if it
     !!       is owned by the core
-    call child_config%get( "Diagnostics", new_core%diagnostics_,              &
+    call child_config%get( "diagnostics", new_core%diagnostics_,              &
                            Iam, found = found )
     if( .not. found ) allocate( new_core%diagnostics_( 0 ) )
 

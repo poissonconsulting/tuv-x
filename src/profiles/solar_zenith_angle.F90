@@ -29,19 +29,19 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Initialize solar zenith angle profile from time
-  function constructor( profile_config, grid_warehouse ) result( this )
+  function constructor( config, grid_warehouse ) result( this )
 
-    use musica_config, only : config_t
-    use musica_string, only : string_t
-    use tuvx_grid,  only : grid_t
-    use tuvx_grid_warehouse,  only : grid_warehouse_t
+    use musica_assert,                 only : assert_msg
+    use musica_config,                 only : config_t
+    use musica_string,                 only : string_t
+    use tuvx_grid,                     only : grid_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
 
-    !> Arguments
     type(sza_from_time_t), pointer :: this
-    type(config_t), intent(inout)         :: profile_config
+    type(config_t), intent(inout)         :: config
     type(grid_warehouse_t), intent(inout) :: grid_warehouse
 
-    !> Local variables
+    ! Local variables
     real(dk), parameter :: NINETY  = 90._dk
     integer(ik) :: n, tNdx
     integer(ik) :: Year, Month, Day
@@ -50,29 +50,44 @@ contains
     real(dk)    :: Lon, Lat
     character(len=*), parameter :: Iam = 'sza from time initialize: '
     class(grid_t), pointer :: timeGrid
+    type(string_t) :: required_keys(7), optional_keys(2)
 
+    required_keys(1) = "type"
+    required_keys(2) = "units"
+    required_keys(3) = "year"
+    required_keys(4) = "month"
+    required_keys(5) = "day"
+    required_keys(6) = "longitude"
+    required_keys(7) = "latitude"
+    optional_keys(1) = "name"
+    optional_keys(2) = "time zone"
+
+    call assert_msg( 482373225,                                               &
+                     config%validate( required_keys, optional_keys ),         &
+                     "Bad configuration data format for "//                   &
+                     "solar zenith angle profile." )
     allocate( this )
 
     timeGrid => grid_warehouse%get_grid( "time", "hours" )
     this%ncells_ = timeGrid%ncells_
 
-    call profile_config%get( 'name', this%handle_, Iam, default='none' )
-    call profile_config%get( 'units', this%units_, Iam )
+    call config%get( 'name', this%handle_, Iam, default='none' )
+    call config%get( 'units', this%units_, Iam )
 
     allocate( this%edge_val_(0) )
 
     ! Map solar zenith angle as function of time
-    call profile_config%get( 'year', Year, Iam )
-    call profile_config%get( 'month', Month, Iam )
-    call profile_config%get( 'day', Day, Iam )
-    call profile_config%get( 'time zone', tmzone, Iam, default=0.0_dk )
-    call profile_config%get( 'longitude', Lon, Iam, default=0.0_dk )
-    call profile_config%get( 'latitude', Lat, Iam, default=0.0_dk )
+    call config%get( 'year', Year, Iam )
+    call config%get( 'month', Month, Iam )
+    call config%get( 'day', Day, Iam )
+    call config%get( 'time zone', tmzone, Iam, default=0.0_dk )
+    call config%get( 'longitude', Lon, Iam )
+    call config%get( 'latitude', Lat, Iam )
 
     Jday = julian_day_of_year(Year, Month, Day )
 
     do tNdx = 1_ik,this%ncells_+1_ik
-      ut = timeGrid%edge_(tNdx) - tmzone
+      ut = timeGrid%edge_(tNdx) + tmzone
       solarElevation = solar_zenith_angle(Year, Jday, ut, Lat, Lon )
       this%edge_val_ = [this%edge_val_,NINETY - solarElevation]
     enddo

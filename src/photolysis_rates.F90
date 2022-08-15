@@ -116,7 +116,7 @@ contains
       rates%quantum_yields_ = [ rates%quantum_yields_, quantum_yield_ptr ]
 
       ! finally get scaling factor factor
-      call reaction_config%get( "rate constant alias factor",                 &
+      call reaction_config%get( "scaling factor",                             &
                                  rate_aliasing_factor, Iam, default = 1.0_dk )
       rates%scaling_factors_ = [ rates%scaling_factors_, rate_aliasing_factor ]
     end do

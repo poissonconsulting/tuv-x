@@ -19,6 +19,9 @@ module tuvx_grid_warehouse
     !> get a copy of a grid object
     procedure, private :: get_grid_char, get_grid_string
     generic :: get_grid => get_grid_char, get_grid_string
+    !> checks if a grid is present in the warehouse
+    procedure, private :: exists_char, exists_string
+    generic :: exists => exists_char, exists_string
     !> Finalize the object
     final :: finalize
   end type grid_warehouse_t
@@ -81,7 +84,7 @@ contains
     use tuvx_grid,                     only : grid_t
 
     class(grid_warehouse_t), intent(inout) :: this     ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
-    character(len=*),        intent(in)    :: name     ! The name of a grid, see :ref:`configuration-grid` for grid names
+    character(len=*),        intent(in)    :: name     ! The name of a grid, see :ref:`configuration-grids` for grid names
     character(len=*),        intent(in)    :: units    ! The units of the grid
     class(grid_t), pointer                 :: grid_ptr ! The :f:type:`~tuvx_grid/grid_t` which matches the name passed in
 
@@ -114,13 +117,53 @@ contains
     use tuvx_grid,                     only : grid_t
 
     class(grid_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
-    type(string_t),          intent(in)    :: name ! The name of a grid, see :ref:`configuration-grid` for grid names
-    type(string_t),          intent(in)    :: units ! The units of the grid 
+    type(string_t),          intent(in)    :: name ! The name of a grid, see :ref:`configuration-grids` for grid names
+    type(string_t),          intent(in)    :: units ! The units of the grid
     class(grid_t), pointer                 :: grid_ptr ! The :f:type:`~tuvx_grid/grid_t` which matches the name passed in
 
     grid_ptr => this%get_grid_char( name%to_char( ), units%to_char( ) )
 
   end function get_grid_string
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  logical function exists_char( this, name, units ) result( exists )
+    ! checks if a grid exists in the warehouse
+
+    use musica_string,                 only : string_t
+    use tuvx_grid,                     only : grid_t
+
+    class(grid_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    character(len=*),        intent(in)    :: name ! The name of a grid, see :ref:`configuration-grids` for grid names
+    character(len=*),        intent(in)    :: units ! The units of the grid
+
+    integer :: ndx
+
+    exists = .false.
+    do ndx = 1, size( this%grid_objs_ )
+      if( name .eq. this%grid_objs_( ndx )%val_%handle_ ) then
+        exists = .true.
+        exit
+      endif
+    end do
+
+  end function exists_char
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  logical function exists_string( this, name, units ) result( exists )
+    ! checks if a grid exists in the warehouse
+
+    use musica_string,                 only : string_t
+    use tuvx_grid,                     only : grid_t
+
+    class(grid_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(string_t),          intent(in)    :: name ! The name of a grid, see :ref:`configuration-grids` for grid names
+    type(string_t),          intent(in)    :: units ! The units of the grid
+
+    exists = this%exists_char( name%to_char( ), units%to_char( ) )
+
+  end function exists_string
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

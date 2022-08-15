@@ -79,6 +79,6 @@
             "vertical profile units": "molecule cm-3"
          }
       ],
-      "Diagnostics" : [ "air" ]
+      "diagnostics" : [ "air" ]
    }
 }

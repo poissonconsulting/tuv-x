@@ -1,12 +1,11 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 !
-! profile specified in json config file
 module tuvx_profile_from_config
+  ! profile specified in json config file
 
-  use musica_constants, only : &
-    dk => musica_dk, ik => musica_ik, lk => musica_lk
-  use tuvx_profile,     only : profile_t
+  use musica_constants,                only : dk => musica_dk
+  use tuvx_profile,                    only : profile_t
 
   implicit none
 
@@ -27,60 +26,70 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Initialize grid
-  function constructor( profile_config, grid_warehouse ) result( this )
+  function constructor( config, grid_warehouse ) result( this )
 
-    use musica_config, only : config_t
-    use musica_string, only : string_t
-    use musica_assert, only : assert_msg
-    use tuvx_grid,     only : grid_t
-    use tuvx_grid_warehouse,  only : grid_warehouse_t
+    use musica_assert,                 only : assert_msg
+    use musica_config,                 only : config_t
+    use musica_string,                 only : string_t
+    use tuvx_grid,                     only : grid_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
 
     type(from_config_t), pointer          :: this
-    type(config_t), intent(inout)         :: profile_config
+    type(config_t), intent(inout)         :: config
     type(grid_warehouse_t), intent(inout) :: grid_warehouse
 
     ! Local variables
     character(len=*), parameter :: Iam = 'From config profile initialize: '
-    integer(ik)                 :: ndx
-    real(dk)                    :: uniformValue
-    logical(lk)                 :: found
-    type(config_t)              :: grid_config
-    type(string_t)              :: grid_name, grid_units
+    integer                :: ndx
+    real(dk)               :: uniformValue
+    logical                :: found
+    type(config_t)         :: grid_config
+    type(string_t)         :: grid_name, grid_units
     class(grid_t), pointer :: theGrid
+    type(string_t) :: required_keys(3), optional_keys(3)
+
+    required_keys(1) = "type"
+    required_keys(2) = "units"
+    required_keys(3) = "grid"
+    optional_keys(1) = "name"
+    optional_keys(2) = "values"
+    optional_keys(3) = "uniform value"
+
+    call assert_msg( 530095878,                                               &
+                     config%validate( required_keys, optional_keys ),         &
+                     "Bad configuration data format for "//                   &
+                     "profile from configuration file." )
 
     allocate( this )
 
     ! Get the handle
-    call profile_config%get( 'name', this%handle_, Iam, default = 'none' )
-    call profile_config%get( 'units', this%units_, Iam )
+    call config%get( 'name', this%handle_, Iam, default = 'none' )
+    call config%get( 'units', this%units_, Iam )
 
     ! Get values from config file
-    call profile_config%get( "values", this%edge_val_, Iam, found=found )
+    call config%get( "values", this%edge_val_, Iam, found = found )
     if( .not. found ) then
-      call profile_config%get( "uniform value", uniformValue, Iam,            &
-                               found = found )
+      call config%get( "uniform value", uniformValue, Iam, found = found )
       call assert_msg( 715232062, found,                                      &
-                      "Neither 'Values' or 'Uniform value' keyword specified" )
+                      "Neither 'values' or 'Uniform value' keyword specified" )
 
-      call profile_config%get( "grid", grid_config, Iam, found = found )
+      call config%get( "grid", grid_config, Iam, found = found )
       call assert_msg( 376823788, found,                                      &
                        "Grid missing from profile configuration" )
       call grid_config%get( "name", grid_name, Iam )
       call grid_config%get( "units", grid_units, Iam )
 
       theGrid => grid_warehouse%get_grid( grid_name, grid_units )
-      this%edge_val_ = (/ (uniformValue,ndx=1,theGrid%ncells_+1_ik) /)
+      this%edge_val_ = (/ ( uniformValue, ndx = 1, theGrid%ncells_ + 1 ) /)
     endif
 
-    this%ncells_ = size(this%edge_val_) - 1_ik
+    this%ncells_ = size( this%edge_val_ ) - 1
 
-    this%mid_val_ = .5_dk * ( &
-      this%edge_val_(1_ik:this%ncells_) + &
-      this%edge_val_(2_ik:this%ncells_+1_ik) &
-    )
+    this%mid_val_ = .5_dk * ( this%edge_val_( 1 : this%ncells_ ) +            &
+                              this%edge_val_( 2 : this%ncells_ + 1 ) )
 
-    this%delta_val_ = (this%edge_val_(2_ik:this%ncells_+1_ik) - &
-      this%edge_val_(1_ik:this%ncells_))
+    this%delta_val_ = ( this%edge_val_( 2 : this%ncells_ + 1 ) -              &
+                        this%edge_val_( 1 : this%ncells_ ) )
 
     deallocate( theGrid )
 

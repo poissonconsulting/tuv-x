@@ -7,7 +7,7 @@ A :f:type:`~tuvx_cross_section/cross_section_t`, or one of its subclasses, calcu
 section for one or more chemical reactions.
 
 The cross sections used by ``tuv-x`` are specified by the configuration.
-See :ref:`configuration-cross-section` for more information.
+See :ref:`configuration-cross-sections` for more information.
 Each cross section is built by the
 :f:mod:`tuvx_cross_section_factory` and stored in the 
 :f:type:`~tuvx_cross_section_warehouse/cross_section_warehouse_t`.

@@ -47,7 +47,9 @@
          "units": "degrees",
          "year" : 2002,
          "month": 3,
-         "day": 21
+         "day": 21,
+         "longitude": 0.0,
+         "latitude": 0.0
       },
       "Earth-Sun distance": {
          "type": "Earth-Sun distance",
@@ -132,7 +134,7 @@
             "550 nm optical depth": 0.235
          }
       ],
-      "Diagnostics" : [ "air", "aerosols", "O2", "O3" ]
+      "diagnostics" : [ "air", "aerosols", "O2", "O3" ]
    },
-#PHOTO_RATES 
+#PHOTO_RATES
 }

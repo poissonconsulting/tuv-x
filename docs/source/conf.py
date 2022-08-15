@@ -73,6 +73,11 @@ html_theme_options = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
+# Custom styling
+html_context = {
+        'css_files': ['_static/custom.css'],
+}
+
 # -- Options for sphinx-fortran
 fortran_src = [
     '../src/cross_section*.F90',

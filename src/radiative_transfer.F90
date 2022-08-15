@@ -47,7 +47,7 @@ contains
       result( new_radiative_transfer )
     ! Initializes the components necessary to solve radiative transfer
 
-    use musica_assert,                 only : die_msg
+    use musica_assert,                 only : assert_msg, die_msg
     use musica_string,                 only : string_t
     use tuvx_delta_eddington,          only : delta_eddington_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
@@ -61,6 +61,17 @@ contains
     character(len=*), parameter :: Iam = 'radiative transfer constructor: '
     type(string_t)       :: solver
     type(config_t) :: child_config
+    type(string_t) :: required_keys(2), optional_keys(2)
+
+    required_keys(1) = "cross sections"
+    required_keys(2) = "radiators"
+    optional_keys(1) = "solver"
+    optional_keys(2) = "diagnostics"
+
+    call assert_msg( 817033232,                                               &
+                     config%validate( required_keys, optional_keys ),         &
+                     "Bad configuration data format for "//                   &
+                     "radiative transfer." )
 
     allocate( new_radiative_transfer )
 
@@ -79,12 +90,12 @@ contains
     new_radiative_transfer%config_ = config
 
     ! get the radiative transfer solver
-    call config%get( "Solver", solver, Iam, default="Delta Eddington" )
-    if( solver == 'Discrete Ordinants' ) then
+    call config%get( "solver", solver, Iam, default="Delta Eddington" )
+    if( solver == 'discrete ordinants' ) then
       call config%get( "n_streams", new_radiative_transfer%n_streams_, Iam,   &
                        default = 4 )
       call die_msg( 900569062,                                                &
-                    "Discrete Ordinants method is not currently available" )
+                    "Discrete ordinants method is not currently available" )
     else
       allocate( delta_eddington_t :: new_radiative_transfer%solver_ )
     endif

@@ -1,13 +1,12 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-  
+!
 module tuvx_grid_from_config
-! 1d grid specified in json config file. See 
-! :ref:`configuration-grid` for more information.
+! 1d grid specified in json config file. See
+! :ref:`configuration-grids` for more information.
 
-  use musica_constants, only : &
-    dk => musica_dk, ik => musica_ik, lk => musica_lk
-  use tuvx_grid,        only : grid_t
+  use musica_constants,                only : dk => musica_dk
+  use tuvx_grid,                       only : grid_t
 
   implicit none
 
@@ -26,30 +25,40 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function constructor( grid_config ) result ( this )
+  function constructor( config ) result ( this )
     ! Initialize grid
-      
-    use musica_config, only : config_t
-    use musica_string, only : string_t
-    use musica_assert, only : die_msg
 
-    type(config_t), intent(inout) :: grid_config ! The grid config. See :ref:`configuration-grid` for more details
+    use musica_assert,                 only : assert_msg
+    use musica_config,                 only : config_t
+    use musica_string,                 only : string_t
 
-    !> Local variables
+    type(config_t), intent(inout) :: config ! The grid config. See :ref:`configuration-grids` for more details
+
+    ! Local variables
     character(len=*), parameter :: Iam = 'From config grid initialize: '
     type(from_config_t), pointer  :: this
+    type(string_t) :: required_keys(3), optional_keys(1)
 
+    required_keys(1) = "type"
+    required_keys(2) = "units"
+    required_keys(3) = "values"
+    optional_keys(1) = "name"
+
+    call assert_msg( 482373225,                                               &
+                     config%validate( required_keys, optional_keys ),         &
+                     "Bad configuration data format for "//                   &
+                     "grid from configuration file." )
     allocate( this )
- 
-    call grid_config%get( 'name', this%handle_, Iam, default = 'none' )
-    call grid_config%get( 'units', this%units_, Iam )
-    call grid_config%get( "values", this%edge_, Iam )
 
-    this%ncells_ = size(this%edge_) - 1_ik
-    this%mid_ = .5_dk * &
-      (this%edge_(1_ik:this%ncells_) + this%edge_(2_ik:this%ncells_+1_ik))
-    this%delta_ = &
-      this%edge_(2_ik:this%ncells_+1_ik) - this%edge_(1_ik:this%ncells_)
+    call config%get( 'name', this%handle_, Iam, default = 'none' )
+    call config%get( 'units', this%units_, Iam )
+    call config%get( "values", this%edge_, Iam )
+
+    this%ncells_ = size( this%edge_ ) - 1
+    this%mid_ = .5_dk *                                                       &
+      ( this%edge_( 1 : this%ncells_ ) + this%edge_( 2 : this%ncells_ + 1 ) )
+    this%delta_ =                                                             &
+      this%edge_( 2 : this%ncells_ + 1 ) - this%edge_( 1 : this%ncells_ )
 
   end function constructor
 

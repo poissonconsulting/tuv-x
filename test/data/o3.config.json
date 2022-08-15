@@ -80,6 +80,6 @@
             "vertical profile units": "molecule cm-3"
          }
       ],
-      "Diagnostics" : [ "O3" ]
+      "diagnostics" : [ "O3" ]
    }
 }

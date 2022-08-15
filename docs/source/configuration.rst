@@ -3,56 +3,695 @@
 Configuration
 =============
 
-<High level description>
+The TUV-x configuration JSON file is used to set up TUV-x to calculate
+the set of photolysis rate constants and/or dose rates that you are
+interested in.
+It also allows you to specify details about how these
+are calculated (solver options, which absorbing species should be
+considered in determining the radiation field, etc.) and the
+conditions they should be calculated for (temperature, solar flux,
+solar zenith angle, etc.).
 
-.. _configuration-grid:
+Configuration data for specific components of TUV-x may
+include paths to needed data files. These paths can be absolute
+or relative to the folder you run the ``tuvx`` executable in.
+(There are no hard-coded paths to data files in the TUV-x source
+code; they are all specified in the JSON configuration file.)
+
+TUV-x JSON data include a number of required and optional
+elements.
+Users can additionally decorate the JSON file with
+custom elements by using a "``__``" prefix for the custom key.
+TUV-x will ignore all key-value pairs whose key includes this
+prefix.
+These can be useful for including notes, descriptions,
+or references.
+They can also be useful if TUV-x is embedded
+in an application that needs to attach specific information
+to TUV-x objects.
+
+.. code-block:: JSON
+
+   {
+     "tuv object": {
+       "a TUV-x required key": "foo",
+       "a TUV-x optional key": "sometimes bar",
+       "__my note": "TUV-x will ignore this",
+       "__user provided data" : {
+         "will TUV-x ignore this object?": true
+       }
+     }
+   }
+
+
+The TUV-x configuration JSON file has six objects:
+
+.. code-block:: JSON
+   :force:
+
+   {
+     "O2 absorption": { ... },
+     "grids": { ... },
+     "profiles": { ... },
+     "radiative transfer": { ... },
+     "photolysis rate constants": { ... },
+     "dose rates": { ... }
+   }
+
+
+We use elipses (``...``) here and throughout this section for
+JSON data that are described in a separate sub-section of this
+page.
+
+The first four objects
+(:ref:`O2 absorption <configuration-o2-absorption>`,
+:ref:`grids <configuration-grids>`,
+:ref:`profiles <configuration-profiles>`, and
+:ref:`radiative transfer <configuration-radiation>`)
+are required for every TUV-x run.
+The last two objects
+(:ref:`photolysis rate constants <configuration-photolysis>` and
+:ref:`dose rates <configuration-dose-rates>`)
+are optional and allow the user to optionally
+calculate only photolysis rates, only dose rates, or both.
+
+The following sections describe each of these six JSON
+object.
+
+.. _configuration-o2-absorption:
+
+O2 Absorption
+-------------
+
+This object describes how TUV-x calculates the special
+Lyman--Alpha and Shumann--Runge absorption bands for O2.
+It has a single required data member that provides the
+path to a text file containing parameters needed in
+these calculations:
+
+.. code-block:: JSON
+
+   "O2 absorption": {
+     "cross section parameters file": "data/cross_sections/O2_parameters.txt"
+   }
+
+
+This file is a hold-over from the original TUV and has
+not yet been converted into a NetCDF file. It can be found
+in the location shown above relative to the ``tuv-x/`` root
+directory.
+
+
+.. _configuration-grids:
 
 Grids
 -----
 
-<describe grids>
+Grids define axes along which TUV-x data are distributed or calculations
+are performed.
+Depending on your use case, certain grids may or may not
+need to be included.
+At minimum, you will need to include a ``height``
+grid (units: ``km``) that defines the vertical grid TUV-x operates on,
+and a ``wavelength`` grid (units: ``nm``), that defines the wavelength
+bins for which optical property data is provided.
+For stand-alone TUV-x, you will also need to provide a ``time`` grid
+(units: ``hours``) that provides the time of day for which to calculate
+the photolysis and/or dose rates.
+
+There are two key-value pairs that are required for every grid, ``type``
+and ``units``.
+The ``type`` is a string that describes how the grid data is specified,
+and must be one of ``equal interval``,
+``from csv file``, and ``from config file``.
+These types are described below.
+The ``units`` are the units for the grid data and are used to ensure
+consistency throughout the configuration data and
+with expectations in the code.
+
+Equal Interval
+^^^^^^^^^^^^^^
+
+This grid type is defined by start and end points, and a cell width:
 
 
-.. _configuration-cross-section:
+.. code-block:: JSON
 
-Cross Sections
---------------
+   "my grid": {
+     "type": "equal interval",
+     "units": "foos",
+     "begins at": 12.0,
+     "ends at": 112.0,
+     "cell delta": 10.0
+   }
 
-<describe cross sections>
+
+From CSV File
+^^^^^^^^^^^^^
+
+This grid type is defined by data from a text file.
+The first line of the file is ignored and can be used for header info.
+The remaining lines should each include a single real number
+that will be used to define the grid.
+Values should be monotonic and increasing.
+
+
+.. code-block:: JSON
+
+   "my grid": {
+     "type": "from csv file",
+     "units": "bars",
+     "file path": "path/to/file"
+   }
+
+
+From Config File
+^^^^^^^^^^^^^^^^
+
+The values for each cell of this grid type are included directly in
+the configuration file.
+Values sholud be monotonic and increasing.
+
+
+.. code-block:: JSON
+
+   "my grid": {
+     "type": "from config file",
+     "units": "foos",
+     "values": [ 1.0, 7.0, 12.5 ]
+   }
+
+
+.. _configuration-profiles:
 
 Profiles
 --------
 
-<describe profiles>
+Profiles define parameters along a :ref:`grid <configuration-grids>`.
+Similar to grids, depending on your use case, certain profiles may
+or may not need to be included.
+At minimum, you will need to include the key-value pairs listed
+in the following table.
+
+=========================  ==============
+profile                    grid
+=========================  ==============
+``temperature``            ``height``
+``solar zenith angle``     ``time``
+``Earth-Sun distance``     ``time``
+``surface albedo``         ``wavelength``
+``extraterrestrial flux``  ``wavelength``
+``air``                    ``height``
+=========================  ==============
+
+The air profile defines the number density of air
+as a function of height.
+
+In addition to the required profiles, profiles of atmospheric
+constituents that affect the radiation field by absorbing or
+scattering light should be included when these exist as
+:ref:`radiators <configuration-radiators>` in the
+:ref:`radiative transfer <configuration-radiation>` object.
+
+As with grids, there are two key-value pairs required for every
+profile, ``type`` and ``units``.
+The ``units`` are the units for the profile data and are used to ensure
+consistency throughout the configuration data and
+with expectations in the code.
+The ``type`` is a string that describes how the profile data is specified.
+There are two general-use types that can be used for any profile,
+``from csv file`` and ``from config file``.
+In addition, there are several profile types that are useful for describing
+specific types of profiles, ``O2``, ``O3``, ``air``, ``solar zenith angle``,
+``Earth-Sun distance``, and ``extraterrestrial flux``.
+
+The specific profile types are described below.
+
+From CSV file
+^^^^^^^^^^^^^
+
+This profile type loads profile data from a text file where the
+data is extected to be space-separated with the first column being
+the grid-point value and the second column being the value of the
+profile at that grid-point.
+Any number of header lines can be included at the top of the file
+by prefixing them with any of ``#!$%*``.
+The format for the profile is:
+
+.. code-block:: JSON
+
+   "my profile": {
+     "type": "from csv file",
+     "units": "foos",
+     "file path": "path/to/file"
+   }
+
+
+From Config File
+^^^^^^^^^^^^^^^^
+
+This profile type extracts profile data directly from the configuration
+data file. There are two options for this profile format.
+The first specifies a single uniform value at every grid point:
+
+.. code-block:: JSON
+
+   "my profile": {
+     "type": "from config file",
+     "units": "bars",
+     "uniform value": 12.3,
+     "grid": {
+       "name": "foo",
+       "units": "bazes"
+     }
+   }
+
+
+The second specifies values at each grid point in an array:
+
+
+.. code-block:: JSON
+
+   "my profile": {
+     "type": "from config file",
+     "units": "bars",
+     "values": [ 12.3, 32.4, 103.2 ],
+     "grid": {
+       "name": "foo",
+       "units": "bazes"
+     }
+   }
+
+
+Solar Zenith Angle
+^^^^^^^^^^^^^^^^^^
+
+This profile is specifically for calculating the solar zenith angle
+as a function of time. Its configuration takes the form:
+
+.. code-block:: JSON
+
+   "solar zenith angle": {
+     "type": "solar zenith angle",
+     "units": "degrees",
+     "year" : 2002,
+     "month": 3,
+     "day": 21,
+     "longitude": 0.0,
+     "latitude": 0.0
+   }
+
+
+The latitude and longitude are in degrees. There is an optional
+argument ``time zone`` that defaults to 0, and is an offset
+in hours to adjust for a specific time zone relative to GMT.
+
+
+Earth-Sun Distance
+^^^^^^^^^^^^^^^^^^
+
+This profile is specifically for calculating the Earth-Sun distance
+as a function of time. Its configuration takes the form:
+
+
+.. code-block:: JSON
+
+     "Earth-Sun distance": {
+       "type": "Earth-Sun distance",
+       "units": "AU",
+       "year" : 2002,
+       "month": 3,
+       "day": 21
+     }
+
+There is an optional argument ``time zone`` that defaults to 0,
+and is an offset in hours to adjust for a specific time zone
+relative to GMT.
+
+
+Other Profiles
+^^^^^^^^^^^^^^
+
+The remaining profile types support legacy code from the original
+implementation of TUV. These will be gradually removed as configurations
+employing the general-use profile types are developed.
+
+These can be used as follows (note that file paths are relative
+to the root ``tuv-x/`` folder):
+
+
+.. code-block:: JSON
+
+      "O3": {
+         "type": "O3",
+         "units": "molecule cm-3",
+         "file path": "data/profiles/atmosphere/ussa.ozone"
+      },
+      "air": {
+         "type": "air",
+         "units": "molecule cm-3",
+         "file path": "data/profiles/atmosphere/ussa.dens"
+      },
+      "O2": {
+         "type": "O2",
+         "units": "molecule cm-3",
+         "file path": "data/profiles/atmosphere/ussa.dens"
+      },
+      "extraterrestrial flux": {
+         "type": "extraterrestrial flux",
+         "units": "photon cm-2 s-1",
+         "file path": ["data/profiles/solar/susim_hi.flx",
+                      "data/profiles/solar/atlas3_1994_317_a.dat",
+                      "data/profiles/solar/sao2010.solref.converted",
+                      "data/profiles/solar/neckel.flx"],
+         "interpolator": ["","","","interp4"]
+      }
+
 
 .. _configuration-radiation:
 
 Radiative Transfer
 ------------------
 
-<describe radiative transfer>
+Radiative transfer describes how the radiation field is calculated.
+The general format for radiative transfer is:
+
+
+.. code-block:: JSON
+
+   "radiative transfer": {
+     "cross sections": [
+       {
+         "name": "foo",
+         "type": "base",
+         "netcdf files": [ "my/data/file.nc" ]
+       }
+     ],
+     "radiators": [
+       {
+         "name": "foo",
+         "type": "base",
+         "cross section": "foo",
+         "vertical profile": "foo",
+         "vertical profile units": "molecule cm-3"
+       }
+     ]
+   }
+
+
+The ``cross sections`` and ``radiators`` are required arrays.
+The ``cross sections`` define the absorption cross sections
+for the radiators.
+Cross section configuration formats are described
+:ref:`below <configuration-cross-sections>`.
+
+The ``radiators`` define the atmospheric constituents that
+should be considered in the calculation of the radiation
+field.
+Radiator configuration formats are described
+:ref:`below <configuration-radiators>`.
+
+
+.. _configuration-photolysis:
 
 Photolysis Reactions
 --------------------
 
-<describe photolysis reactions>
+The configuration for photolysis reactions takes the following form:
 
-.. _configuration-quantum-yields:
 
-Quantum Yields
---------------
+.. code-block:: JSON
+   :force:
 
-<describe quantum yield configuration>
+   "photolysis reactions": {
+     "my first reaction": {
+       "cross section": { ... },
+       "quantum yield": { ... },
+       "scaling factor": 1.3
+     },
+     "my second reaction": {
+       "cross section": { ... },
+       "quantum yield": { ... },
+     }
+   }
+
+
+Each member of ``photolysis reactions`` describes a photolysis
+reaction that TUV-x will calculate a rate constant for at runtime.
+The key for each photolysis reaction is a user-defined name
+that will be associated with the calculated rate constant,
+and can be used for mapping to a chemistry solver or other
+package.
+Each reaction must have a ``cross section``, whose configuration
+format is described :ref:`here <configuration-cross-sections>`.
+Each reaction must also have a ``quantum yield``, whose
+configuration is described :ref:`here <configuration-quantum-yields>`.
+The ``scaling factor`` is a optional scaling factor that will be
+applied to the calculated rate constant.
+
+The file ``data/photolysis_rate_constants.json`` contains
+configuration data for every photolysis rate constant that
+can be calculated from data available in the ``data/``
+folder.
+
+.. _configuration-dose-rates:
 
 Dose Rates
 ----------
 
-<describe dose rates>
+The configuration for dose rates takes the following form:
+
+
+.. code-block:: JSON
+   :force:
+
+   "dose rates": {
+     "my first dose rate": {
+       "weights": { ... }
+     },
+     "my second dose rate": {
+       "weights": { ... }
+     }
+   }
+
+
+Each member of ``dose rates`` describes a dose rate that
+TUV-x will calculate at runtime.
+The key for each dose rate is a user-defined name that
+will be associated with the calculated rate.
+Each dose rate must have a ``weights`` object that
+defines a spectral weight, whose configuration format
+is described :ref:`here <configuration-spectral-weights>`.
+
+
+Additional Objects
+------------------
+
+These configuration JSON objects are used in one or more
+of the six high-level JSON objects in the TUV-x data file.
+
+
+.. _configuration-cross-sections:
+
+Cross Sections
+^^^^^^^^^^^^^^
+
+The configuration for a standard cross section is as
+follows:
+
+.. code-block:: JSON
+
+   {
+     "type": "base",
+     "netcdf files": [ "path/to/my/netcdf/file.nc" ]
+   }
+
+
+The NetCDF file should be structured as follows::
+
+   dimensions:
+	    bins = NUMBER_OF_WAVELENGTH_BINS ;
+	    parameters = 1 ;
+   variables:
+	    double wavelength(bins) ;
+		     wavelength:units = "nm" ;
+	    double cross_section_parameters(parameters, bins) ;
+
+
+Here, ``NUMBER_OF_WAVELENGTH_BINS`` is the number of wavelength
+bins the cross section values are provided on.
+
+The ``cross_section_parameters`` array should hold the value
+of the cross section at each wavelength.
+TUV-x will perform interpolation of the cross section
+data to the native wavelength grid.
+
+A number of custom cross section types have been developed
+when more complex algorithms are needed to calculate
+cross sections.
+These generally apply to a specific photolysis reaction.
+Their configuration data formats are demonstrated
+in ``data/photolysis_rate_constants.json``.
+
+.. _configuration-quantum-yields:
+
+Quantum Yields
+^^^^^^^^^^^^^^
+
+The configuration for a standard quantum yield can be of two forms.
+The first describes a quantum yield that is a constant value at
+all wavelengths:
+
+
+.. code-block:: JSON
+
+   {
+     "type": "base",
+     "constant value": 1.0
+   }
+
+
+The second describes a quantum yield that is read from a NetCDF
+file:
+
+
+.. code-block:: JSON
+
+   {
+     "type": "base",
+     "netcdf files": [ "path/to/my/netcdf/file.nc" ]
+   }
+
+
+The NetCDF file should be structured as follows::
+
+   dimensions:
+	   bins = NUMBER_OF_WAVELENGTH_BINS ;
+	   parameters = 1 ;
+   variables:
+	   double wavelength(bins) ;
+		   wavelength:units = "nm" ;
+	   double quantum_yield_parameters(parameters, bins) ;
+		   quantum_yield_parameters:units = "fraction" ;
+
+
+Here, ``NUMBER_OF_WAVELENGTH_BINS`` is the number of wavelength
+bins the quantum yield values are provided on.
+
+The ``quantum_yield_parameters`` array should hold the value
+of the quantum yield at each wavelength.
+TUV-x will perform interpolation of the quantum yield data
+to the native wavelength grid.
+
+A number of custom quantum yield types have been developed
+when more complex algorithms are needed to calculate
+quantum yields.
+These generally apply to a specific photolysis reaction.
+Their configuration data formats are demonstrated
+in ``data/photolysis_rate_constants.json``.
+
+
+.. _configuration-radiators:
+
+Radiators
+^^^^^^^^^
+
+Radiators represent atmospheric constituents that attenuate
+solar radiation and will be considered in calculations of the
+radiation field.
+The configuration data format for standard radiators is as
+follows:
+
+.. code-block:: JSON
+
+   {
+     "type": "base",
+     "name": "foo",
+     "cross section": "foo",
+     "vertical profile": "foo",
+     "vertical profile units": "molecule cm-3"
+   }
+
+
+The ``cross section`` must be the name of a cross
+section in the list of ``cross sections`` in the
+:ref:`configuration-radiation` object.
+The vertical profile must be the name of a profile with
+the provided units that is present in the list of
+:ref:`configuration-profiles`.
+These profiles should describe the concentration of
+the constituent on the ``height`` grid.
+
+A special radiator type exists for aerosols, which
+provides fixed optical depths at each wavelength.
+An example of the aerosol configuration is provided
+below.
+
+
+.. code-block:: JSON
+
+   {
+     "name": "aerosols",
+     "type": "aerosol",
+     "optical depths": [2.40e-01, 1.06e-01, 4.56e-02, 1.91e-02, 1.01e-02, 7.63e-03,
+                        5.38e-03, 5.00e-03, 5.15e-03, 4.94e-03, 4.82e-03, 4.51e-03,
+                        4.74e-03, 4.37e-03, 4.28e-03, 4.03e-03, 3.83e-03, 3.78e-03,
+                        3.88e-03, 3.08e-03, 2.26e-03, 1.64e-03, 1.23e-03, 9.45e-04,
+                        7.49e-04, 6.30e-04, 5.50e-04, 4.21e-04, 3.22e-04, 2.48e-04,
+                        1.90e-04, 1.45e-04, 1.11e-04, 8.51e-05, 6.52e-05, 5.00e-05,
+                        3.83e-05, 2.93e-05, 2.25e-05, 1.72e-05, 1.32e-05, 1.01e-05,
+                        7.72e-06, 5.91e-06, 4.53e-06, 3.46e-06, 2.66e-06, 2.04e-06,
+                        1.56e-06, 1.19e-06, 9.14e-07],
+     "single scattering albedo": 0.99,
+     "asymmetry factor": 0.61,
+     "550 nm optical depth": 0.235
+   }
+
+
+The optical depths are expected to be on the ``wavelength``
+grid.
 
 
 .. _configuration-spectral-weights:
 
-Spectral Weight
----------------
+Spectral Weights
+^^^^^^^^^^^^^^^^
 
-<describe dose rates>
+Standard spectral weight types load spectral weights from a NetCDF
+file.
+Their configuration format is as follows:
+
+
+.. code-block:: JSON
+
+   {
+     "type": "base",
+     "netcdf files": [ "path/to/my/netcdf/file.nc" ]
+   }
+
+The NetCDF file should be structured as follows::
+
+   dimensions:
+	   bins = NUMBER_OF_WAVELENGTH_BINS ;
+	   parameters = 1 ;
+   variables:
+	   double wavelength(bins) ;
+		   wavelength:units = "nm" ;
+	   double spectral_weight_parameters(parameters, bins) ;
+		   spectral_weight_parameters:hdr = "" ;
+
+
+Here, ``NUMBER_OF_WAVELENGTH_BINS`` is the number of wavelength
+bins the spectral weight values are provided on.
+
+The ``spectral_weight_parameters`` array should hold the value
+of the spectral weight at each wavelength.
+TUV-x will perform interpolation of the spectral weight  data
+to the native wavelength grid.
+
+A number of custom spectral weight types have been developed
+when more complex algorithms are needed to calculate
+spectral weights.
+Their configuration data formats are demonstrated
+in ``data/dose_rates.json``.
+

@@ -17,7 +17,7 @@ installation and usage instructions.
 To build and run the stand-alone version of TUV-x, you must have [Docker Desktop](https://www.docker.com/get-started) installed and running. With Docker Desktop running, open a terminal window and run the following command to start the TUV-x container:
 
 ```
-docker run -it ghcr.io/NCAR/tuv-x:main bash
+docker run -it ghcr.io/ncar/tuv-x:release bash
 ```
 
 Inside the container, you can run the TUV-x tests from the `/build/` folder:

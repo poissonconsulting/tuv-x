@@ -273,3 +273,83 @@ Radiators
 ---------
 
 <describe adding radiators>
+
+Test Creation
+-------------
+
+Unit tests are required for all new code contributions.
+Source code for new unit tests should be added to the ``test/unit/`` folder
+or one of its sub-folders depending on the module being tested.
+Unit tests are typically Fortran programs that are linked to the ``tuv-x``
+library and test the components of a single Fortran module in the ``src/``
+tree.
+
+An example of a  unit test for the fictitous ``foo`` module is shown below.
+
+.. code-block:: fortran
+
+   program test_foo
+
+     implicit none
+
+     call test_foo_t( )
+
+   contains
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+     subroutine test_foo_t( )
+       ! Tests the foo_t type
+
+       use musica_assert,              only : assert_msg
+       use tuvx_foo,                   only : foo_t
+
+       type(foo_t) :: my_foo
+
+       call assert( 501352581, my_foo%do_bar( ) .eq. 12.5 )
+       call assert( 503258115, my_foo%do_baz( ) .eq. "qux" )
+
+     end subroutine test_foo_t
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+   end program test_foo
+
+
+The `musica_assert <https://ncar.github.io/musica-core/html/namespacemusica__assert.html>`_
+module contains a number of functions that can be useful in
+unit tests.
+
+You will need to modify the ``CMakeLists.txt`` file in the
+folder where you saved your test source code (for this example we assume the above
+file is named ``test_foo.F90``) to include your new source in the build, and
+your test in the test suite.
+An updated ``CMakeLists.txt`` file for the ``foo`` test is shown below.
+
+
+.. code-block:: cmake
+
+   ################################################################################
+   # Test utilities
+
+   include(test_util)
+
+   ################################################################################
+   # Photo-decomp tests
+
+   create_standard_test(NAME some_existing_test SOURCES test_bar.F90)
+   create_standard_test(NAME foo SOURCES test_foo.F90)
+
+   ################################################################################
+
+
+The ``create_standard_test()`` CMake function adds your new executable to the build,
+links it to the ``tuv-x`` library, and includes the test as well as a
+memory check of your test to the testing suite.
+The function is defined in ``cmake-modules/test_util.cmake``, but can generally used
+as shown above.
+
+If your test needs access to data files, you can place these in the ``test/data/``
+folder.
+By default, your test executable will be run in the build folder and can access
+data files you place in this folder using a relative path: ``test/data/my_foo_data.txt``.

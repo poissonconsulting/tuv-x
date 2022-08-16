@@ -21,7 +21,269 @@ new features are fully run-time configurable.
 Cross Sections
 --------------
 
-<describe adding cross sections>
+The base functionality for cross section calculations is described in
+``src/cross_section.F90``.
+The base cross section type :f:type:`~tuvx_cross_section/cross_section_t` defined in this
+module includes a constructor that reads a set of NetCDF files
+specified in the configuration JSON object as an array of file
+paths with the key ``netcdf files``.
+
+Here is an exmple configuration for a base cross section:
+
+.. code-block:: JSON
+
+   {
+     "type": "base",
+     "netcdf files": [ "path/to/my/netcdf/file.nc" ]
+   }
+
+
+More description of the cross section configuration can
+be found :ref:`here <configuration-cross-sections>`.
+The reading of NetCDF file data is available to cross section
+subclasses through the :f:func:`tuvx_cross_section/base_constructor` function.
+
+Data from each NetCDF file in the array in the configuration data
+will be loaded into an element of the
+``cross_section_parms`` data member. If a NetCDF variable named
+``cross_section_parameters`` is present, it will be used to populate
+the ``array(:,:)`` data member of the ``cross_section_parms_t`` object.
+This first dimension of the array is wavelength, and will be interpolated
+to the native TUV-x wavelength grid if this differs from the wavelength
+grid in the netcdf file (named ``wavelength``). The second dimension
+is used to accomodate multiple wavelength-resolved parameters for
+cross section calculations.
+
+If a NetCDF variable named ``temperature`` is present, it will be
+used to populate the ``temperature(:)`` data member of the
+``cross_section_parms_t`` object.
+
+The calculation of cross sections is done by calling the ``calculate()``
+type-bound procedure on a :f:type:`~tuvx_cross_section/cross_section_t` object.
+
+The base-class calculation of cross sections returns the
+wavelength-interpolated first parameter (``array(:,1)``) from the first
+NetCDF file (``cross_section_parms(1)``) specified in the configuration
+data.
+
+Cross section subclasses are located in the ``src/cross_sections/`` folder.
+These each provide unique algorithms for calculating cross sections.
+
+Before adding a new cross section class, first check to make sure there
+is not an existing class that can be configured to accomodate your
+needs. If you find that an existing cross section subclass could be used
+by moving one or more hard-coded parameters to the configuration data, this
+is preferable to adding a new subclass.
+
+If you determine that a new cross section subclass is needed, this can be
+done in four steps:
+
+- :ref:`cs-create-subclass`
+- :ref:`cs-add-to-build-scripts`
+- :ref:`cs-add-to-factory`
+- :ref:`cs-create-unit-test`
+
+.. _cs-create-subclass:
+
+Create subclass module
+^^^^^^^^^^^^^^^^^^^^^^
+
+First, choose a unique name for your cross section calculation.
+Ideally, this name will describe the algorithm, rather than
+the specific photolysis reaction you are applying it to.
+However, many subclasses currently in TUV-x are named for
+specific photolysis reactions.
+For this example, we will use the name ``foo`` for our
+cross section algorithm.
+
+**Pay special attention to naming of files, modules, types, and functions
+in these instructions.**
+
+Create a file to hold your new subclass module in ``src/cross_sections/`` named
+``foo.F90``. The general layout of the module will be (comments have been omitted
+for this example, but should be included in an actual module):
+
+.. code-block:: fortran
+
+   ! Copyright (C) 2020 National Center for Atmospheric Research
+   ! SPDX-License-Identifier: Apache-2.0
+   !
+   module tuvx_cross_section_foo
+
+     use tuvx_cross_section,              only : cross_section_t
+
+     implicit none
+
+     private
+     public :: cross_section_foo_t
+
+     type, extends(cross_section_t) :: cross_section_foo_t
+     contains
+       procedure :: calculate => run
+     end type cross_section_foo_t
+
+     interface cross_section_foo_t
+       module procedure constructor
+     end interface cross_section_foo_t
+
+   contains
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+     function constructor( config, grid_warehouse, profile_warehouse )           &
+         result( this )
+
+       use musica_config,                 only : config_t
+       use tuvx_cross_section,            only : base_constructor
+       use tuvx_grid_warehouse,           only : grid_warehouse_t
+       use tuvx_profile_warehouse,        only : profile_warehouse_t
+
+       class(cross_section_t),    pointer       :: this
+       type(config_t),            intent(inout) :: config
+       type(grid_warehouse_t),    intent(inout) :: grid_warehouse
+       type(profile_warehouse_t), intent(inout) :: profile_warehouse
+
+       allocate( cross_section_foo_t :: this )
+
+       ! You can call the base_constructor function to load data from NetCDF
+       ! files into the `cross_section_parms(:)` data member according to the
+       ! standard base class logic. Alternatively, you can perform custom
+       ! initialization of the subclass object here.
+       call base_constructor( this, config, grid_warehouse, profile_warehouse )
+
+     end function constructor
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+     function run( this, grid_warehouse, profile_warehouse, at_mid_point )       &
+         reuslt( cross_section )
+
+       use musica_constants,              only : dk => musica_dk
+       use tuvx_grid_warehouse,           only : grid_warehouse_t
+       use tuvx_profile_warehouse,        only : profile_warehouse_t
+
+       class(cross_section_foo_t), intent(in) :: this
+       type(grid_warehouse_t),     intent(inout) :: grid_warehouse
+       type(profile_warehouse_t),  intent(inout) :: profile_warehouse
+       ! This flag indicates whether the cross-section data should be calculated
+       ! at mid-points on the vertical grid. If it is false or omitted, cross-
+       ! section data are calculated at interfaces on the vertical grid.
+       logical, optional,          intent(in)    :: at_mid_point
+       real(kind=dk), allocatable                :: cross_section
+
+       ! Do your calculation here
+
+     end function run
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+   end module tuvx_cross_section_foo
+
+The constructor function is reponsible for initializing new instances of your cross
+section subclass.
+First, you allocate the pointer to be returned as your new type
+(``cross_section_foo_t`` in this example).
+Then you initialize its data members.
+If you just want to use the default initialization of the base class,
+you can call the ``base_constructor()`` function as shown above.
+You can alternatively initialize data members of the base class
+(``cross_section_parms(:)``) directly in this function or add data members to your
+subclass and initialize them here (see ``src/cross_sections/o3_tint.F90`` for an example).
+
+The run function overrides the base-class run function and will be called when a
+user calls the ``calculate()`` type-bound procedure on an instance of your new subclass.
+You can access grid and profile data from the “warehouse” objects passed in as function
+arguments, and any data in the base-class data members or in data members you’ve added
+to your subclass to perform your calculations.
+See the files in ``src/cross_sections/`` for examples of how to access this data in
+the ``run()`` function.
+
+
+.. _cs-add-to-build-scripts:
+
+Add subclass module to build scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To include your new class in the build, edit the ``src/cross_sections/CMakeLists.txt`` file
+and add your file name to the list saved as ``SRC``.
+Files are in alphabetical order.
+
+.. code-block:: cmake
+
+   ################################################################################
+   # Cross section source
+
+   set(SRC acetone-ch3co_ch3.F90
+           bro-br_o.F90
+           ccl4.F90
+           cfc-11.F90
+           chbr3.F90
+           chcl3.F90
+           ch3ono2-ch3o_no2.F90
+           ch2o.F90
+           cl2-cl_cl.F90
+           clono2.F90
+           foo.F90
+           h2o2-oh_oh.F90
+           hcfc.F90
+           hno3-oh_no2.F90
+           hobr-oh_br.F90
+           n2o-n2_o1d.F90
+           n2o5-no2_no3.F90
+           nitroxy_acetone.F90
+           nitroxy_ethanol.F90
+           no2_tint.F90
+           o3_tint.F90
+           oclo.F90
+           rono2.F90
+           t_butyl_nitrate.F90
+           tint.F90
+           rayliegh.F90
+           )
+
+   list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+   set(CROSS_SECTION_SRC ${SRC} PARENT_SCOPE)
+
+   ################################################################################
+
+
+.. _cs-add-to-factory:
+
+Add subclass to factory function
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In order to use your new subclass, you will need to add it to the
+``tuvx_cross_section_factory`` module in ``src/cross_section_factory.F90``.
+First, use-associate your new class at the module level:
+
+.. code-block:: fortran
+
+   use tuvx_cross_section_foo,            only : cross_section_foo_t
+
+Then, inside the ``cross_section_builder()`` function, add these lines to the
+``select case`` block:
+
+.. code-block:: fortran
+
+   case( 'foo' )
+     new_cross_section => cross_section_foo_t( config, grid_warehouse,          &
+                                               profile_warehouse )
+
+Now, when you add a cross section of type ``foo`` to the configuration data,
+an instance of your new subclass will be created.
+
+
+.. _cs-create-unit-test:
+
+Create unit test
+^^^^^^^^^^^^^^^^
+
+The last step to adding a cross section is to create a unit test.
+This will ensure that your calculations are doing what you intended.
+It will also serve as an example for how users can configure and use your
+new subclass.
+
+See :ref:`developer-add-test` for more details.
 
 Dose Rates
 ----------
@@ -81,7 +343,7 @@ by moving one or more hard-coded parameters to the configuration data, this
 is preferable to adding a new subclass.
 
 If you determine that a new quantum yield subclass is needed, this can be
-done in three steps:
+done in four steps:
 
 - :ref:`qy-create-subclass`
 - :ref:`qy-add-to-build-scripts`
@@ -113,7 +375,7 @@ for this example, but should be included in an actual module):
    !
    module tuvx_quantum_yield_foo
 
-     use tuvx_quantum_yield,              only : quantum_yield_t, base_constructor
+     use tuvx_quantum_yield,              only : quantum_yield_t
 
      implicit none
      private
@@ -139,6 +401,7 @@ for this example, but should be included in an actual module):
        use musica_config,                 only : config_t
        use tuvx_grid_warehouse,           only : grid_warehouse_t
        use tuvx_profile_warehouse,        only : profile_warehouse_t
+       use tuvx_quantum_yield,            only : base_constructor
 
        class(quantum_yield_t),    pointer       :: this
        type(config_t),            intent(inout) :: config
@@ -263,16 +526,15 @@ The last step to adding a quantum yield is to create a unit test. This will ensu
 that your calculations are doing what you intended. It will also serve as an example
 for how users can configure and use your new subclass.
 
-.. note::
-
-   Add instructions for creating quantum yield tests when tests for existing classes
-   have been added.
+See :ref:`developer-add-test` for more details.
 
 
 Radiators
 ---------
 
 <describe adding radiators>
+
+.. _developer-add-test:
 
 Test Creation
 -------------

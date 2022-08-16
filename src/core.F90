@@ -34,7 +34,8 @@ module tuvx_core
     type(dose_rates_t),          pointer :: dose_rates_ => null()
   contains
     procedure :: run
-    procedure :: output
+    procedure :: output_photolysis_rate_constants
+    procedure :: output_dose_rates
     final     :: finalize
   end type photolysis_core_t
 
@@ -174,7 +175,11 @@ contains
     integer                           :: i_ndx, i_diag
     ! photolysis rate constants (time, vertical level, reaction)
     real(dk), allocatable             :: all_photo_rates(:,:,:)
+    ! photolysis rate constants (vertical level, reaction)
     real(dk), allocatable             :: photo_rates(:,:)
+    ! dose rates (time, vertical level, dose rate type)
+    real(dk), allocatable             :: all_dose_rates(:,:,:)
+    ! dose rates (vertical level, dose rate type)
     real(dk), allocatable             :: dose_rates(:,:)
     character(len=2)                  :: number
     class(profile_t),         pointer :: solar_zenith_angles => null( )
@@ -217,22 +222,35 @@ contains
                                      size( photo_rates, 2 ) ) )
         end if
         all_photo_rates( i_ndx, :, : ) = photo_rates(:,:)
-      elseif( associated(this%dose_rates_) ) then
-        if( allocated(dose_rates) ) then
-          deallocate(dose_rates)
+      end if
+      if( associated( this%dose_rates_ ) ) then
+        if( allocated( dose_rates ) ) then
+          deallocate( dose_rates )
         endif
         call this%dose_rates_%get( this%grid_warehouse_,                      &
                                    this%profile_warehouse_,                   &
                                    radiation_field,                           &
                                    dose_rates,                                &
                                    number )
+        if( .not. allocated( all_dose_rates ) ) then
+          allocate( all_dose_rates( size( solar_zenith_angles%edge_val_ ),    &
+                                    size( dose_rates, 1 ),                    &
+                                    size( dose_rates, 2 ) ) )
+        end if
+        all_dose_rates( i_ndx, :, : ) = dose_rates(:,:)
       endif
       deallocate( radiation_field )
     enddo sza_loop
 
     ! output photolysis rate constants
     if( associated( this%photolysis_rates_ ) ) then
-      call this%output( all_photo_rates, "photolysis_rate_constants.nc" )
+      call this%output_photolysis_rate_constants( all_photo_rates,            &
+                                              "photolysis_rate_constants.nc" )
+    end if
+
+    ! output dose rates
+    if( associated( this%dose_rates_ ) ) then
+      call this%output_dose_rates( all_dose_rates, "dose_rates.nc" )
     end if
 
     ! diagnostic output
@@ -261,11 +279,12 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Outputs calculated photolysis rate constants
-  subroutine output( this, values, file_path )
+  subroutine output_photolysis_rate_constants( this, values, file_path )
 
     use musica_assert,                 only : assert
     use nc4fortran,                    only : netcdf_file
     use tuvx_grid,                     only : grid_t
+    use tuvx_netcdf,                   only : clean_string
     use tuvx_profile,                  only : profile_t
 
     !> TUV-x core
@@ -277,6 +296,7 @@ contains
 
     type(netcdf_file)           :: output_file
     integer                     :: i_rxn
+    type(string_t)              :: nc_name
     type(string_t), allocatable :: rxn_names(:)
     class(profile_t),   pointer :: sza
     class(grid_t),      pointer :: time, vertical
@@ -305,7 +325,8 @@ contains
     call output_file%write_attribute( "solar zenith angle", "units",          &
                                       "degrees" )
     do i_rxn = 1, size( rxn_names )
-      call output_file%write( rxn_names( i_rxn )%val_, values( :, :, i_rxn ), &
+      nc_name = clean_string( rxn_names( i_rxn ) )
+      call output_file%write( nc_name%to_char( ), values( :, :, i_rxn ),      &
                               (/ "time          ", "vertical_level" /) )
     end do
     call output_file%close( )
@@ -313,7 +334,67 @@ contains
     deallocate( time )
     deallocate( vertical )
 
-  end subroutine output
+  end subroutine output_photolysis_rate_constants
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !> Outputs calculated dose rates
+  subroutine output_dose_rates( this, values, file_path )
+
+    use musica_assert,                 only : assert
+    use nc4fortran,                    only : netcdf_file
+    use tuvx_grid,                     only : grid_t
+    use tuvx_netcdf,                   only : clean_string
+    use tuvx_profile,                  only : profile_t
+
+    !> TUV-x core
+    class(photolysis_core_t), intent(in) :: this
+      !> Dose rates (time, vertical level, dose rate type)
+    real(dk),                 intent(in) :: values(:,:,:)
+    !> File path to output to
+    character(len=*),         intent(in) :: file_path
+
+    type(netcdf_file)           :: output_file
+    integer                     :: i_rate
+    type(string_t)              :: nc_name
+    type(string_t), allocatable :: rate_names(:)
+    class(profile_t),   pointer :: sza
+    class(grid_t),      pointer :: time, vertical
+
+    call assert( 337750978, associated( this%dose_rates_ ) )
+    sza => this%profile_warehouse_%get_profile( "solar zenith angle",         &
+                                                "degrees" )
+    time => this%grid_warehouse_%get_grid( "time", "hours" )
+    vertical => this%grid_warehouse_%get_grid( "height", "km" )
+    rate_names = this%dose_rates_%labels( )
+    call assert( 182934700,                                                   &
+                 size( sza%edge_val_ ) .eq. size( time%edge_ ) )
+    call assert( 394136298,                                                   &
+                 size( values, 1 ) .eq. size( time%edge_ ) )
+    call assert( 664629694,                                                   &
+                 size( values, 2 ) .eq. size( vertical%edge_ ) )
+    call assert( 266929622,                                                   &
+                 size( values, 3 ) .eq. size( rate_names ) )
+    call output_file%open( file_path, action='w' )
+    call output_file%write( "altitude", vertical%edge_,                       &
+                            (/ "vertical_level" /) )
+    call output_file%write_attribute( "altitude", "units", "km" )
+    call output_file%write( "time", time%edge_, (/ "time" /) )
+    call output_file%write_attribute( "time", "units", "hr" )
+    call output_file%write( "solar zenith angle", sza%edge_val_, (/ "time" /) )
+    call output_file%write_attribute( "solar zenith angle", "units",          &
+                                      "degrees" )
+    do i_rate = 1, size( rate_names )
+      nc_name = clean_string( rate_names( i_rate ) )
+      call output_file%write( nc_name%to_char( ), values( :, :, i_rate ),     &
+                              (/ "time          ", "vertical_level" /) )
+    end do
+    call output_file%close( )
+    deallocate( sza )
+    deallocate( time )
+    deallocate( vertical )
+
+  end subroutine output_dose_rates
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

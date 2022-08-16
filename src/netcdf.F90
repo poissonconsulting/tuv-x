@@ -10,7 +10,7 @@ module tuvx_netcdf
   implicit none
 
   private
-  public :: netcdf_t
+  public :: netcdf_t, clean_string
 
   type netcdf_t
     ! NetCDF I/O
@@ -102,6 +102,18 @@ contains
     endif
 
   end subroutine finalize
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  type(string_t) function clean_string( from )
+
+    use musica_string,                 only : string_t
+
+    type(string_t), intent(in) :: from
+
+    clean_string = from%replace( "/", "_" )
+
+  end function clean_string
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

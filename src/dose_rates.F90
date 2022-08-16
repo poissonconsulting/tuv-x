@@ -29,6 +29,8 @@ module tuvx_dose_rates
   contains
     !> Returns the dose rates for a given set of conditions
     procedure :: get
+    !> Returns the names of each dose rate
+    procedure :: labels
     !> Finalize the object
     final :: finalize
   end type dose_rates_t
@@ -120,7 +122,7 @@ contains
     type(radiation_field_t),   intent(in)    :: radiation_field
     !> Tag used in file name of output data
     character(len=*),          intent(in)    :: file_tag
-    !> Calculated dose rate constants
+    !> Calculated dose rate constants (vertical layer, dose rate type)
     real(dk), allocatable,     intent(inout) :: dose_rates(:,:)
 
     ! Local variables
@@ -182,6 +184,18 @@ rate_loop:                                                                    &
     if( associated( etfl ) ) deallocate( etfl )
 
   end subroutine get
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function labels( this )
+    ! Returns the names of each dose rate
+
+    type(string_t), allocatable     :: labels(:)
+    class(dose_rates_t), intent(in) :: this
+
+    labels = this%handles_
+
+  end function labels
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

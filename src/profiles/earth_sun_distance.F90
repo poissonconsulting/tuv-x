@@ -1,8 +1,10 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> Earth-Sun distance profile type
+
 module tuvx_profile_earth_sun_distance
+  ! Earth-Sun distance profile type
+  ! Calculates the earth sun distance using the 
+  ! :f:func:`tuvx_profile_utils/earth_sun_distance`
 
   use musica_constants,                only : dk => musica_dk
   use tuvx_profile,                    only : profile_t
@@ -12,24 +14,24 @@ module tuvx_profile_earth_sun_distance
   implicit none
 
   private
-  public :: earth_sun_distance_t
+  public :: profile_earth_sun_distance_t
 
-  type, extends(profile_t) :: earth_sun_distance_t
+  type, extends(profile_t) :: profile_earth_sun_distance_t
   contains
     final     :: finalize
-  end type earth_sun_distance_t
+  end type profile_earth_sun_distance_t
 
   !> Constructor
-  interface earth_sun_distance_t
+  interface profile_earth_sun_distance_t
     module procedure constructor
-  end interface earth_sun_distance_t
+  end interface profile_earth_sun_distance_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize distance between sun, earth in AU
   function constructor( config, grid_warehouse ) result ( this )
+    ! Initialize distance between sun, earth in AU
 
     use musica_assert,                 only : assert_msg, die_msg
     use musica_config,                 only : config_t
@@ -38,9 +40,9 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
 
     ! Arguments
-    type(earth_sun_distance_t), pointer   :: this
-    type(config_t), intent(inout)         :: config
-    type(grid_warehouse_t), intent(inout) :: grid_warehouse
+    type(profile_earth_sun_distance_t), pointer   :: this ! This f:type:`~tuvx_profile_earth_sun_distance/profile_earth_sun_distance_t`
+    type(config_t), intent(inout)         :: config ! A profile config
+    type(grid_warehouse_t), intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 
     ! Local variables
     real(dk), parameter :: NINETY  = 90._dk
@@ -104,8 +106,9 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine finalize( this )
+    ! Cleanup the memory used by this object
 
-    type(earth_sun_distance_t), intent(inout) :: this
+    type(profile_earth_sun_distance_t), intent(inout) :: this ! This f:type:`~tuvx_profile_earth_sun_distance/profile_earth_sun_distance_t`
 
     if( allocated( this%edge_val_ ) ) then
       deallocate( this%edge_val_ )

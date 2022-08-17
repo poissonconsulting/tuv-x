@@ -1,32 +1,32 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> Extraterrestrial flux profile type
+
 module tuvx_profile_extraterrestrial_flux
+  ! Extraterrestrial flux profile type
 
   use musica_constants,                only : dk => musica_dk
   use tuvx_profile,                    only : profile_t
 
   implicit none
 
-  public :: extraterrestrial_flux_t
+  public :: profile_extraterrestrial_flux_t
 
-  type, extends(profile_t) :: extraterrestrial_flux_t
+  type, extends(profile_t) :: profile_extraterrestrial_flux_t
   contains
     final     :: finalize
-  end type extraterrestrial_flux_t
+  end type profile_extraterrestrial_flux_t
 
   !> Constructor
-  interface extraterrestrial_flux_t
+  interface profile_extraterrestrial_flux_t
     module procedure constructor
-  end interface extraterrestrial_flux_t
+  end interface profile_extraterrestrial_flux_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize grid
   function constructor( config, grid_warehouse ) result ( this )
+    ! Initialize this profile
 
     use musica_assert,                 only : assert_msg, die_msg
     use musica_config,                 only : config_t
@@ -38,9 +38,9 @@ contains
     use tuvx_interpolate
     use tuvx_util,                     only : addpnt
 
-    type(extraterrestrial_flux_t), pointer :: this
-    type(config_t),           intent(inout) :: config
-    type(grid_warehouse_t),   intent(inout) :: grid_warehouse
+    type(profile_extraterrestrial_flux_t), pointer :: this ! This f:type:`~tuvx_profile_extraterrestrial_flux/profile_extraterrestrial_flux_t`
+    type(config_t), intent(inout)          :: config ! A profile config
+    type(grid_warehouse_t), intent(inout)  :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 
     ! Local variables
     character(len=*), parameter :: Iam = &
@@ -266,8 +266,9 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine finalize( this )
+    ! Cleanup the memory used by this object
 
-    type(extraterrestrial_flux_t), intent(inout) :: this
+    type(profile_extraterrestrial_flux_t), intent(inout) :: this ! This f:type:`~tuvx_profile_extraterrestrial_flux/profile_extraterrestrial_flux_t`
 
     if( allocated( this%edge_val_ ) ) deallocate( this%edge_val_ )
     if( allocated( this%mid_val_ ) )  deallocate( this%mid_val_ )

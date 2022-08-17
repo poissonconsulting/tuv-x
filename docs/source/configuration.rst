@@ -227,6 +227,8 @@ specific types of profiles, ``O2``, ``O3``, ``air``, ``solar zenith angle``,
 
 The specific profile types are described below.
 
+.. _configuration-profiles-from-csv:
+
 From CSV file
 ^^^^^^^^^^^^^
 
@@ -246,6 +248,8 @@ The format for the profile is:
      "file path": "path/to/file"
    }
 
+
+.. _configuration-profiles-from-config:
 
 From Config File
 ^^^^^^^^^^^^^^^^

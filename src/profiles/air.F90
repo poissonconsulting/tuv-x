@@ -1,8 +1,8 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> air profile type
+
 module tuvx_profile_air
+  ! air profile type
 
   use musica_constants,                only : dk => musica_dk
   use tuvx_profile,                    only : profile_t
@@ -16,7 +16,6 @@ module tuvx_profile_air
     final     :: finalize
   end type profile_air_t
 
-  !> Constructor
   interface profile_air_t
     module procedure constructor
   end interface profile_air_t
@@ -25,8 +24,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize grid
-  function constructor( config, gridWareHouse ) result ( this )
+  function constructor( config, grid_warehouse ) result ( this )
+    ! Construct this air profile
 
     use musica_assert,                 only : assert_msg, die_msg
     use musica_config,                 only : config_t
@@ -36,9 +35,9 @@ contains
     use tuvx_interpolate
 
     ! arguments
-    type(profile_air_t), pointer          :: this
-    type(config_t), intent(inout)         :: config
-    type(grid_warehouse_t), intent(inout) :: gridWareHouse
+    type(profile_air_t), pointer          :: this ! This f:type:`~tuvx_profile_air/profile_air_t`
+    type(config_t), intent(inout)         :: config ! A profile config
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 
     ! local variables
     integer, parameter :: Ok = 0
@@ -120,7 +119,7 @@ contains
 
     close( unit = inUnit )
 
-    zGrid => gridWareHouse%get_grid( "height", "km" )
+    zGrid => grid_warehouse%get_grid( "height", "km" )
     this%ncells_ = zGrid%ncells_
 
     ! assign actual interpolator for this profile
@@ -177,6 +176,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine finalize( this )
+    ! Clean up this object
 
     type(profile_air_t), intent(inout) :: this
 

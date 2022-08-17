@@ -1,11 +1,10 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> \file
-!> The tuvx_profile_warehouse module
 
-!> The profile warehouse type and related functions
 module tuvx_profile_warehouse
+  ! The profile warehouse type and related functions. Holds one or more
+  ! :f:type:`~tuvx_profile/profile_t` s created by the 
+  ! :f:mod:`tuvx_profile_factory`
 
   use tuvx_profile, only : profile_ptr
 
@@ -14,24 +13,19 @@ module tuvx_profile_warehouse
   private
   public :: profile_warehouse_t
 
-  type :: profile_warehouse_t
-    ! profile warehouse type
+  type profile_warehouse_t
     private
-    ! profile objects
     type(profile_ptr), allocatable :: profile_objs_(:)
   contains
-    ! get a copy of a profile object
     procedure, private :: get_profile_char, get_profile_string
     generic :: get_profile => get_profile_char, get_profile_string
-    ! checks if a profile exists in the warehouse
     procedure :: exists_char, exists_string
     generic :: exists => exists_char, exists_string
-    ! Finalize the object
     final :: finalize
   end type profile_warehouse_t
 
-  ! profile warehouse_t constructor
   interface profile_warehouse_t
+    ! profile warehouse_t constructor
     module procedure :: constructor
   end interface
 
@@ -39,9 +33,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> profile warehouse constructor
   function constructor( config, grid_warehouse) &
     result( profile_warehouse )
+    ! profile warehouse constructor
 
     use musica_config,        only : config_t
     use musica_iterator,      only : iterator_t
@@ -49,11 +43,9 @@ contains
     use tuvx_grid_warehouse,  only : grid_warehouse_t
     use tuvx_profile_factory, only : profile_builder
 
-    !> profile configuration data
-    type(config_t),             intent(inout) :: config
-    type(grid_warehouse_t),     intent(inout) :: grid_warehouse
-    !> New profile_warehouse_obj
-    class(profile_warehouse_t), pointer       :: profile_warehouse
+    type(config_t),             intent(inout) :: config ! profile configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    class(profile_warehouse_t), pointer       :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     ! local variables
     type(config_t)              :: profile_config
@@ -87,8 +79,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Get copy of a profile object
   function get_profile_char( this, name, units ) result( profile_ptr )
+    ! Get copy of a profile object
 
     use musica_assert,     only : assert_msg
     use tuvx_profile,      only : profile_t
@@ -123,8 +115,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Get a copy of a profile object
   function get_profile_string( this, name, units ) result( profile_ptr )
+    ! Get a copy of a profile object
 
     use musica_string,                 only : string_t
     use tuvx_profile,                  only : profile_t
@@ -180,8 +172,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Finalize profile warehouse
   subroutine finalize( this )
+    ! Finalize profile warehouse
 
     use musica_constants, only : ik => musica_ik
 

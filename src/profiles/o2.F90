@@ -1,32 +1,31 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> O2 profile from csv file type
+
 module tuvx_profile_o2
+  ! O2 profile from csv file type
 
   use musica_constants,                only : dk => musica_dk
   use tuvx_profile,                    only : profile_t
 
   implicit none
 
-  public :: o2_from_csv_file_t
+  public :: profile_o2_t
 
-  type, extends(profile_t) :: o2_from_csv_file_t
+  type, extends(profile_t) :: profile_o2_t
   contains
     final     :: finalize
-  end type o2_from_csv_file_t
+  end type profile_o2_t
 
-  !> Constructor
-  interface o2_from_csv_file_t
+  interface profile_o2_t
     module procedure constructor
-  end interface o2_from_csv_file_t
+  end interface profile_o2_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize grid
   function constructor( config, grid_warehouse ) result( this )
+    ! Initialize profile
 
     use musica_assert,                 only : assert_msg, die_msg
     use musica_config,                 only : config_t
@@ -35,9 +34,9 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_interpolate
 
-    type(config_t), intent(inout)         :: config
-    type(o2_from_csv_file_t), pointer     :: this
-    type(grid_warehouse_t), intent(inout) :: grid_warehouse
+    type(profile_o2_t), pointer   :: this ! This f:type:`~tuvx_profile_o2/profile_o2_t`
+    type(config_t), intent(inout)         :: config ! A profile config
+    type(grid_warehouse_t), intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 
     ! local variables
     integer, parameter :: Ok = 0
@@ -172,8 +171,9 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine finalize( this )
+    ! Cleanup the memory used by this object
 
-    type(o2_from_csv_file_t), intent(inout) :: this
+    type(profile_o2_t), intent(inout) :: this ! This f:type:`~tuvx_profile_o2/profile_o2_t`
 
     if( allocated( this%edge_val_ ) ) then
       deallocate( this%edge_val_ )

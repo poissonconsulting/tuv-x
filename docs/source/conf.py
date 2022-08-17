@@ -87,6 +87,8 @@ fortran_src = [
     '../src/quantum_yield.F90',
     '../src/quantum_yield_factory.F90',
     '../src/quantum_yields/*.F90',
+    '../src/profile*.F90',
+    '../src/profiles/*.F90',
     '../src/radiative_transfer*.F90',
     '../src/radiator*.F90',
     '../src/radiators/*.F90',

@@ -1,8 +1,41 @@
 ! Copyright (C) 2022 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> Utility function for use in profile types
+
 module tuvx_profile_utils
+  ! Utility function for use in profile types
+  ! :f:func:`tuvx_profile_utils/earth_sun_distance` and
+  ! :f:func:`tuvx_profile_utils/solar_zenith_angle` are based on 
+  ! 
+  ! Michalsky, J., 1988: The Astronomical Almanac's algorithm for
+  ! approximate solar position (1950-2050), Solar Energy 40,
+  ! 227-235 (but the version of this program in the Appendix
+  ! contains errors and should not be used)
+  ! `doi:10.1016/0038-092X(88)90045-X <https://doi.org/10.1016/0038-092X(88)90045-X>`_
+  !
+  ! The Astronomical Almanac, U.S. Gov't Printing Office, Washington,
+  ! D.C. (published every year): the formulas used from the 1995
+  ! version are as follows
+  ! 
+  ! - p. A12: approximation to sunrise/set times
+  ! - p. B61: solar elevation ("altitude") and azimuth
+  ! - p. B62: refraction correction
+  ! - p. C24: mean longitude, mean anomaly, ecliptic longitude, obliquity of ecliptic, right ascension, declination, Earth-Sun distance, angular diameter of Sun
+  ! - p. L2:  Greenwich mean sidereal time (ignoring T^2, T^3 terms)
+  ! 
+  ! These two functions calculate the local solar azimuth and
+  ! elevation angles, and
+  ! the distance to and angle subtended by the Sun, at a specific
+  ! location and time using approximate formulas in The Astronomical
+  ! Almanac.  Accuracy of angles is 0.01 deg or better (the angular
+  ! width of the Sun is about 0.5 deg, so 0.01 deg is more than
+  ! sufficient for most applications).
+  !
+  ! Unlike many GCM (and other) sun angle routines, this
+  ! one gives slightly different sun angles depending on
+  ! the year.  The difference is usually down in the 4th
+  ! significant digit but can slowly creep up to the 3rd
+  ! significant digit after several decades to a century.
+
 
   use musica_constants, only : &
     dk => musica_dk, ik => musica_ik, lk => musica_lk
@@ -18,16 +51,15 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   function julian_day_of_year( year, month, day ) result( julianday )
-
-    !-------------------------------------------------------------------------
-    != calculates julian day corresponding to specified year, month, day     =
-    != also checks validity of date                                          =
-    !-------------------------------------------------------------------------
+    ! Calculates julian day corresponding to specified year, month, day
+    ! also checks validity of date     
 
     !> Arguments
-    integer(ik), intent(in)  :: year, month, day
+    integer(ik), intent(in)  :: year, &  ! integer; range 1950 to 2050
+                                month, & ! The integer month, e.g., 11
+                                day      ! day of year at LAT-LONG location integer; range 1-366
 
-    integer(ik)              :: julianday
+    integer(ik)              :: julianday ! The `Julian day <https://en.wikipedia.org/wiki/Julian_day>`_
 
     !> Local variables
     integer(ik) :: m
@@ -66,116 +98,16 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !     The two functions below calculate the local solar azimuth and
-  !     elevation angles, and
-  !     the distance to and angle subtended by the Sun, at a specific
-  !     location and time using approximate formulas in The Astronomical
-  !     Almanac.  Accuracy of angles is 0.01 deg or better (the angular
-  !     width of the Sun is about 0.5 deg, so 0.01 deg is more than
-  !     sufficient for most applications).
-  !
-  !     Unlike many GCM (and other) sun angle routines, this
-  !     one gives slightly different sun angles depending on
-  !     the year.  The difference is usually down in the 4th
-  !     significant digit but can slowly creep up to the 3rd
-  !     significant digit after several decades to a century.
-  !
-  !     A refraction correction appropriate for the "US Standard
-  !     Atmosphere" is added, so that the returned sun position is
-  !     the APPARENT one.  The correction is below 0.1 deg for solar
-  !     elevations above 9 deg.  To remove it, comment out the code
-  !     block where variable REFRAC is set, and replace it with
-  !     REFRAC = 0.0.
-  !
-  !     In June, 2022 Kyle Shores ripped these two functions out of the files
-  !     solar_zenith_angle.F90 and earth_sun_distance.F90 because the code
-  !     was largely the same between the two files. In that process, the code
-  !     was refactored so that it would be easier to read.
-  !
-  ! --------------------------------------------------------------------
-  !   References:
-  !
-  !     Michalsky, J., 1988: The Astronomical Almanac's algorithm for
-  !        approximate solar position (1950-2050), Solar Energy 40,
-  !        227-235 (but the version of this program in the Appendix
-  !        contains errors and should not be used)
-  !    url: https://www.sciencedirect.com/science/article/pii/0038092X8890045X
-  !
-  !     The Astronomical Almanac, U.S. Gov't Printing Office, Washington,
-  !        D.C. (published every year): the formulas used from the 1995
-  !        version are as follows:
-  !        p. A12: approximation to sunrise/set times
-  !        p. B61: solar elevation ("altitude") and azimuth
-  !        p. B62: refraction correction
-  !        p. C24: mean longitude, mean anomaly, ecliptic longitude,
-  !                obliquity of ecliptic, right ascension, declination,
-  !                Earth-Sun distance, angular diameter of Sun
-  !        p. L2:  Greenwich mean sidereal time (ignoring T^2, T^3 terms)
-  ! --------------------------------------------------------------------
-  !   Authors:  Dr. Joe Michalsky (joe@asrc.albany.edu)
-  !             Dr. Lee Harrison (lee@asrc.albany.edu)
-  !             Atmospheric Sciences Research Center
-  !             State University of New York
-  !             Albany, New York
-  ! --------------------------------------------------------------------
-  !   Modified by:  Dr. Warren Wiscombe (wiscombe@climate.gsfc.nasa.gov)
-  !                 NASA Goddard Space Flight Center
-  !                 Code 913
-  !                 Greenbelt, MD 20771
-  ! --------------------------------------------------------------------
-  !   WARNING:  Do not use this routine outside the year range
-  !             1950-2050.  The approximations become increasingly
-  !             worse, and the calculation of Julian date becomes
-  !             more involved.
-  ! --------------------------------------------------------------------
-  !   Uses double precision for safety and because Julian dates can
-  !   have a large number of digits in their full form (but in practice
-  !   this version seems to work fine in single precision if you only
-  !   need about 3 significant digits and aren't doing precise climate
-  !   change or solar tracking work).
-  ! --------------------------------------------------------------------
-  !   Why does this routine require time input as Greenwich Mean Time
-  !   (GMT; also called Universal Time, UT) rather than "local time"?
-  !   Because "local time" (e.g. Eastern Standard Time) can be off by
-  !   up to half an hour from the actual local time (called "local mean
-  !   solar time").  For society's convenience, "local time" is held
-  !   constant across each of 24 time zones (each technically 15 longitude
-  !   degrees wide although some are distorted, again for societal
-  !   convenience).  Local mean solar time varies continuously around a
-  !   longitude belt;  it is not a step function with 24 steps.
-  !   Thus it is far simpler to calculate local mean solar time from GMT,
-  !   by adding 4 min for each degree of longitude the location is
-  !   east of the Greenwich meridian or subtracting 4 min for each degree
-  !   west of it.
-  ! --------------------------------------------------------------------
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  !   Input:
-  !      year     year (integer; range 1950 to 2050)
-  !      day      day of year at LAT-LONG location (integer; range 1-366)
-  !      hour     hour of DAY [GMT or UT] (REAL; range -13.0 to 36.0)
-  !               = (local hour) + (time zone number)
-  !                 + (Daylight Savings Time correction; -1 or 0)
-  !               where (local hour) range is 0 to 24,
-  !               (time zone number) range is -12 to +12, and
-  !               (Daylight Time correction) is -1 if on Daylight Time
-  !               (summer half of year), 0 otherwise;
-  !               Example: 8:30 am Eastern Daylight Time would be
-  !
-  !                           HOUR = 8.5 + 5 - 1 = 12.5
-  !   Output:
-  !      solar_distance   distance to sun [Astronomical Units, AU]
-  !               (1 AU = mean Earth-sun distance = 1.49597871E+11 m
-  !                in IAU 1976 System of Astronomical Constants)
   function earth_sun_distance( year, day, hour ) result( solar_distance )
+    ! Calculate the solar distance to the sun in AU
 
     !> arguments
-    integer(ik), intent(in) ::  year, day
-    real(dk), intent(in)    ::  hour
+    integer(ik), intent(in) ::  year, & ! integer; range 1950 to 2050
+                                day     ! day of year at LAT-LONG location integer; range 1-366
+    real(dk), intent(in)    ::  hour    ! hour of DAY [GMT or UT] (REAL; range -13.0 to 36.0) (local hour) + (time zone number) + (Daylight Savings Time correction; -1 or 0) where (local hour) range is 0 to 24, (time zone number) range is -12 to +12, and (Daylight Time correction) is -1 if on Daylight Time (summer half of year), 0 otherwise; Example: 8:30 am Eastern Daylight Time would be HOUR = 8.5 + 5 - 1 = 12.5
 
     !> local variables
-    real(dk) ::  solar_distance
+    real(dk) ::  solar_distance !  distance to sun [Astronomical Units, AU] (1 AU = mean Earth-sun distance = 1.49597871E+11 m in IAU 1976 System of Astronomical Constants)
     real(dk) :: mean_anomaly
     real(dk) :: time
 
@@ -190,35 +122,19 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !   Input:
-  !      year     year (integer; range 1950 to 2050)
-  !      day      day of year at LAT-LONG location (integer; range 1-366)
-  !      hour     hour of DAY [GMT or UT] (REAL; range -13.0 to 36.0)
-  !               = (local hour) + (time zone number)
-  !                 + (Daylight Savings Time correction; -1 or 0)
-  !               where (local hour) range is 0 to 24,
-  !               (time zone number) range is -12 to +12, and
-  !               (Daylight Time correction) is -1 if on Daylight Time
-  !               (summer half of year), 0 otherwise;
-  !               Example: 8:30 am Eastern Daylight Time would be
-  !
-  !                           HOUR = 8.5 + 5 - 1 = 12.5
-  !      LAT      latitude [degrees]
-  !               (REAL; range -90.0 to 90.0; north is positive)
-  !      LONG     longitude [degrees]
-  !               (REAL; range -180.0 to 180.0; east is positive)
-  !   Output:
-  !      solar_elevation       solar elevation angle [-90 to 90 degs];
-  !               solar zenith angle = 90 - EL
   function solar_zenith_angle( year, day, hour, lat, long ) &
       result( solar_elevation )
+      ! Calculates the solar zenith angle
 
-    !> arguments
-    integer(ik), intent(in) ::  year, day
-    real(dk), intent(in)    ::  hour, lat, long
+    ! arguments
+    integer(ik), intent(in) ::  year, & ! integer; range 1950 to 2050
+                                day     ! day of year at LAT-LONG location integer; range 1-366
+    real(dk), intent(in)    ::  hour, & !  hour of DAY [GMT or UT] (REAL; range -13.0 to 36.0) (local hour) + (time zone number) + (Daylight Savings Time correction; -1 or 0) where (local hour) range is 0 to 24, (time zone number) range is -12 to +12, and (Daylight Time correction) is -1 if on Daylight Time (summer half of year), 0 otherwise; Example: 8:30 am Eastern Daylight Time would be HOUR = 8.5 + 5 - 1 = 12.5
+                                lat,  & ! latitude [degrees], range -90.0 to 90.0; north is positive
+                                long    ! longitude [degrees], range -180.0 to 180.0; east is positive
 
-    !> local variables
-    real(dk)            ::  solar_elevation
+    ! local variables
+    real(dk)            ::  solar_elevation ! angle [-90 to 90 degs]; solar zenith angle = 90 - EL
     real(dk), parameter :: day2hrs = 24._dk
     real(dk), parameter :: ninety  = 90._dk
     real(dk), parameter :: three60 = 360._dk
@@ -261,42 +177,41 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !   TIME
-  !
-  !   The measurement of time has become a complicated topic.  A few
-  !   basic facts are:
-  !
-  !   (1) The Gregorian calendar was introduced in 1582 to replace
-  !   Julian calendar; in it, every year divisible by four is a leap
-  !   year just as in the Julian calendar except for centurial years
-  !   which must be exactly divisible by 400 to be leap years.  Thus
-  !   2000 is a leap year, but not 1900 or 2100.
-
-  !   (2) The Julian day begins at Greenwich noon whereas the calendar
-  !   day begins at the preceding midnight;  and Julian years begin on
-  !   "Jan 0" which is really Greenwich noon on Dec 31.  True Julian
-  !   dates are a continous count of day numbers beginning with JD 0 on
-  !   1 Jan 4713 B.C.  The term "Julian date" is widely misused and few
-  !   people understand it; it is best avoided unless you want to study
-  !   the Astronomical Almanac and learn to use it correctly.
-
-  !   (3) Universal Time (UT), the basis of civil timekeeping, is
-  !   defined by a formula relating UT to GMST (Greenwich mean sidereal
-  !   time).  UTC (Coordinated Universal Time) is the time scale
-  !   distributed by most broadcast time services.  UT, UTC, and other
-  !   related time measures are within a few sec of each other and are
-  !   frequently used interchangeably.
-
-  !   (4) Beginning in 1984, the "standard epoch" of the astronomical
-  !   coordinate system is Jan 1, 2000, 12 hr TDB (Julian date
-  !   2,451,545.0, denoted J2000.0).  The fact that this routine uses
-  !   1949 as a point of reference is merely for numerical convenience.
-  ! --------------------------------------------------------------------
 
   function calculate_time( year, day, hour ) result( time )
-    !> Arguments
-    integer(ik), intent(in) :: year, day
-    real(dk), intent(in)    :: hour
+    ! Calculate the time.
+    ! The measurement of time has become a complicated topic.  A few
+    ! basic facts are:
+    !
+    ! (1) The Gregorian calendar was introduced in 1582 to replace
+    ! Julian calendar; in it, every year divisible by four is a leap
+    ! year just as in the Julian calendar except for centurial years
+    ! which must be exactly divisible by 400 to be leap years.  Thus
+    ! 2000 is a leap year, but not 1900 or 2100.
+    !
+    ! (2) The Julian day begins at Greenwich noon whereas the calendar
+    ! day begins at the preceding midnight;  and Julian years begin on
+    ! "Jan 0" which is really Greenwich noon on Dec 31.  True Julian
+    ! dates are a continous count of day numbers beginning with JD 0 on
+    ! 1 Jan 4713 B.C.  The term "Julian date" is widely misused and few
+    ! people understand it; it is best avoided unless you want to study
+    ! the Astronomical Almanac and learn to use it correctly.
+    !
+    ! (3) Universal Time (UT), the basis of civil timekeeping, is
+    ! defined by a formula relating UT to GMST (Greenwich mean sidereal
+    ! time).  UTC (Coordinated Universal Time) is the time scale
+    ! distributed by most broadcast time services.  UT, UTC, and other
+    ! related time measures are within a few sec of each other and are
+    ! frequently used interchangeably.
+    !
+    ! (4) Beginning in 1984, the "standard epoch" of the astronomical
+    ! coordinate system is Jan 1, 2000, 12 hr TDB (Julian date
+    ! 2,451,545.0, denoted J2000.0).  The fact that this routine uses
+    ! 1949 as a point of reference is merely for numerical convenience.
+
+    integer(ik), intent(in) ::  year, & ! integer; range 1950 to 2050
+                                day     ! day of year at LAT-LONG location integer; range 1-366
+    real(dk), intent(in)    ::  hour    !  hour of DAY [GMT or UT] (REAL; range -13.0 to 36.0) (local hour) + (time zone number) + (Daylight Savings Time correction; -1 or 0) where (local hour) range is 0 to 24, (time zone number) range is -12 to +12, and (Daylight Time correction) is -1 if on Daylight Time (summer half of year), 0 otherwise; Example: 8:30 am Eastern Daylight Time would be HOUR = 8.5 + 5 - 1 = 12.5
 
     !> Local variables
     real(dk), parameter :: day_to_hours = 24._dk
@@ -330,9 +245,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !     mean_long    Mean longitude of Sun, corrected for aberration
-  !               (deg; normalized to 0-360)
   function calculate_mean_long( time ) result( mean_long )
+    ! Calculate the mean longitude of the sun at a given time
 
     !> Arguments
     real(dk), intent(in) :: time
@@ -341,7 +255,7 @@ contains
     real(dk), parameter :: THREE60 = 360._dk
     real(dk), parameter :: PI    = 2._dk*ASIN( 1._dk )
     real(dk), parameter :: degrees_to_radians   = PI/180._dk
-    real(dk) :: mean_long
+    real(dk) :: mean_long ! Mean longitude of Sun, corrected for aberration (deg; normalized to 0-360)
 
     !                    ** force mean longitude between 0 and 360 degs
     mean_long = 280.460_dk + 0.9856474_dk*time
@@ -352,8 +266,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !     mean_anomaly    Mean anomaly (radians, normalized to 0 to 2*pi)
   function calculate_mean_anomaly( time ) result( mean_anomaly )
+    ! Calculate the mean anamoly at a given time
 
     !> Arguments
     real(dk), intent(in) :: time
@@ -362,7 +276,7 @@ contains
     real(dk), parameter :: THREE60 = 360._dk
     real(dk), parameter :: PI    = 2._dk*ASIN( 1._dk )
     real(dk), parameter :: degrees_to_radians   = PI/180._dk
-    real(dk)  :: mean_anomaly
+    real(dk)  :: mean_anomaly ! radians, normalized to 0 to 2*pi
 
     !                    ** mean anomaly in radians between 0 and 2*pi
     mean_anomaly = 357.528_dk + 0.9856003_dk*time
@@ -375,13 +289,16 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !     DEC       Declination (radians)
   function calculate_declination( ecliptic_longitude, obliquity ) result (dec)
+    ! Calculate the declimation angle
+
     !> arguments
-    real(dk), intent(in)    ::  ecliptic_longitude, obliquity
+    real(dk), intent(in) :: ecliptic_longitude, & ! the ecliptic longitude
+                            obliquity             ! the obliquity
 
     !> local variables
-    real(dk) :: dec, eclong, oblqec
+    real(dk) :: dec, & ! declination (radians)
+                eclong, oblqec
     !                    ** declination
     dec  = asin( sin( obliquity )*sin( ecliptic_longitude ) )
 
@@ -389,13 +306,14 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !     OBLQEC    Obliquity of the ecliptic (radians)
   function calculate_obliquity( time ) result ( oblqec )
+    ! Calculate the obliquity
+
     !> arguments
     real(dk), intent(in) :: time
 
     !> local variables
-    real(dk) :: oblqec
+    real(dk) :: oblqec ! Obliquity of the ecliptic (radians)
     real(dk), parameter :: pi    = 2._dk*asin( 1._dk )
     real(dk), parameter :: degrees_to_radians   = pi/180._dk
 
@@ -405,9 +323,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !     ECLONG    Ecliptic longitude (radians)
   function calculate_ecliptic_longitude( mean_anomaly, mean_long ) &
       result( eclong )
+      ! Calculate the ecliptic longitude
 
     !> arguments
     real(dk), intent(in)    ::  mean_anomaly, mean_long
@@ -420,7 +338,7 @@ contains
     real(dk), parameter :: pi    = 2._dk*asin( 1._dk )
     real(dk), parameter :: degrees_to_radians   = pi/180._dk
 
-    real(dk) :: eclong
+    real(dk) :: eclong ! Ecliptic longitude (radians)
 
     eclong = mean_long + 1.915_dk*sin( mean_anomaly ) &
                     + 0.020_dk*sin( rtwo*mean_anomaly )
@@ -433,9 +351,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !     RA        Right ascension  (radians)
   function calculate_right_ascension( ecliptic_longitude, obliquity ) &
       result ( ra )
+      ! Calculate the right ascension
 
     !> Arguments
     real(dk), intent(in) :: ecliptic_longitude, obliquity
@@ -444,7 +362,8 @@ contains
     real(dk), parameter :: rzero   = 0._dk
     real(dk), parameter :: pi    = 2._dk*asin( 1._dk )
     real(dk), parameter :: twopi = 2._dk*pi
-    real(dk) :: den, num, ra
+    real(dk) :: den, num
+    real(dk) :: ra ! Right ascension  (radians)
 
     !                    ** right ascension
     num  = cos( obliquity )*sin( ecliptic_longitude )
@@ -461,9 +380,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !     HA        Hour angle (radians, -pi to pi)
   function calculate_hour_angle( time, hour, long, right_ascension ) &
       result( ha )
+      ! Calculate the hour angle
 
     !> arguments
     real(dk), intent(in)    ::  time, hour, long, right_ascension
@@ -476,7 +395,8 @@ contains
     real(dk), parameter :: d2r   = pi/180._dk
 
     ! lmst      Local mean sidereal time (radians)
-    real(dk) :: gmst, ha, lmst
+    real(dk) :: gmst, lmst
+    real(dk) :: ha ! Hour angle (radians, -pi to pi)
 
     !                    ** greenwich mean sidereal time in hours
     gmst = 6.697375_dk + 0.0657098242_dk*time + hour
@@ -507,9 +427,10 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   function is_leap( year ) result( leap )
+    ! Determines if a function is a `leap year <https://en.wikipedia.org/wiki/Leap_year#Algorithm>`_
 
     !> Arguments
-    integer(ik), intent(in) ::  year
+    integer(ik), intent(in) ::  year ! integer year
 
     !> Local variables
     logical(lk) :: leap

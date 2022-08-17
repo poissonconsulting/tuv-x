@@ -1,8 +1,9 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
+
 module tuvx_profile_from_config
-  ! profile specified in json config file
+  ! Profile specified in json config file. See 
+  ! :ref:`configuration-profiles-from-config` for more information.
 
   use musica_constants,                only : dk => musica_dk
   use tuvx_profile,                    only : profile_t
@@ -10,23 +11,22 @@ module tuvx_profile_from_config
   implicit none
 
   private
-  public :: from_config_t
+  public :: profile_from_config_t
 
-  type, extends(profile_t) :: from_config_t
+  type, extends(profile_t) :: profile_from_config_t
   contains
-  end type from_config_t
+  end type profile_from_config_t
 
-  !> Constructor
-  interface from_config_t
+  interface profile_from_config_t
     module procedure constructor
-  end interface from_config_t
+  end interface profile_from_config_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize grid
   function constructor( config, grid_warehouse ) result( this )
+    ! Initialize this profile
 
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
@@ -34,9 +34,9 @@ contains
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
 
-    type(from_config_t), pointer          :: this
-    type(config_t), intent(inout)         :: config
-    type(grid_warehouse_t), intent(inout) :: grid_warehouse
+    type(profile_from_config_t), pointer   :: this ! This f:type:`~tuvx_profile_from_config/profile_from_config_t`
+    type(config_t), intent(inout)         :: config ! A profile config
+    type(grid_warehouse_t), intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 
     ! Local variables
     character(len=*), parameter :: Iam = 'From config profile initialize: '

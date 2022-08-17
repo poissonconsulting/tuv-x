@@ -1,32 +1,32 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
+
 module tuvx_profile_from_csv_file
-  ! Profile from csv file type
+  ! Profile from csv file type. See
+  ! :ref:`configuration-profiles-from-csv` for more information.
 
   use musica_constants,                only : dk => musica_dk
   use tuvx_profile,                    only : profile_t
 
   implicit none
 
-  public :: from_csv_file_t
+  public :: profile_from_csv_file_t
 
-  type, extends(profile_t) :: from_csv_file_t
+  type, extends(profile_t) :: profile_from_csv_file_t
   contains
     final     :: finalize
-  end type from_csv_file_t
+  end type profile_from_csv_file_t
 
-  !> Constructor
-  interface from_csv_file_t
+  interface profile_from_csv_file_t
     module procedure constructor
-  end interface from_csv_file_t
+  end interface profile_from_csv_file_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize grid
   function constructor( config, grid_warehouse ) result( this )
+    ! Initialize profile
 
     use musica_assert,                 only : assert_msg, die_msg
     use musica_config,                 only : config_t
@@ -35,9 +35,9 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_interpolate
 
-    type(config_t), intent(inout)         :: config
-    type(from_csv_file_t), pointer        :: this
-    type(grid_warehouse_t), intent(inout) :: grid_warehouse
+    type(profile_from_csv_file_t), pointer        :: this ! This f:type:`~tuvx_profile_from_csv_file/profile_from_csv_file_t`
+    type(config_t), intent(inout)         :: config ! A profile config
+    type(grid_warehouse_t), intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 
     ! local variables
     character(len=*), parameter :: Iam = 'From_csv_file profile initialize: '
@@ -158,8 +158,10 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine finalize( this )
+    ! Cleanup the memory used by this object
 
-    type(from_csv_file_t), intent(inout) :: this
+    type(profile_from_csv_file_t), intent(inout) :: this ! This f:type:`~tuvx_profile_from_csv_file/profile_from_csv_file_t`
+
 
     if( allocated( this%edge_val_ ) ) then
       deallocate( this%edge_val_ )

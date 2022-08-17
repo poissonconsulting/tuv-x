@@ -1,8 +1,10 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> Solar zenith angle from time type
+  
 module tuvx_profile_solar_zenith_angle
+  ! Solar zenith angle from time.
+  ! Calculates the solar zenith angle using the 
+  ! :f:func:`tuvx_profile_utils/solar_zenith_angle`
 
   use musica_constants,   only : &
     dk => musica_dk, ik => musica_ik, lk => musica_lk
@@ -12,24 +14,23 @@ module tuvx_profile_solar_zenith_angle
 
   implicit none
 
-  public :: sza_from_time_t
+  public :: profile_solar_zenith_angle_t
 
-  type, extends(profile_t) :: sza_from_time_t
+  type, extends(profile_t) :: profile_solar_zenith_angle_t
   contains
     final     :: finalize
-  end type sza_from_time_t
+  end type profile_solar_zenith_angle_t
 
-  !> Constructor
-  interface sza_from_time_t
+  interface profile_solar_zenith_angle_t
     module procedure constructor
-  end interface sza_from_time_t
+  end interface profile_solar_zenith_angle_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize solar zenith angle profile from time
   function constructor( config, grid_warehouse ) result( this )
+    ! Initialize solar zenith angle profile from time
 
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
@@ -37,9 +38,9 @@ contains
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
 
-    type(sza_from_time_t), pointer :: this
-    type(config_t), intent(inout)         :: config
-    type(grid_warehouse_t), intent(inout) :: grid_warehouse
+    type(profile_solar_zenith_angle_t), pointer   :: this ! This f:type:`~tuvx_profile_solar_zenith_angle/profile_solar_zenith_angle_t`
+    type(config_t), intent(inout)         :: config ! A profile config
+    type(grid_warehouse_t), intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 
     ! Local variables
     real(dk), parameter :: NINETY  = 90._dk
@@ -107,8 +108,9 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine finalize( this )
+    ! Cleanup the memory used by this object
 
-    type(sza_from_time_t), intent(inout) :: this
+    type(profile_solar_zenith_angle_t), intent(inout) :: this ! This f:type:`~tuvx_profile_solar_zenith_angle/profile_solar_zenith_angle_t`
 
     if( allocated( this%edge_val_ ) ) then
       deallocate( this%edge_val_ )

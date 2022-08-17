@@ -1,8 +1,8 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
-!
-!> surface albedo profile type
+
 module tuvx_profile_surface_albedo
+  ! Surface albedo profile type
 
   use musica_constants,                only : dk => musica_dk
   use tuvx_profile,                    only : profile_t
@@ -10,23 +10,22 @@ module tuvx_profile_surface_albedo
   implicit none
 
   private
-  public :: surface_albedo_t
+  public :: profile_surface_albedo_t
 
-  type, extends(profile_t) :: surface_albedo_t
+  type, extends(profile_t) :: profile_surface_albedo_t
   contains
-  end type surface_albedo_t
+  end type profile_surface_albedo_t
 
-  !> Constructor
-  interface surface_albedo_t
+  interface profile_surface_albedo_t
     module procedure constructor
-  end interface surface_albedo_t
+  end interface profile_surface_albedo_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Initialize grid
   function constructor( config, grid_warehouse ) result( this )
+    ! Initialize grid
 
     use musica_assert,                 only : assert_msg, die_msg
     use musica_config,                 only : config_t
@@ -34,9 +33,9 @@ contains
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
 
-    type(config_t), intent(inout)         :: config
-    type(surface_albedo_t), pointer       :: this
-    type(grid_warehouse_t), intent(inout) :: grid_warehouse
+    type(profile_surface_albedo_t), pointer   :: this ! This f:type:`~tuvx_profile_surface_albedo/profile_surface_albedo_t`
+    type(config_t), intent(inout)         :: config ! A profile config
+    type(grid_warehouse_t), intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 
     ! Local variables
     real(dk)                    :: uniformValue

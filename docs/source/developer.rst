@@ -119,7 +119,7 @@ for this example, but should be included in an actual module):
 
      type, extends(cross_section_t) :: cross_section_foo_t
      contains
-       procedure :: calculate => run
+       procedure :: calculate
      end type cross_section_foo_t
 
      interface cross_section_foo_t
@@ -143,6 +143,18 @@ for this example, but should be included in an actual module):
        type(grid_warehouse_t),    intent(inout) :: grid_warehouse
        type(profile_warehouse_t), intent(inout) :: profile_warehouse
 
+       type(string_t) :: required_keys(1), optional_keys(1)
+
+       ! This block of code ensures that the configuration keys are valid for
+       ! your class. These can be modified to fit your needs. The first
+       ! argument to assert_msg() should be a unique integer code for this error.
+       required_keys(1) = "type"
+       optional_keys(1) = "name"
+       call assert_msg( 465568611,                                               &
+                        config%validate( required_keys, optional_keys ),         &
+                        "Bad configuration data format for "//                   &
+                        "foo cross section." )
+
        allocate( cross_section_foo_t :: this )
 
        ! You can call the base_constructor function to load data from NetCDF
@@ -155,7 +167,7 @@ for this example, but should be included in an actual module):
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-     function run( this, grid_warehouse, profile_warehouse, at_mid_point )       &
+     function calculate( this, grid_warehouse, profile_warehouse, at_mid_point ) &
          reuslt( cross_section )
 
        use musica_constants,              only : dk => musica_dk
@@ -173,7 +185,7 @@ for this example, but should be included in an actual module):
 
        ! Do your calculation here
 
-     end function run
+     end function calculate
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -190,13 +202,14 @@ You can alternatively initialize data members of the base class
 (``cross_section_parms(:)``) directly in this function or add data members to your
 subclass and initialize them here (see ``src/cross_sections/o3_tint.F90`` for an example).
 
-The run function overrides the base-class run function and will be called when a
-user calls the ``calculate()`` type-bound procedure on an instance of your new subclass.
+The ``calculate()`` function overrides the base-class ``calculate()`` function and will
+be called when a user calls the ``calculate()`` type-bound procedure on an instance of
+your new subclass.
 You can access grid and profile data from the “warehouse” objects passed in as function
 arguments, and any data in the base-class data members or in data members you’ve added
 to your subclass to perform your calculations.
 See the files in ``src/cross_sections/`` for examples of how to access this data in
-the ``run()`` function.
+the ``calculate()`` function.
 
 
 .. _cs-add-to-build-scripts:
@@ -288,7 +301,232 @@ See :ref:`developer-add-test` for more details.
 Dose Rates
 ----------
 
-<describe adding dose rates>
+Dose rates apply a spectral weight to the radiation field at each
+interface on the vertical grid.
+The configuration for a dose rate is:
+
+
+.. code-block:: JSON
+   :force:
+
+   {
+     "weights": { ... }
+   }
+
+The value of ``weights`` defines the spectral weight
+used to calculate the dose rate.
+The standard spectral weight configuration is described
+:ref:`here <configuration-spectral-weights>`.
+
+If a new dose rate requires an algorithm for calculating the
+spectral weight that TUV-x does not currently support, a new
+spectral weight algorithm can be introduced in four steps:
+
+- :ref:`dose-rate-create-subclass`
+- :ref:`dose-rate-add-to-build-scripts`
+- :ref:`dose-rate-add-to-factory`
+- :ref:`dose-rate-create-unit-test`
+
+
+.. _dose-rate-create-subclass:
+
+Create subclass module
+^^^^^^^^^^^^^^^^^^^^^^
+
+First, choose a unique name for your spectral weight algorithm.
+Ideally, this name will describe the algorithm, rather than
+the specific dose rate you are applying it to.
+
+**Pay special attention to the naming of files, modules, types, and
+functions in these instructions.**
+
+Create a file to hold your new subclass module in ``src/spectral_weights/``
+named ``foo.F90``.
+The general layout of the module will be (comments have been omitted
+in this example, but should be included in an actual module):
+
+.. code-block:: fortran
+
+   ! Copyright (C) 2020 National Center for Atmospheric Research
+   ! SPDX-License-Identifier: Apache-2.0
+   !
+   module tuvx_spectral_weight_foo
+
+     use tuvx_spectral_weight,            only : spectral_weight_t
+
+     implicit none
+
+     private
+     public :: spectral_weight_foo_t
+
+     type, extends(spectral_weight_t) :: spectral_weight_foo_t
+     contains
+       procedure :: calculate
+     end type spectral_weight_t
+
+     interface spectral_weight_t
+       module procedure :: constructor
+     end interface spectral_weight_t
+
+   contains
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+     function constructor( config, grid_warehouse, profile_warehouse )           &
+         result ( this )
+
+       use musica_assert,                 only : assert_msg
+       use musica_config,                 only : config_t
+       use musica_string,                 only : string_t
+       use tuvx_grid_warehouse,           only : grid_warehouse_t
+       use tuvx_profile_warehouse,        only : profile_warehouse_t
+
+       class(spectral_weight_t),  pointer       :: this
+       type(config_t),            intent(inout) :: config
+       type(grid_warehouse_t),    intent(inout) :: grid_warehouse
+       type(profile_warehouse_t), intent(inout) :: profile_warehouse
+
+       type(string_t) :: required_keys(1), optional_keys(1)
+
+       ! This block of code ensures that the configuration keys are valid for
+       ! your class. These can be modified to fit your needs. The first
+       ! argument to assert_msg() should be a unique integer code for this error.
+       required_keys(1) = "type"
+       optional_keys(1) = "name"
+       call assert_msg( 407417332,                                               &
+                        config%validate( required_keys, optional_keys ),         &
+                        "Bad configuration data format for "//                   &
+                        "foo spectral weight." )
+
+       allocate( spectral_weight_foo_t :: this )
+
+       ! You can call the base_constructor function to load data from NetCDF
+       ! files into the `spectral_weight_parms(:)` data member according to the
+       ! standard base class logic. Alternatively, you can perform custom
+       ! initialization of the subclass object here.
+       call base_constructor( this, config, grid_warehouse, profile_warehouse )
+
+     end function constructor
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+     subroutine calculate( this, grid_warehouse, profile_warehouse )             &
+         result( spectral_weight )
+
+       use musica_string,                 only : string_t
+       use tuvx_grid_warehouse,           only : grid_warehouse_t
+       use tuvx_profile_warehouse,        only : profile_warehouse_t
+
+       class(spectral_weight_foo_t),  intent(in)    :: this
+       type(grid_warehouse_t),        intent(inout) :: grid_warehouse
+       type(profile_warehouse_t),     intent(inout) :: profile_warehouse
+       real(kind=dk), allocatable                   :: spectral_weight(:)
+
+       ! do your calculations here
+
+     end subroutine calculate
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+   end module tuvx_spectral_weight_foo
+
+
+The constructor function is reponsible for initializing new instances of your
+spectral weight subclass.
+First, you allocate the pointer to be returned as your new type
+(``spectral_weight_foo_t`` in this example).
+Then you initialize its data members.
+If you just want to use the default initialization of the base class, you can
+call the ``base_constructor()`` function as shown above.
+You can alternatively initialize data members of the base class (``spectral_weight_parms(:)``)
+directly in this function or add data members to your subclass and initialize them
+here.
+
+The ``calculate()`` function overrides the base-class ``calculate()`` function and will be
+called when a user calls the ``calculate()`` type-bound procedure on an instance
+of your new subclass.
+You can access grid and profile data from the “warehouse” objects passed in as
+function arguments, and any data in the base-class data members or in data members
+you’ve added to your subclass to perform your calculations.
+See the files in ``src/spectral_weights/`` for examples of how to access this data
+in the ``calculate()`` function.
+
+
+.. _dose-rate-add-to-build-scripts:
+
+Add subclass module to build scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To include your new class in the build, edit the
+``src/spectral_weights/CMakeLists.txt`` file and add your file name to the list
+saved to ``SRC``. Files are listed in alphabetical order.
+
+.. code-block:: cmake
+
+   ################################################################################
+   # Spectral weight source
+
+   set(SRC notch_filter.F90
+           gaussian_filter.F90
+           eppley.F90
+           par.F90
+           exp_decay.F90
+           foo.F90
+           scup_mice.F90
+           standard_human_erythema.F90
+           UV_Index.F90
+           phytoplankton_boucher.F90
+           plant_damage.F90
+           plant_damage_flint_caldwell.F90
+           plant_damage_flint_caldwell_ext.F90
+           )
+
+   list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+   set(SPECTRAL_WGHT_SRC ${SRC} PARENT_SCOPE)
+
+   ################################################################################
+
+
+.. _dose-rate-add-to-factory:
+
+Add subclass to factory
+^^^^^^^^^^^^^^^^^^^^^^^
+
+In order to use your new subclass, you will need to add it to the
+``tuvx_spectral_weight_factory`` module in ``src/spectral_weight_factory.F90``.
+First use-associate your new class at the module level:
+
+.. code-block:: fortran
+
+   use tuvx_spectral_weight_foo,          only : spectral_weight_foo_t
+
+
+Then, inside the ``spectral_weight_builder()`` function, add these lines to the
+``select case`` block:
+
+.. code-block:: fortran
+
+   case( 'foo' )
+     new_spectral_weight => spectral_weight_foo_t( config, grid_warehouse,       &
+                                                   profile_warehouse )
+
+
+Now, when you add a spectral weight of type ``foo`` to the configuration data,
+an instance of your new subclass will be created.
+
+
+
+.. _dose-rate-create-unit-test:
+
+Create unit test
+^^^^^^^^^^^^^^^^
+
+The last step to adding a spectral weight is to create a unit test.
+This will ensure that your calculations are doing what you intended.
+It will also serve as an example for how users can configure and use
+your new subclass.
+
+See :ref:`developer-add-test` for more details.
 
 Quantum Yields
 --------------
@@ -384,7 +622,7 @@ for this example, but should be included in an actual module):
 
      type, extends(quantum_yield_t) :: quantum_yield_foo_t
      contains
-       procedure :: calculate => run
+       procedure :: calculate
      end type quantum_yield_foo_t
 
      interface quantum_yield_foo_t
@@ -408,6 +646,18 @@ for this example, but should be included in an actual module):
        type(grid_warehouse_t),    intent(inout) :: grid_warehouse
        type(profile_warehouse_t), intent(inout) :: profile_warehouse
 
+       type(string_t) :: required_keys(1), optional_keys(1)
+
+       ! This block of code ensures that the configuration keys are valid for
+       ! your class. These can be modified to fit your needs. The first
+       ! argument to assert_msg() should be a unique integer code for this error.
+       required_keys(1) = "type"
+       optional_keys(1) = "name"
+       call assert_msg( 409635586,                                               &
+                        config%validate( required_keys, optional_keys ),         &
+                        "Bad configuration data format for "//                   &
+                        "foo quantum yield." )
+
        allocate( quantum_yield_foo_t :: this )
 
        ! You can call the base_constructor function to load data from NetCDF
@@ -420,7 +670,7 @@ for this example, but should be included in an actual module):
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-     function run( this, grid_warehouse, profile_warehouse )                     &
+     function calculate( this, grid_warehouse, profile_warehouse )               &
          result( quantum_yield )
 
        use musica_constants,              only : dk => musica_dk
@@ -434,7 +684,7 @@ for this example, but should be included in an actual module):
 
        ! Do your calculations here
 
-     end function run
+     end function calculate
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -451,13 +701,14 @@ You can alternatively initialize data members of the base class
 to your subclass and initialize them here (see
 ``src/quantum_yields/tint.F90`` for an example).
 
-The run function overrides the base-class run function and will be called when
-a user calls the ``calculate()`` type-bound procedure on an instance of your
-new subclass. You can access grid and profile data from the "warehouse" objects
+The ``calculate()`` function overrides the base-class ``calculate()`` function
+and will be called when a user calls the ``calculate()`` type-bound procedure
+on an instance of your new subclass.
+You can access grid and profile data from the "warehouse" objects
 passed in as function arguments, and any data in the base-class data members
 or in data members you've added to your subclass to perform your calculations.
 See the files in ``src/quantum_yields/`` for examples of how to access this
-data in the ``run()`` function.
+data in the ``calculate()`` function.
 
 .. _qy-add-to-build-scripts:
 

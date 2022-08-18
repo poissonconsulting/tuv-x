@@ -693,6 +693,41 @@ of the spectral weight at each wavelength.
 TUV-x will perform interpolation of the spectral weight  data
 to the native wavelength grid.
 
+The ``type`` and ``netcdf files`` keys are required. There are
+also two optional key-value pairs: ``lower extrapolation`` and
+``upper extrapolation``.
+These both have the same structure.
+An example of the ``lower extrapolation`` follows.
+
+.. code-block:: JSON
+
+   "lower extrapolation": {
+     "type": "boundary"
+   }
+
+
+The value of ``type`` can be ``boundary`` or ``constant``.
+If ``boundary`` is selected, the value at the lower (or upper)
+boundary of the input data will be extended to the
+lower (or upper) extent of the TUV-x wavelength grid.
+If ``constant`` is selected, a key-value pair ``value``
+must also be present:
+
+.. code-block:: JSON
+
+   "lower extrapolation": {
+     "type": "constant",
+     "value": 12.2
+   }
+
+
+This value will be used between the lower (or upper)
+boundaries of the input data and TUV-x wavelength grids.
+If no lower or upper extrapolation is specified, the
+values between the input data and TUV-x wavelength grids
+will be 0.
+
+
 A number of custom spectral weight types have been developed
 when more complex algorithms are needed to calculate
 spectral weights.

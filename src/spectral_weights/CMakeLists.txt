@@ -1,5 +1,5 @@
 ################################################################################
-# Quantum yield source
+# Spectral weight source
 
 set(SRC notch_filter.F90
         gaussian_filter.F90

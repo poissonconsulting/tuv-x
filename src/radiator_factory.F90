@@ -17,7 +17,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function radiator_builder( config, gridWareHouse ) result( new_radiator )
+  function radiator_builder( config, grid_warehouse ) result( new_radiator )
     ! Builder of :f:type:`~tuvx_radiator/radiator_t` objects
 
     use musica_assert,                 only : die_msg
@@ -26,7 +26,7 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
 
     type(config_t),         intent(inout) :: config        ! Radiator configuration data
-    type(grid_warehouse_t), intent(inout) :: gridWareHouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(grid_warehouse_t), intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     class(radiator_t),      pointer       :: new_radiator  ! New :f:type:`~tuvx_radiator/radiator_t` object
 
     ! Local variables
@@ -38,9 +38,9 @@ contains
 
     select case( radiator_type%to_char() )
       case( 'base' )
-        new_radiator => radiator_t( config, gridWareHouse )
+        new_radiator => radiator_t( config, grid_warehouse )
       case( 'aerosol' )
-        new_radiator => radiator_aerosol_t( config, gridWareHouse )
+        new_radiator => radiator_aerosol_t( config, grid_warehouse )
       case default
         call die_msg( 460768245, "Invalid radiator type: '"//                 &
                                  radiator_type%to_char()//"'" )

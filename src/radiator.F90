@@ -15,9 +15,9 @@ module tuvx_radiator
   type radiator_state_t
     ! Optical properties for a radiator
 
-    real(kind=dk), allocatable :: layer_OD_(:,:) ! layer optical depth
-    real(kind=dk), allocatable :: layer_SSA_(:,:) ! layer single scattering albedo
-    real(kind=dk), allocatable :: layer_G_(:,:) ! layer asymmetry factor
+    real(kind=dk), allocatable :: layer_OD_(:,:) ! layer optical depth (vertical layer, wavelength bin)
+    real(kind=dk), allocatable :: layer_SSA_(:,:) ! layer single scattering albedo (vertical layer, wavelength bin)
+    real(kind=dk), allocatable :: layer_G_(:,:) ! layer asymmetry factor (vertical layer, wavelength bin)
   contains
     final :: finalize
   end type radiator_state_t

@@ -133,7 +133,9 @@ for this example, but should be included in an actual module):
      function constructor( config, grid_warehouse, profile_warehouse )           &
          result( this )
 
+       use musica_assert,                 only : assert_msg
        use musica_config,                 only : config_t
+       use musica_string,                 only : string_t
        use tuvx_cross_section,            only : base_constructor
        use tuvx_grid_warehouse,           only : grid_warehouse_t
        use tuvx_profile_warehouse,        only : profile_warehouse_t
@@ -181,7 +183,7 @@ for this example, but should be included in an actual module):
        ! at mid-points on the vertical grid. If it is false or omitted, cross-
        ! section data are calculated at interfaces on the vertical grid.
        logical, optional,          intent(in)    :: at_mid_point
-       real(kind=dk), allocatable                :: cross_section
+       real(kind=dk), allocatable                :: cross_section(:,:)
 
        ! Do your calculation here
 
@@ -380,6 +382,7 @@ in this example, but should be included in an actual module):
        use musica_string,                 only : string_t
        use tuvx_grid_warehouse,           only : grid_warehouse_t
        use tuvx_profile_warehouse,        only : profile_warehouse_t
+       use tuvx_spectral_weight,          only : base_constructor
 
        class(spectral_weight_t),  pointer       :: this
        type(config_t),            intent(inout) :: config
@@ -413,7 +416,7 @@ in this example, but should be included in an actual module):
      subroutine calculate( this, grid_warehouse, profile_warehouse )             &
          result( spectral_weight )
 
-       use musica_string,                 only : string_t
+       use musica_constants,              only : dk => musica_dk
        use tuvx_grid_warehouse,           only : grid_warehouse_t
        use tuvx_profile_warehouse,        only : profile_warehouse_t
 
@@ -636,7 +639,9 @@ for this example, but should be included in an actual module):
      function constructor( config, grid_warehouse, profile_warehouse )           &
          result( this )
 
+       use musica_assert,                 only : assert_msg
        use musica_config,                 only : config_t
+       use musica_string,                 only : string_t
        use tuvx_grid_warehouse,           only : grid_warehouse_t
        use tuvx_profile_warehouse,        only : profile_warehouse_t
        use tuvx_quantum_yield,            only : base_constructor
@@ -783,7 +788,222 @@ See :ref:`developer-add-test` for more details.
 Radiators
 ---------
 
-<describe adding radiators>
+Radiators are atmospheric constituents that affect the calculation of the
+radiative field.
+The configuration for a standard radiator is:
+
+.. code-block:: JSON
+
+   {
+     "name": "foo",
+     "type": "base",
+     "cross section": "foo",
+     "vertical profile": "foo",
+     "vertical profile units": "molecule cm-3"
+   }
+
+A description of the components of the radiator configuration are
+provided :ref:`here <configuration-radiators>`.
+
+Most radiators can use the standard radiator configuration.
+If a new algorithm for calculating the optical properties of
+radiators is required, a new radiator subclass can be introduced
+in four steps:
+
+- :ref:`radiator-create-subclass`
+- :ref:`radiator-add-to-build-scripts`
+- :ref:`radiator-add-to-factory`
+- :ref:`radiator-create-unit-test`
+
+.. _radiator-create-subclass:
+
+Create subclass module
+^^^^^^^^^^^^^^^^^^^^^^
+
+First, choose a unique name for your radiator algorithm.
+Ideally, this name will describe the algorithm, rather than the specific
+atmospheric constituent you are applying it to.
+For this example, we will use the name ``foo`` for our radiator algorithm.
+
+**Pay special attention to naming of files, modules, types, and functions
+in these instructions.**
+
+Create a file to hold your new subclass module in ``src/radiators/`` named
+``foo.F90``.
+The general layout of the module will be (comments have been omitted for this
+example, but should be included in an actual module):
+
+.. code-block:: fortran
+
+   ! Copyright (C) 2020 National Center for Atmospheric Research
+   ! SPDX-License-Identifier: Apache-2.0
+   !
+   module tuvx_radiator_foo
+
+     use tuvx_radiator,                   only : radiator_t
+
+     implicit none
+
+     private
+     public :: radiator_foo_t
+
+     type, extends(radiator_t) :: radiator_foo_t
+     contains
+       procedure :: update_state
+     end type radiator_foo_t
+
+     interface radiator_foo_t
+       module procedure :: constructor
+     end interface radiator_foo_t
+
+   contains
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+     function constructor( config, grid_warehouse ) result( this )
+
+       use musica_assert,                 only : assert_msg
+       use musica_config,                 only : config_t
+       use musica_string,                 only : string_t
+       use tuvx_grid_warehouse,           only : grid_warehouse_t
+       use tuvx_radiator,                 only : base_constructor
+
+       class(radiator_t),      pointer       :: this
+       type(config_t),         intent(inout) :: config
+       type(grid_warehouse_t), intent(inout) :: grid_warehouse
+
+       type(string_t) :: required_keys(1), optional_keys(1)
+
+       ! This block of code ensures that the configuration keys are valid for
+       ! your class. These can be modified to fit your needs. The first
+       ! argument to assert_msg() should be a unique integer code for this error.
+       required_keys(1) = "type"
+       optional_keys(1) = "name"
+       call assert_msg( 302604745,                                               &
+                        config%validate( required_keys, optional_keys ),         &
+                        "Bad configuration data format for "//                   &
+                        "foo radiator." )
+
+       allocate( radiator_foo_t :: this )
+
+       ! You can call the base_constructor function to load data data members
+       ! with configuration data available from the standard radiator class.
+       ! Alternatively, you can perform custom initialization of the subclass
+       ! object here.
+       call base_constructor( this, config, grid_warehouse )
+
+     end function constructor
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+     subroutine update_state( this, grid_warehouse, profile_warehouse,           &
+         cross_section_warehouse )
+
+       use tuvx_cross_section_warehouse,  only : cross_section_warehouse_t
+       use tuvx_grid_warehouse,           only : grid_warehouse_t
+       use tuvx_profile_warehouse,        only : profile_warehouse_t
+
+       class(radiator_foo_t),           intent(inout) :: this
+       type(grid_warehouse_t),          intent(inout) :: grid_warehouse
+       type(profile_warehouse_t),       intent(inout) :: profile_warehouse
+       type(cross_section_warehouse_t), intent(inout) :: cross_section_warehouse
+
+       ! Calculate optical properties (layer optical depth, layer single
+       ! scattering albedo, and layer asymmetry factor) and load them into
+       ! this%state_
+
+     end subroutine update_state
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+   end module tuvx_radiator_foo
+
+
+The ``constructor()`` function is responsible for initializing new instances of
+your radiator subclass.
+First, you allocate the pointer to be returned as your new type
+(``radiator_foo_t`` in this example).
+Then, you initialize its data members.
+If you want to use the default initialization of the base class, you can
+call the ``base_constructor()`` function as shown above.
+You can alternatively initialize data members of the base class directly in
+this function or add data members to your subclass and initialize them here.
+
+The ``update_state()`` function overrides the base-class ``update_state()``
+function and will be called when a user calls the ``update_state()`` type-bound
+procedure on an instance of your new subclass.
+You can access grid, profile, and cross section data from the "warehouse"
+objects passed in as function arguments, and any data in the base-class data
+members or in data members you've added to your subclass to perform your
+calculations.
+See the files in ``src/radiators/`` for examples of how to access this data
+in the ``update_state()`` function.
+
+
+
+.. _radiator-add-to-build-scripts:
+
+Add subclass module to build scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To include your new class in the build, edit the
+``src/radiators/CMakeLists.txt`` file and add your file name to the
+list save to ``SRC``. Files are listed in alphabetical order.
+
+.. code-block:: cmake
+
+   ################################################################################
+   # Radiator transfer source
+
+   set(SRC aerosol.F90
+           foo.F90
+           )
+
+   list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+   set(RADIATOR_SRC ${SRC} PARENT_SCOPE)
+
+   ################################################################################
+
+
+.. _radiator-add-to-factory:
+
+Add subclass to factory
+^^^^^^^^^^^^^^^^^^^^^^^
+
+In order to use your new subclass, you will need to add it to the
+``tuvx_radiator_factory`` module in ``src/radiator_factory.F90``.
+First, use-associate your new class at the module level:
+
+.. code-block:: fortran
+
+   use tuvx_radiator_foo,                 only : radiator_foo_t
+
+
+Then, inside the ``radiator_builder()`` function, add these lines to the
+``select case`` block:
+
+.. code-block:: fortran
+
+   case( 'foo' )
+     new_radiator => radiator_foo_t( config, grid_warehouse )
+
+
+Now, when you add a radiator of type ``foo`` to the configuration data, an instance
+of your new subclass will be created.
+
+
+
+.. _radiator-create-unit-test:
+
+Create unit test
+^^^^^^^^^^^^^^^^
+
+The last step to adding a radiator is to create a unit test.
+This will ensure that your calculations are doing what you intended.
+It will also serve as an example for how users can configure and use your new subclass.
+
+See :ref:`developer-add-test` for more details.
+
 
 .. _developer-add-test:
 
@@ -814,7 +1034,7 @@ An example of a  unit test for the fictitous ``foo`` module is shown below.
      subroutine test_foo_t( )
        ! Tests the foo_t type
 
-       use musica_assert,              only : assert_msg
+       use musica_assert,              only : assert
        use tuvx_foo,                   only : foo_t
 
        type(foo_t) :: my_foo

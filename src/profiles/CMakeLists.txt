@@ -10,7 +10,6 @@ set(SRC air.F90
         o3.F90
         profile_utils.F90
         solar_zenith_angle.F90
-        surface_albedo.F90
         )
 
 list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")

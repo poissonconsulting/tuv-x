@@ -66,21 +66,32 @@ contains
     call config%get( 'name', this%handle_, Iam, default = 'none' )
     call config%get( 'units', this%units_, Iam )
 
+    call config%get( "grid", grid_config, Iam, found = found )
+    call assert_msg( 376823788, found,                                      &
+                      "Grid missing from profile configuration" )
+    call grid_config%get( "name", grid_name, Iam )
+    call grid_config%get( "units", grid_units, Iam )
+
+    theGrid => grid_warehouse%get_grid( grid_name, grid_units )
+
     ! Get values from config file
     call config%get( "values", this%edge_val_, Iam, found = found )
+
     if( .not. found ) then
       call config%get( "uniform value", uniformValue, Iam, found = found )
       call assert_msg( 715232062, found,                                      &
                       "Neither 'values' or 'Uniform value' keyword specified" )
 
-      call config%get( "grid", grid_config, Iam, found = found )
-      call assert_msg( 376823788, found,                                      &
-                       "Grid missing from profile configuration" )
-      call grid_config%get( "name", grid_name, Iam )
-      call grid_config%get( "units", grid_units, Iam )
-
-      theGrid => grid_warehouse%get_grid( grid_name, grid_units )
       this%edge_val_ = (/ ( uniformValue, ndx = 1, theGrid%ncells_ + 1 ) /)
+    else
+      ! Grid only required if we are using a constant value, but we should
+      ! still perform a check if we are reading "values" from the config file
+      ! to make sure that the "values" are the same length as the grid.
+      ! each profile has to provide values at every element of 
+      ! whatever grid they're on (height, wavelength, etc.)
+      call assert_msg( 778098283,                                             &
+        size( this%edge_val_, dim = 1 ) == size( theGrid%edge_, dim = 1 ),    &
+        "The length of `values` must match the length of the specified grid")
     endif
 
     this%ncells_ = size( this%edge_val_ ) - 1
@@ -91,7 +102,8 @@ contains
     this%delta_val_ = ( this%edge_val_( 2 : this%ncells_ + 1 ) -              &
                         this%edge_val_( 1 : this%ncells_ ) )
 
-    deallocate( theGrid )
+
+      deallocate( theGrid )
 
   end function constructor
 

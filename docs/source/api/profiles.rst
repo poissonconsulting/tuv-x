@@ -78,7 +78,3 @@ Utility functions for Profiles
 Solar Zenith Angle
 ^^^^^^^^^^^^^^^^^^
 .. f:automodule:: tuvx_profile_solar_zenith_angle
-
-Surface Albedo
-^^^^^^^^^^^^^^
-.. f:automodule:: tuvx_profile_surface_albedo

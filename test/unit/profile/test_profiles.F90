@@ -11,16 +11,9 @@ program test_Profile
 
   implicit none
 
-  !> Command-line options
-  character(len=256) :: argument
   type(string_t)     :: configFileSpec
-  !> Command-line argument index
-  integer :: i_arg
 
-  !> Get the model configuration file and options from the command line
-  argument = 'test/data/profile.test.config.json'
-
-  configFileSpec = argument
+  configFileSpec = 'test/data/profile.test.config.json'
   call test_Profile_t( configFileSpec )
 
 contains
@@ -49,11 +42,7 @@ contains
     class(grid_t), pointer   :: zGrid, lambdaGrid
     type(Profile_warehouse_t), pointer :: theProfileWarehouse
     class(profile_t), pointer      :: aProfile
-    class(profile_t), pointer      :: AirProfile, TemperatureProfile
-    class(profile_t), pointer      :: O3Profile
     type(string_t)                  :: Handle
-
-    write(*,*) Iam // 'entering'
 
     call prepare_diagnostic_output( )
 
@@ -78,20 +67,50 @@ contains
         Profile_warehouse_t( child_config, theGridWareHouse )
 
     !> Get copy of the Air Profile
-    AirProfile => theProfileWarehouse%get_profile( "air", "molecule cm-3" )
-    call assert( 412238771, all( AirProfile%delta_val_ < 0._dk ) )
+        aProfile => theProfileWarehouse%get_profile( "air", "molecule cm-3" )
+    call assert( 422238771, all( aProfile%delta_val_ < 0._dk ) )
+
+    deallocate( aProfile )
 
     !> Get copy of the temperature Profile
-    TemperatureProfile => theProfileWarehouse%get_profile( "temperature", "K" )
-    call assert( 412238772, all( TemperatureProfile%edge_val_ < 400._dk ) )
-    call assert( 412238772, all( TemperatureProfile%edge_val_ > 150._dk ) )
-    call assert( 412238773, all( abs(TemperatureProfile%delta_val_) < 20._dk ) )
+    aProfile => theProfileWarehouse%get_profile( "temperature", "K" )
+    call assert( 412238778, all( aProfile%edge_val_ < 400._dk ) )
+    call assert( 412238772, all( aProfile%edge_val_ > 150._dk ) )
+    call assert( 412238773, all( abs(aProfile%delta_val_) < 20._dk ) )
+
+    deallocate( aProfile )
 
     !> Get copy of the Unit test
-    aProfile => theProfileWarehouse%get_profile( "UnitTest", "foos" )
-    write(*,*) Iam // 'UnitTest'
-    write(*,'(1p10g15.7)') aProfile%mid_val_
-    call assert( 412238770, all( aProfile%mid_val_ .eq. 7.7e11_dk ) )
+    aProfile => theProfileWarehouse%get_profile( "FromConfigValues", "bars" )
+    call assert( 412238770, aProfile%mid_val_(1) .eq. 22.35_dk )
+    call assert( 412238771, aProfile%mid_val_(2) .eq. 67.8_dk )
+
+    deallocate( aProfile )
+
+    aProfile => theProfileWarehouse%get_profile( "FromConfigUniformValue", "bars" )
+    call assert( 412238780, all( aProfile%mid_val_ .eq. 12.3_dk ) )
+
+    deallocate( aProfile )
+
+    aProfile => theProfileWarehouse%get_profile( "Earth-Sun distance", "AU" )
+    
+    call assert( 412238374,                                                   &
+      almost_equal(aProfile%mid_val_(1), 0.9962_dk, 0.01_dk ))
+    call assert( 412238375,                                                   &
+      almost_equal(aProfile%edge_val_(1), 0.996229_dk, 0.01_dk ))
+    call assert( 412238376,                                                   &
+      almost_equal(aProfile%edge_val_(2), 0.996252_dk, 0.01_dk ))
+
+    deallocate( aProfile )
+
+    aProfile => theProfileWarehouse%get_profile( "solar zenith angle",        &
+      "degrees" )
+    call assert( 412239371,                                                   &
+      almost_equal(aProfile%mid_val_(1), 20.127_dk, 0.01_dk ))
+    call assert( 412239372,                                                   &
+      almost_equal(aProfile%edge_val_(1), 21.523_dk, 0.01_dk ))
+    call assert( 412239373,                                                   &
+      almost_equal(aProfile%edge_val_(2), 18.732_dk, 0.01_dk ))
 
     deallocate( aProfile )
 
@@ -101,34 +120,17 @@ contains
     deallocate( aProfile )
 
     !> Get copy of ozone profile
-    O3Profile => theProfileWarehouse%get_profile( "O3", "molecule cm-3" )
+    aProfile => theProfileWarehouse%get_profile( "O3", "molecule cm-3" )
 
-    write(*,*) Iam // 'Handle = ',O3Profile%handle_
-    write(*,*) ' '
-    write(*,*) ' '
-    write(*,*) Iam // 'O3 on model z grid'
-    write(*,'(1p10g15.7)') O3Profile%edge_val_
-
-    deallocate( O3Profile )
+    deallocate( aProfile )
 
     deallocate( zGrid )
     deallocate( lambdaGrid )
-    deallocate( AirProfile )
-    deallocate( TemperatureProfile )
     deallocate( theGridWarehouse )
     deallocate( theProfileWarehouse )
-    write(*,*) Iam // 'leaving'
 
   end subroutine test_Profile_t
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  !> Fail run and print usage info
-  subroutine fail_run( )
-
-    write(*,*) "Usage: ./Profile_test configuration_file.json"
-    stop 3
-
-  end subroutine fail_run
 
 end program test_Profile

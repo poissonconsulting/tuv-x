@@ -28,7 +28,6 @@ contains
     use tuvx_profile,                    only : profile_t
     use tuvx_grid_warehouse,             only : grid_warehouse_t
     use tuvx_profile_from_config,        only : profile_from_config_t
-    use tuvx_profile_surface_albedo,     only : profile_surface_albedo_t
     use tuvx_profile_extraterrestrial_flux, only : profile_extraterrestrial_flux_t
 
     type(config_t), intent(inout)         :: config ! Grid configuration data
@@ -50,8 +49,6 @@ contains
         new_profile_t => profile_extraterrestrial_flux_t( config, grid_warehouse )
       case( 'from config file' )
         new_profile_t => profile_from_config_t( config, grid_warehouse )
-      case( 'surface albedo' )
-        new_profile_t => profile_surface_albedo_t( config, grid_warehouse )
       case( 'air' )
         new_profile_t => profile_air_t( config, grid_warehouse )
       case( 'O2' )

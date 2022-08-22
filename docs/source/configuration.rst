@@ -238,6 +238,18 @@ the grid-point value and the second column being the value of the
 profile at that grid-point.
 Any number of header lines can be included at the top of the file
 by prefixing them with any of ``#!$%*``.
+
+=========================  ==============
+keys                       Required/Optional
+=========================  ==============
+``type``                   required
+``units``                  required 
+``file path``              required
+``name``                   optional
+``interpolator``           optional
+``scale height``           optional
+=========================  ==============
+
 The format for the profile is:
 
 .. code-block:: JSON
@@ -279,8 +291,26 @@ From Config File
 ^^^^^^^^^^^^^^^^
 
 This profile type extracts profile data directly from the configuration
-data file. There are two options for this profile format.
-The first specifies a single uniform value at every grid point:
+data file. There are two options for this profile format. Each option will 
+require that ``type`` and ``units`` be present in the configuration file. 
+
+The ``grid`` option is required. In the case of ``values``, the grid ensures
+that the number of elements in ``values`` matches the length of the grid.
+When using the ``uniform value`` option, the ``edge_val``, or the edges of the 
+cells, are determined from the grid.
+
+=========================  ==============
+keys                       Required/Optional
+=========================  ==============
+``type``                   required
+``units``                  required 
+``grid``                   required
+``name``                   optional
+``values``                 optional
+``uniform value``          optional
+=========================  ==============
+
+The first option specifies a single uniform value at every grid point:
 
 .. code-block:: JSON
 
@@ -295,7 +325,7 @@ The first specifies a single uniform value at every grid point:
    }
 
 
-The second specifies values at each grid point in an array:
+The second option specifies values at each grid point in an array:
 
 
 .. code-block:: JSON
@@ -315,7 +345,23 @@ Solar Zenith Angle
 ^^^^^^^^^^^^^^^^^^
 
 This profile is specifically for calculating the solar zenith angle
-as a function of time. Its configuration takes the form:
+as a function of time. 
+
+=========================  ==============
+keys                       Required/Optional
+=========================  ==============
+``type``                   required
+``units``                  required 
+``year``                   required
+``month``                  required
+``day``                    required
+``longitude``              required
+``latitude``               required
+``name``                   optional
+``time zone``              optional
+=========================  ==============
+
+Its configuration takes the form:
 
 .. code-block:: JSON
 
@@ -339,8 +385,22 @@ Earth-Sun Distance
 ^^^^^^^^^^^^^^^^^^
 
 This profile is specifically for calculating the Earth-Sun distance
-as a function of time. Its configuration takes the form:
+as a function of time. This profile requires that a grid named ``time`` be
+defined in the :ref:`configuration-grids` section.
 
+=========================  ==============
+keys                       Required/Optional
+=========================  ==============
+``type``                   required
+``units``                  required 
+``year``                   required
+``month``                  required
+``day``                    required
+``name``                   optional
+``time zone``              optional
+=========================  ==============
+
+Its configuration takes the form:
 
 .. code-block:: JSON
 
@@ -395,6 +455,55 @@ to the root ``tuv-x/`` folder):
          "interpolator": ["","","","fractional target"]
       }
 
+Air Keys
+""""""""
+=========================  ==============
+keys                       Required/Optional
+=========================  ==============
+``type``                   required
+``units``                  required 
+``file path``              required
+``name``                   optional
+=========================  ==============
+
+Extraterrestrial Flux Keys
+""""""""""""""""""""""""""
+=========================  ==============
+keys                       Required/Optional
+=========================  ==============
+``type``                   required
+``units``                  required 
+``file path``              required
+``interpolator``           required
+``name``                   optional
+=========================  ==============
+
+O2 Keys
+"""""""
+=========================  ==============
+keys                       Required/Optional
+=========================  ==============
+``type``                   required
+``units``                  required 
+``file path``              required
+``name``                   optional
+``interpolator``           optional
+``scale height``           optional
+=========================  ==============
+
+O3 Keys
+"""""""
+=========================  ==============
+keys                       Required/Optional
+=========================  ==============
+``type``                   required
+``units``                  required 
+``file path``              required
+``name``                   optional
+``interpolator``           optional
+``scale height``           optional
+``reference column``       optional
+=========================  ==============
 
 .. _configuration-radiation:
 

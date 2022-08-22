@@ -32,12 +32,20 @@
       "temperature": {
          "type": "from csv file",
          "units": "K",
-         "file path": "data/profiles/atmosphere/ussa.temp"
+         "file path": "data/profiles/atmosphere/ussa.temp",
+         "grid": {
+           "name": "height",
+           "units": "km"
+         }
       },
       "UnitTest": {
          "type": "from csv file",
          "units": "foos",
-         "file path": "test/data/test.ozone"
+         "file path": "test/data/test.ozone",
+         "grid": {
+           "name": "height",
+           "units": "km"
+         }
       }
    },
    "cross sections": [

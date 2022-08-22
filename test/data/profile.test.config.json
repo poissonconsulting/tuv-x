@@ -26,11 +26,6 @@
       }
    },
    "profiles": {
-      "temperature": {
-         "type": "from csv file",
-         "units": "K",
-         "file path": "data/profiles/atmosphere/ussa.temp"
-      },
       "FromConfigValues": {
          "type": "from config file",
          "units": "bars",
@@ -82,6 +77,24 @@
          "type": "O2",
          "units": "molecule cm-3",
          "file path": "data/profiles/atmosphere/ussa.dens"
+      },
+      "temperature": {
+         "type": "from csv file",
+         "units": "K",
+         "file path": "data/profiles/atmosphere/ussa.temp",
+         "grid": {
+           "name": "height",
+           "units": "km"
+         }
+      },
+      "UnitTest": {
+         "type": "from csv file",
+         "units": "foos",
+         "file path": "test/data/test.ozone",
+         "grid": {
+           "name": "height",
+           "units": "km"
+         }
       },
       "extraterrestrial flux": {
          "__legacy": "Legacy type that will eventually be dropped",

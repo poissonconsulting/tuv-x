@@ -257,7 +257,11 @@ The format for the profile is:
    "my profile": {
      "type": "from csv file",
      "units": "foos",
-     "file path": "path/to/file"
+     "file path": "path/to/file",
+     "grid": {
+       "name": "bar",
+       "units": "bazes"
+     }
    }
 
 An optional ``interpolator`` key can be used to specify the

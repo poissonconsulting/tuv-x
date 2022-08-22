@@ -74,7 +74,7 @@
                       "data/profiles/solar/atlas3_1994_317_a.dat",
                       "data/profiles/solar/sao2010.solref.converted",
                       "data/profiles/solar/neckel.flx"],
-         "interpolator": ["","","","interp4"]
+         "interpolator": ["","","","fractional target"]
       }
    },
    "radiative transfer": {

@@ -37,7 +37,8 @@ contains
     use musica_config,                 only : config_t
     use tuvx_constants,                only : nzero, pzero
     use tuvx_diagnostic_util,          only : diagout
-    use tuvx_interpolate,              only : interpolator_t, interp3_t
+    use tuvx_interpolate,              only : interpolator_t,                 &
+                                              interpolator_fractional_source_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
 
@@ -87,7 +88,7 @@ contains
     allocate( this%state_%layer_G_(   zGrid%ncells_, lambdaGrid%ncells_ ) )
 
     ! set up the interpolator
-    allocate( interp3_t :: theInterpolator )
+    allocate( interpolator_fractional_source_t :: theInterpolator )
 
     ! read json config
     call config%get( "optical depths", input_OD, Iam )

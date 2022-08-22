@@ -9,7 +9,9 @@ module tuvx_interpolate
   implicit none
 
   private
-  public :: interpolator_t, interp1_t, interp2_t, interp3_t, interp4_t
+  public :: interpolator_t, interpolator_linear_t,                            &
+            interpolator_conserving_t, interpolator_fractional_source_t,      &
+            interpolator_fractional_target_t
 
   real(dk), parameter :: rZERO = 0.0_dk
 
@@ -21,29 +23,31 @@ module tuvx_interpolate
   end type interpolator_t
 
 
-  type, extends(interpolator_t) :: interp1_t
-    ! Type 1 interpolator
+  type, extends(interpolator_t) :: interpolator_linear_t
+    ! Standard linear interpolator
   contains
-    procedure :: interpolate => inter1
-  end type interp1_t
+    procedure :: interpolate => interpolate_linear
+  end type interpolator_linear_t
 
-  type, extends(interpolator_t) :: interp2_t
-    ! Type 2 interpolator
+  type, extends(interpolator_t) :: interpolator_conserving_t
+    ! Area-conserving linear interpolator
   contains
-    procedure :: interpolate => inter2
-  end type interp2_t
+    procedure :: interpolate => interpolate_conserving
+  end type interpolator_conserving_t
 
-  type, extends(interpolator_t) :: interp3_t
-    ! Type 3 interpolator
+  type, extends(interpolator_t) :: interpolator_fractional_source_t
+    ! Interpolator based on fractional overlap of grid sections
+    ! relative to the source grid section width
   contains
-    procedure :: interpolate => inter3
-  end type interp3_t
+    procedure :: interpolate => interpolate_fractional_source
+  end type interpolator_fractional_source_t
 
-  type, extends(interpolator_t) :: interp4_t
-    ! Type 4 interpolator
+  type, extends(interpolator_t) :: interpolator_fractional_target_t
+    ! Interpolator based on fractional overlap of grid sections
+    ! relative to the target grid section width
   contains
-    procedure :: interpolate => inter4
-  end type interp4_t
+    procedure :: interpolate => interpolate_fractional_target
+  end type interpolator_fractional_target_t
 
 interface
 
@@ -76,26 +80,30 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function inter1(this, x_target, x_source, y_source, fold_in)                &
+  function interpolate_linear( this, x_target, x_source, y_source, fold_in )  &
       result( y_target )
+    !  Standard linear interpolation
+    !
     !  Map input data given on single, discrete points, onto a discrete target
     !  grid.
+    !
     !  The original input data are given on single, discrete points of an
     !  arbitrary grid and are being linearly interpolated onto a specified
     !  discrete target grid.  A typical example would be the re-gridding of a
     !  given data set for the vertical temperature profile to match the speci-
     !  fied altitude grid.
+    !
     !  Some caution should be used near the end points of the grids.  If the
     !  input data set does not span the range of the target grid, the remaining
     !  points will be set to zero, as extrapolation is not permitted.
     !  If the input data does not encompass the target grid, use ADDPNT to
     !  expand the input array.
 
-    class(interp1_t),  intent(inout) :: this        ! Interpolator
-    real(dk),          intent(in)    :: x_target(:) ! Target axis
-    real(dk),          intent(in)    :: x_source(:) ! Source axis
-    real(dk),          intent(in)    :: y_source(:) ! Source data
-    integer, optional, intent(in)    :: fold_in     ! Not used
+    class(interpolator_linear_t), intent(inout) :: this        ! Interpolator
+    real(dk),                     intent(in)    :: x_target(:) ! Target axis
+    real(dk),                     intent(in)    :: x_source(:) ! Source axis
+    real(dk),                     intent(in)    :: y_source(:) ! Source data
+    integer, optional,            intent(in)    :: fold_in     ! Not used
 
     real(dk), allocatable :: y_target(:)
 
@@ -119,7 +127,7 @@ contains
           endif
         else
           slope = ( y_source( j + 1 ) - y_source( j ) )                       &
-                  / (x_source( j + 1 ) - x_source( j ) )
+                  / ( x_source( j + 1 ) - x_source( j ) )
           y_target( i ) = y_source( j )                                       &
                           + slope * ( x_target( i ) - x_source( j ) )
           jsave = j
@@ -128,14 +136,17 @@ contains
       enddo
     enddo
 
-  end function inter1
+  end function interpolate_linear
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function inter2(this, x_target, x_source, y_source, fold_in)                &
-      result( y_target )
+  function interpolate_conserving( this, x_target, x_source, y_source,        &
+      fold_in ) result( y_target )
+    !  Area-conserving linear interpolation
+    !
     !  Map input data given on single, discrete points onto a set of target
     !  bins.
+    !
     !  The original input data are given on single, discrete points of an
     !  arbitrary grid and are being linearly interpolated onto a specified set
     !  of target bins.  In general, this is the case for most of the weighting
@@ -144,6 +155,7 @@ contains
     !  The average value in each target bin is found by averaging the trapezoi-
     !  dal area underneath the input data curve (constructed by linearly
     !  connectting the discrete input values).
+    !
     !  Some caution should be used near the endpoints of the grids.  If the
     !  input data set does not span the range of the target grid, an error
     !  message is printed and the execution is stopped, as extrapolation of the
@@ -153,11 +165,11 @@ contains
 
     use musica_assert, only : die_msg
 
-    class(interp2_t),  intent(inout) :: this        ! Interpolator
-    real(dk),          intent(in)    :: x_target(:) ! Target axis
-    real(dk),          intent(in)    :: x_source(:) ! Source axis
-    real(dk),          intent(in)    :: y_source(:) ! Source data
-    integer, optional, intent(in)    :: fold_in     ! Not used
+    class(interpolator_conserving_t), intent(inout) :: this        ! Interpolator
+    real(dk),                         intent(in)    :: x_target(:) ! Target axis
+    real(dk),                         intent(in)    :: x_source(:) ! Source axis
+    real(dk),                         intent(in)    :: y_source(:) ! Source data
+    integer, optional,                intent(in)    :: fold_in     ! Not used
 
     real(dk), allocatable   :: y_target(:)
 
@@ -245,14 +257,18 @@ contains
       y_target( i ) = area / ( xgu - xgl )
     enddo
 
-  end function inter2
+  end function interpolate_conserving
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function inter3(this, x_target, x_source, y_source, fold_in)                &
-      result( y_target )
+  function interpolate_fractional_source( this, x_target, x_source, y_source, &
+      fold_in ) result( y_target )
+    !  Interpolation based on fractional overlap of grid sections relative
+    !  to the source grid section width.
+    !
     !  Map input data given on a set of bins onto a different set of target
     !  bins.
+    !
     !  The input data are given on a set of bins (representing the integral
     !  of the input quantity over the range of each bin) and are being matched
     !  onto another set of bins (target grid).  A typical example would be an
@@ -261,6 +277,7 @@ contains
     !  The resulting area in a given bin of the target grid is calculated by
     !  simply adding all fractional areas of the input data that cover that
     !  particular target bin.
+    !
     !  Some caution should be used near the endpoints of the grids.  If the
     !  input data do not span the full range of the target grid, the area in
     !  the "missing" bins will be assumed to be zero.  If the input data extend
@@ -277,11 +294,11 @@ contains
 
     use musica_assert, only : die_msg
 
-    class(interp3_t),  intent(inout) :: this        ! Interpolator
-    real(dk),          intent(in)    :: x_target(:) ! Target axis
-    real(dk),          intent(in)    :: x_source(:) ! Source axis
-    real(dk),          intent(in)    :: y_source(:) ! Source data
-    integer, optional, intent(in)    :: fold_in     ! Switch for folding option of "overhang" data
+    class(interpolator_fractional_source_t), intent(inout) :: this        ! Interpolator
+    real(dk),                                intent(in)    :: x_target(:) ! Target axis
+    real(dk),                                intent(in)    :: x_source(:) ! Source axis
+    real(dk),                                intent(in)    :: y_source(:) ! Source data
+    integer, optional,                       intent(in)    :: fold_in     ! Switch for folding option of "overhang" data
 
     real(dk), allocatable   :: y_target(:)
 
@@ -321,7 +338,7 @@ contains
         do
           if( xfrom( j + 1 ) < xto( i ) ) then
             jstart = j
-            j = j+1
+            j = j + 1
             if( j >= nfrom ) then
               exit
             endif
@@ -358,14 +375,18 @@ contains
 
     end associate
 
-  end function inter3
+  end function interpolate_fractional_source
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function inter4(this, x_target, x_source, y_source, fold_in)                &
-      result( y_target )
+  function interpolate_fractional_target( this, x_target, x_source, y_source, &
+      fold_in ) result( y_target )
+    !  Interpolation based on fractional overlap of grid sections relative
+    !  to the target grid section width.
+    !
     !  Map input data given on a set of bins onto a different set of target
     !  bins.
+    !
     !  The input data are given on a set of bins (representing the integral
     !  of the input quantity over the range of each bin) and are being matched
     !  onto another set of bins (target grid).  A typical example would be an
@@ -374,6 +395,7 @@ contains
     !  The resulting area in a given bin of the target grid is calculated by
     !  simply adding all fractional areas of the input data that cover that
     !  particular target bin.
+    !
     !  Some caution should be used near the endpoints of the grids.  If the
     !  input data do not span the full range of the target grid, the area in
     !  the "missing" bins will be assumed to be zero.  If the input data extend
@@ -390,11 +412,11 @@ contains
 
     use musica_assert, only : die_msg
 
-    class(interp4_t),  intent(inout) :: this        ! Interpolator
-    real(dk),          intent(in)    :: x_target(:) ! Target axis
-    real(dk),          intent(in)    :: x_source(:) ! Source axis
-    real(dk),          intent(in)    :: y_source(:) ! Source data
-    integer, optional, intent(in)    :: fold_in     ! Switch for folding option of "overhang" data
+    class(interpolator_fractional_target_t), intent(inout) :: this        ! Interpolator
+    real(dk),                                intent(in)    :: x_target(:) ! Target axis
+    real(dk),                                intent(in)    :: x_source(:) ! Source axis
+    real(dk),                                intent(in)    :: y_source(:) ! Source data
+    integer, optional,                       intent(in)    :: fold_in     ! Switch for folding option of "overhang" data
 
     real(dk), allocatable :: y_target(:)
 
@@ -423,12 +445,12 @@ contains
     do i = 1, ng - 1
        sum = rZERO
        j = jstart
-       if (j < n) then
+       if( j < n ) then
          do
-           if ( x_source( j + 1 ) < x_target( i ) ) then
+           if( x_source( j + 1 ) < x_target( i ) ) then
              jstart = j
              j = j + 1
-             if (j >= n) then
+             if( j >= n ) then
                exit
              endif
            else
@@ -452,7 +474,7 @@ contains
        a2 = x_source( j + 1 ) ! upper limit of last input bin considered
 
        ! do folding only if grids don't match up and there is more input
-       if ( ( a2 > a1 ) .or. ( j + 1 < n ) ) then
+       if( ( a2 > a1 ) .or. ( j + 1 < n ) ) then
          tail = y_source( j ) * ( a2 - a1 )                                   &
                 / ( x_source( j + 1 ) - x_source( j ) )
          do k = j + 1, n - 1
@@ -463,7 +485,7 @@ contains
        endif
     endif
 
-  end function inter4
+  end function interpolate_fractional_target
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

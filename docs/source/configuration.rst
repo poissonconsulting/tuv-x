@@ -248,6 +248,30 @@ The format for the profile is:
      "file path": "path/to/file"
    }
 
+An optional ``interpolator`` key can be used to specify the
+interpolation strategy to apply to the incoming data if needed.
+The possible values are:
+
+- ``linear``
+  Standard linear interpolation scheme. This is the default
+  interpolator used when one is not specified in the configuration
+  data.
+
+- ``conserving``
+  Linear interpolation that conserves the area under the curve.
+
+- ``fractional source``
+  Interpolation scheme for profiles that are integrated values.
+  The interpolation is based on the fractional overlap between
+  source and target grid sections relative to the source
+  grid width.
+
+- ``fractional target``
+  Interpolation scheme for profiles that are integrated values.
+  The interpolation is based on the fractional overlap between
+  source and target grid sections relative to the target
+  grid width.
+
 
 .. _configuration-profiles-from-config:
 
@@ -368,7 +392,7 @@ to the root ``tuv-x/`` folder):
                       "data/profiles/solar/atlas3_1994_317_a.dat",
                       "data/profiles/solar/sao2010.solref.converted",
                       "data/profiles/solar/neckel.flx"],
-         "interpolator": ["","","","interp4"]
+         "interpolator": ["","","","fractional target"]
       }
 
 

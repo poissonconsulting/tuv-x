@@ -80,7 +80,7 @@ contains
 
     allocate( this )
 
-    defaultInterpolator = 'interp2'
+    defaultInterpolator = 'conserving'
 
     ! Get the configuration settings
     call config%get( 'file path', Filespec, Iam )
@@ -200,14 +200,14 @@ contains
       endif
       ! assign interpolator for this dataset
       select case( Interpolator( fileNdx )%to_char( ) )
-        case( 'interp1' )
-          allocate( interp1_t :: theInterpolator )
-        case( 'interp2' )
-          allocate( interp2_t :: theInterpolator )
-        case( 'interp3' )
-          allocate( interp3_t :: theInterpolator )
-        case( 'interp4' )
-          allocate( interp4_t :: theInterpolator )
+        case( 'linear' )
+          allocate( interpolator_linear_t :: theInterpolator )
+        case( 'conserving' )
+          allocate( interpolator_conserving_t :: theInterpolator )
+        case( 'fractional source' )
+          allocate( interpolator_fractional_source_t :: theInterpolator )
+        case( 'fractional target' )
+          allocate( interpolator_fractional_target_t :: theInterpolator )
         case default
           call die_msg( 560768275, "interpolator " // &
             Interpolator( fileNdx )%to_char() // " not a valid selection" )

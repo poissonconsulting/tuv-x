@@ -35,9 +35,9 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_interpolate
 
-    type(profile_from_csv_file_t), pointer        :: this ! This f:type:`~tuvx_profile_from_csv_file/profile_from_csv_file_t`
-    type(config_t), intent(inout)         :: config ! A profile config
-    type(grid_warehouse_t), intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_from_csv_file_t), pointer       :: this ! This f:type:`~tuvx_profile_from_csv_file/profile_from_csv_file_t`
+    type(config_t),                intent(inout) :: config ! A profile config
+    type(grid_warehouse_t),        intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
 
     ! local variables
     character(len=*), parameter :: Iam = 'From_csv_file profile initialize: '
@@ -75,7 +75,7 @@ contains
     call config%get( 'file path', Filespec, Iam )
     call config%get( 'name', this%handle_, Iam, default = 'none' )
     call config%get( 'units', this%units_, Iam )
-    call config%get( 'interpolator', Interpolator, Iam, default = 'interp1' )
+    call config%get( 'interpolator', Interpolator, Iam, default = 'linear' )
     call config%get( 'scale heigth', this%hscale_, Iam, default = 0._dk )
 
     ! Does input grid file exist?
@@ -124,14 +124,14 @@ contains
 
     ! assign actual interpolator for this profile
     select case( Interpolator%to_char( ) )
-      case( 'interp1' )
-        allocate( interp1_t :: theInterpolator )
-      case( 'interp2' )
-        allocate( interp2_t :: theInterpolator )
-      case( 'interp3' )
-        allocate( interp3_t :: theInterpolator )
-      case( 'interp4' )
-        allocate( interp4_t :: theInterpolator )
+      case( 'linear' )
+        allocate( interpolator_linear_t :: theInterpolator )
+      case( 'conserving' )
+        allocate( interpolator_conserving_t :: theInterpolator )
+      case( 'fractional source' )
+        allocate( interpolator_fractional_source_t :: theInterpolator )
+      case( 'fractional target' )
+        allocate( interpolator_fractional_target_t :: theInterpolator )
       case default
         call die_msg( 560768275, "interpolator " // Interpolator%to_char( )   &
           // " not a valid selection" )

@@ -11,17 +11,16 @@ module tuvx_la_sr_bands
   private
   public :: la_sr_bands_t
 
-  ! \todo add descriptions for these parameters
-  integer,  parameter :: nPoly = 20
-  integer,  parameter :: kla = 2
-  integer,  parameter :: nla = kla - 1
-  real(dk), parameter :: wlla(kla) = (/ 121.4_dk, 121.9_dk /)
-  integer,  parameter :: ksrb = 18
-  integer,  parameter :: nsrb = ksrb - 1
+  integer,  parameter :: nPoly = 20      ! order of the Chebyshev polynomials
+  integer,  parameter :: kla = 2         ! dimension of the Lymann-Alpha wavelength grid
+  integer,  parameter :: nla = kla - 1   ! number of Lymann-Alpha wavelength bins
+  real(dk), parameter :: wlla(kla) = (/ 121.4_dk, 121.9_dk /) ! Lymann-Alpha wavelength grid [nm]
+  integer,  parameter :: ksrb = 18       ! dimension of the Schumann-Runge wavelength grid
+  integer,  parameter :: nsrb = ksrb - 1 ! number of Schumann-Runge wavelength bins
   real(dk), parameter :: wlsrb(ksrb) =                                        &
   (/ 175.4_dk, 177.0_dk, 178.6_dk, 180.2_dk, 181.8_dk, 183.5_dk, 185.2_dk,    &
      186.9_dk, 188.7_dk, 190.5_dk, 192.3_dk, 194.2_dk, 196.1_dk, 198.0_dk,    &
-     200.0_dk, 202.0_dk, 204.1_dk, 206.2_dk/)
+     200.0_dk, 202.0_dk, 204.1_dk, 206.2_dk/) ! Schumann-Runge wavelength grid [nm]
 
   integer,  parameter :: iONE = 1
   real(dk), parameter :: rZERO = 0.0_dk
@@ -31,16 +30,15 @@ module tuvx_la_sr_bands
   real(dk), parameter :: precis  = 1.e-7_dk
   real(dk), parameter :: largest = 1.e36_dk
 
-  ! \todo add descriptions for data members
   type :: la_sr_bands_t
     ! Calculator of properties of the Lyman-Alpha and Shuman-Runge bands
-    integer  :: ila
-    integer  :: isrb
-    logical  :: has_la
-    logical  :: has_srb
-    logical  :: has_la_srb
-    real(dk) :: AC( nPoly, nsrb )
-    real(dk) :: BC( nPoly, nsrb ) ! Chebyshev polynomial coeffs
+    integer  :: ila        ! TUV-x photolysis wavelength index where the Lymann-Alpha band starts
+    integer  :: isrb       ! TUV-x photolysis wavelength index where the Schumann-Runge band starts
+    logical  :: has_la     ! .true. if TUV-x photolysis spectrum includes the Lymann-Alpha band
+    logical  :: has_srb    ! .true. if TUV-x photolysis spectrum includes the Schumann-Runge band
+    logical  :: has_la_srb ! .true. if has_la OR has_srb are .true.
+    real(dk) :: AC( nPoly, nsrb ) ! Chebyshev polynomial coefficients
+    real(dk) :: BC( nPoly, nsrb ) ! Chebyshev polynomial coefficients
   contains
     procedure :: optical_depth => la_srb_OD
     procedure :: cross_section => la_srb_xs

@@ -12,12 +12,12 @@ module tuvx_radiative_transfer_solver
    public :: radiative_transfer_solver_t, radiation_field_t
 
    type :: radiation_field_t
-     real(dk), allocatable :: edr_(:,:) ! \todo needs description
-     real(dk), allocatable :: eup_(:,:) ! \todo needs description
-     real(dk), allocatable :: edn_(:,:) ! \todo needs description
-     real(dk), allocatable :: fdr_(:,:) ! \todo needs description
-     real(dk), allocatable :: fup_(:,:) ! \todo needs description
-     real(dk), allocatable :: fdn_(:,:) ! \todo needs description
+     real(dk), allocatable :: edr_(:,:) ! Contribution of the direct component to the total spectral irradiance (vertical interface, wavelength)
+     real(dk), allocatable :: eup_(:,:) ! Contribution of the diffuse upwelling component to the total spectral irradiance (vertical interface, wavelength)
+     real(dk), allocatable :: edn_(:,:) ! Contribution of the diffuse downwelling component to the total spectral irradiance (vertical interface, wavelength)
+     real(dk), allocatable :: fdr_(:,:) ! Contribution of the direct component to the total actinic flux (vertical interface, wavelength)
+     real(dk), allocatable :: fup_(:,:) ! Contribution of the diffuse upwelling component to the total actinic flux (vertical interface, wavelength)
+     real(dk), allocatable :: fdn_(:,:) ! Contribution of the diffuse downwelling component to the total actinic flux (vertical interface, wavelength)
    contains
      final :: finalize
    end type radiation_field_t

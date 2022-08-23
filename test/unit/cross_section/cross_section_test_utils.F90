@@ -9,7 +9,6 @@ contains
 
     use musica_assert,                 only : assert, almost_equal
     use musica_constants,              only : dk => musica_dk
-    use tuvx_util,                     only : inter2
 
     real(kind=dk), intent(in) :: results(:,:)
     real(kind=dk), intent(in) :: expected_results(:,:)

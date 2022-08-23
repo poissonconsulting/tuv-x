@@ -13,9 +13,9 @@ module tuvx_quantum_yield_no2_tint
   public :: quantum_yield_no2_tint_t
 
   type quantum_yield_data_t
-    real(dk), allocatable :: temperature(:) ! \todo what is this
-    real(dk), allocatable :: deltaT(:) ! \todo what is this
-    real(dk), allocatable :: array(:,:) ! \todo what is this
+    real(dk), allocatable :: temperature(:) ! Temperature grid [K]
+    real(dk), allocatable :: deltaT(:)      ! Temperature difference between grid points [K]
+    real(dk), allocatable :: array(:,:)     ! Quantum yield parameters (wavelength, temperature)
   end type quantum_yield_data_t
 
   type, extends(quantum_yield_t) :: quantum_yield_no2_tint_t
@@ -38,14 +38,14 @@ contains
       result( this )
     ! Constructor
 
-    use musica_assert,                 only : die_msg
+    use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_interpolate,              only : interpolator_conserving_t
     use tuvx_netcdf,                   only : netcdf_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
-    use tuvx_util,                     only : inter2
 
     type(quantum_yield_no2_tint_t),  pointer :: this ! This :f:type:`~tuvx_quantum_yield_no2_tint/quantum_yield_no2_tint_t`
     type(config_t),            intent(inout) :: config ! Quantum yield configuration data
@@ -58,7 +58,7 @@ contains
     real(dk), parameter    :: rZERO = 0.0_dk
     real(dk), parameter    :: rONE  = 1.0_dk
 
-    integer     :: retcode, nmdlLambda
+    integer     :: nmdlLambda
     integer     :: nTemps, nParms
     integer     :: parmNdx, fileNdx, Ndxl, Ndxu
     real(dk)    :: tmp
@@ -70,6 +70,7 @@ contains
     type(netcdf_t),   allocatable :: netcdf_obj
     type(string_t),   allocatable :: netcdfFiles(:)
     class(grid_t),    pointer     :: lambdaGrid => null( )
+    type(interpolator_conserving_t) :: interpolator
 
     allocate( this )
 
@@ -78,94 +79,76 @@ contains
 
     ! get quantum yield netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
-has_netcdf_file: &
-    if( found ) then
-      allocate( this%quantum_yield( size( netcdfFiles ) ) )
-file_loop: &
-      do fileNdx = 1, size( netcdfFiles )
-        allocate( netcdf_obj )
-        ! read netcdf file quantum yield data
-        call netcdf_obj%read_netcdf_file(                                     &
-                file_path = netcdfFiles( fileNdx )%to_char( ),                &
-                variable_name = Hdr )
-        nParms = size( netcdf_obj%parameters, dim = 2 )
-        if( nParms < 2 ) then
-          write(msg,*) Iam//'File: ',                                         &
-              trim( netcdfFiles( fileNdx )%to_char( ) ),                      &
-              ' array must have 2 or more parameters'
-          call die_msg( 581722583, msg )
+    call assert_msg( 252847407, found,                                        &
+                     Iam//'must have at least one netcdf input file' )
+    allocate( this%quantum_yield( size( netcdfFiles ) ) )
+    file_loop: do fileNdx = 1, size( netcdfFiles )
+      allocate( netcdf_obj )
+      ! read netcdf file quantum yield data
+      call netcdf_obj%read_netcdf_file(                                       &
+                               file_path = netcdfFiles( fileNdx )%to_char( ), &
+                               variable_name = Hdr )
+      nParms = size( netcdf_obj%parameters, dim = 2 )
+      call assert_msg( 235314124, nParms >= 2, Iam//'File: '//                &
+                       trim( netcdfFiles( fileNdx )%to_char( ) )//            &
+                       ' array must have 2 or more parameters' )
+      associate( Qyield => this%quantum_yield( fileNdx ) )
+      ! interpolation temperatures must be in netcdf file
+      call assert_msg( 264376965, allocated( netcdf_obj%temperature ),        &
+                       Iam//'File: '//                                        &
+                       trim( netcdfFiles( fileNdx )%to_char( ) )//            &
+                       ' does not have interpolation temperatures' )
+      Qyield%temperature = netcdf_obj%temperature
+      nTemps = size( Qyield%temperature )
+      ! must have two or more interpolation temperatures
+      call assert_msg( 393489175, nTemps >= 2, Iam//'File: '//                &
+                       trim( netcdfFiles( fileNdx )%to_char( ) )//            &
+                       ' temperature array has < 2 entries' )
+      call assert_msg( 167399246, nTemps >= nParms, Iam//'File: '//           &
+                       trim( netcdfFiles( fileNdx )%to_char( ) )//            &
+                       ' temperature array < number parameters' )
+      Qyield%deltaT = Qyield%temperature( 2 : nParms ) -                      &
+                        Qyield%temperature( 1 : nParms - 1 )
+      monopos = all( Qyield%deltaT > rZERO )
+      if( .not. monopos ) then
+        call assert_msg( 606144012, .not. any( Qyield%deltaT > rZERO ),       &
+                         Iam//'File: '//                                      &
+                         trim( netcdfFiles( fileNdx )%to_char( ) )//          &
+                         ' temperature array not monotonic' )
+        do Ndxl = 1, nParms / 2
+          Ndxu = nParms - Ndxl + 1
+          tmp = Qyield%temperature( Ndxl )
+          Qyield%temperature( Ndxl ) = Qyield%temperature( Ndxu )
+          Qyield%temperature( Ndxu ) = tmp
+          data_parameter = netcdf_obj%parameters(:,Ndxl)
+          netcdf_obj%parameters( :, Ndxl ) =                                  &
+              netcdf_obj%parameters( :, Ndxu )
+          netcdf_obj%parameters( :, Ndxu ) = data_parameter
+        enddo
+        Qyield%deltaT = Qyield%temperature( 2 : nParms ) -                    &
+                          Qyield%temperature( 1 : nParms - 1 )
+      endif
+      ! interpolate from data to model wavelength grid
+      if( allocated( netcdf_obj%wavelength ) ) then
+        if( .not. allocated( this%quantum_yield( fileNdx )%array) ) then
+          allocate( this%quantum_yield( fileNdx )%array(                      &
+                                              lambdaGrid%ncells_, nParms ) )
         endif
-        associate( Qyield => this%quantum_yield( fileNdx ) )
-        ! interpolation temperatures must be in netcdf file
-        if( allocated( netcdf_obj%temperature ) ) then
-          Qyield%temperature = netcdf_obj%temperature
-          nTemps = size( Qyield%temperature )
-          ! must have two or more interpolation temperatures
-          if( nTemps < 2 ) then
-            write(msg,*) Iam//'File: ',                                       &
-                trim( netcdfFiles( fileNdx )%to_char( ) ),                    &
-                ' temperature array has < 2 entries'
-            call die_msg( 467950999, msg )
-          elseif( nTemps < nParms ) then
-            write(msg,*) Iam//'File: ',                                       &
-                trim( netcdfFiles( fileNdx )%to_char( ) ),                    &
-                ' temperature array < number parameters'
-            call die_msg( 352273881, msg )
-          endif
-          Qyield%deltaT = Qyield%temperature( 2 : nParms ) -               &
-                            Qyield%temperature( 1 : nParms - 1 )
-          monopos = all( Qyield%deltaT > rZERO )
-          if( .not. monopos ) then
-            if( any( Qyield%deltaT > rZERO ) ) then
-              write(msg,*) Iam//'File: ',                                     &
-                  trim( netcdfFiles( fileNdx )%to_char( ) ),                  &
-                  ' temperature array not monotonic'
-              call die_msg( 291076549, msg )
-            endif
-            do Ndxl = 1, nParms / 2
-              Ndxu = nParms - Ndxl + 1
-              tmp = Qyield%temperature( Ndxl )
-              Qyield%temperature( Ndxl ) = Qyield%temperature( Ndxu )
-              Qyield%temperature( Ndxu ) = tmp
-              data_parameter = netcdf_obj%parameters(:,Ndxl)
-              netcdf_obj%parameters( :, Ndxl ) =                              &
-                  netcdf_obj%parameters( :, Ndxu )
-              netcdf_obj%parameters( :, Ndxu ) = data_parameter
-            enddo
-            Qyield%deltaT = Qyield%temperature( 2 : nParms ) -             &
-                              Qyield%temperature( 1 : nParms - 1 )
-          endif
-        else
-          write(msg,*) Iam//'File: ',                                         &
-              trim( netcdfFiles( fileNdx )%to_char( ) ),                      &
-              ' does not have interpolation temperatures'
-          call die_msg( 168681885, msg )
-        endif
-        ! interpolate from data to model wavelength grid
-        if( allocated( netcdf_obj%wavelength ) ) then
-          if( .not. allocated( this%quantum_yield( fileNdx )%array) ) then
-            allocate( this%quantum_yield( fileNdx )%array(                    &
-                                                lambdaGrid%ncells_, nParms ) )
-          endif
-          do parmNdx = 1, nParms
-            data_lambda    = netcdf_obj%wavelength
-            data_parameter = netcdf_obj%parameters( :, parmNdx )
-            call this%add_points( config, data_lambda, data_parameter )
-            call inter2( xto = lambdaGrid%edge_,                              &
-                     yto = this%quantum_yield( fileNdx )%array( :, parmNdx ), &
-                     xfrom = data_lambda,                                     &
-                     yfrom = data_parameter, ierr = retcode )
-          enddo
-        else
-          this%quantum_yield( fileNdx )%array = netcdf_obj%parameters
-        endif
-        end associate
-        deallocate( netcdf_obj )
-      enddo file_loop
-    else has_netcdf_file
-      write(msg,*) Iam//'must have at least one netcdf input file'
-      call die_msg( 553399160, msg )
-    endif has_netcdf_file
+        do parmNdx = 1, nParms
+          data_lambda    = netcdf_obj%wavelength
+          data_parameter = netcdf_obj%parameters( :, parmNdx )
+          call this%add_points( config, data_lambda, data_parameter )
+          this%quantum_yield( fileNdx )%array( :, parmNdx ) =                 &
+                interpolator%interpolate( x_target = lambdaGrid%edge_,        &
+                                          x_source = data_lambda,             &
+                                          y_source = data_parameter )
+        enddo
+      else
+        this%quantum_yield( fileNdx )%array = netcdf_obj%parameters
+      endif
+      end associate
+      deallocate( netcdf_obj )
+    enddo file_loop
 
     deallocate( lambdaGrid )
 

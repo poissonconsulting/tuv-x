@@ -4,8 +4,6 @@
 module tuvx_linear_algebra
   ! General interface and functions for linear algebra types
 
-  ! \todo the function names in this module could be more descriptive
-
    use musica_constants,               only : dk => musica_dk
 
    implicit none
@@ -37,13 +35,13 @@ interface
     use musica_constants,              only : dk => musica_dk
     import linear_algebra_t
     class(linear_algebra_t), intent(inout) :: this
-    real(dk),                intent(inout) :: ABD(:,:) ! \todo needs description
+    real(dk),                intent(inout) :: ABD(:,:) ! Banded matrix A(Ax = b) in a packed format
     integer,                 intent(in)    :: N        ! Order of the original matrix
     integer,                 intent(in)    :: ML       ! Number of diagonals below the main diagonal
     integer,                 intent(in)    :: MU       ! Number of diagonals above the main diagonal
     integer,                 intent(out)   :: IPVT(:)  ! Pivot vector
-    real(dk),                intent(out)   :: RCOND    ! \todo needs description
-    real(dk),                intent(out)   :: Z(:)     ! \todo needs description
+    real(dk),                intent(out)   :: RCOND    ! Estimate of the condition of the inverse of ABD
+    real(dk),                intent(out)   :: Z(:)     ! Working vector
   end subroutine SGBCO
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -56,12 +54,12 @@ interface
     use musica_constants,              only : dk => musica_dk
     import linear_algebra_t
     class(linear_algebra_t), intent(inout) :: this
-    real(dk),                intent(inout) :: ABD(:,:) ! \todo needs description
+    real(dk),                intent(inout) :: ABD(:,:) ! Banded matrix A(Ax = b) in a packed format
     integer,                 intent(in)    :: N        ! Order of the original matrix
     integer,                 intent(in)    :: ML       ! Number of diagonals below the main diagonal
     integer,                 intent(in)    :: MU       ! Number of diagonals above the main diagonal
     integer,                 intent(out)   :: IPVT(:)  ! Pivot vector
-    integer,                 intent(out)   :: INFO     ! \todo needs description
+    integer,                 intent(out)   :: INFO     ! 1 = ABD is singular; 0 = otherwise
   end subroutine SGBFA
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -160,14 +158,23 @@ interface
 
   function tridiag( this, a, b, c, r ) result( u )
     ! Solves the tridiagonal system
+    !
+    ! The system to be solved is:
+    !
+    ! | b1 c1  0 ...                |   |  u1  |   |  r1  |
+    ! | a2 b2 c2 ...                |   |  u2  |   |  r2  |
+    ! |          ...                | * | ...  | = | ...  |
+    ! |          ... aN-1 bN-1 cN-1 |   | uN-1 |   | rN-1 |
+    ! |          ...  aN   bN   cN  |   |  uN  |   |  rN  |
+    !
     use musica_constants,              only : dk => musica_dk
     import linear_algebra_t
     class(linear_algebra_t), intent(in) :: this
-    real(dk),                intent(in) :: a(:) ! \todo needs description
-    real(dk),                intent(in) :: b(:) ! \todo needs description
-    real(dk),                intent(in) :: c(:) ! \todo needs description
-    real(dk),                intent(in) :: r(:) ! \todo needs description
-    real(dk)                            :: u( size( b ) ) ! \todo needs description
+    real(dk),                intent(in) :: a(:) ! lower diagonal
+    real(dk),                intent(in) :: b(:) ! primary diagonal
+    real(dk),                intent(in) :: c(:) ! upper diagonal
+    real(dk),                intent(in) :: r(:) ! right-hand side vector
+    real(dk)                            :: u( size( b ) ) ! result vector
   end function tridiag
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

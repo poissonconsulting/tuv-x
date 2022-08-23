@@ -37,7 +37,6 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_netcdf,                   only : netcdf_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
-    use tuvx_util,                     only : inter2
 
     class(quantum_yield_t), pointer :: this ! This :f:type:`~tuvx_quantum_yield/quantum_yield_t` calculator
     type(config_t),            intent(inout) :: config ! Quantum yield configuration data

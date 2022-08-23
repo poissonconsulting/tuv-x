@@ -81,7 +81,7 @@ contains
     class(spectral_weight_notch_filter_t),  intent(in)     :: this ! This :f:type:`~tuvx_spectral_weight_notch_filter/spectral_weight_notch_filter_t`
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
-    real(kind=dk), allocatable               :: spectral_weight(:) ! The calculated spectral weights /todo units
+    real(kind=dk), allocatable               :: spectral_weight(:) ! The calculated spectral weights (wavelength) [unitless]
 
     ! Local variables
     real(dk), parameter         :: rZERO = 0.0_dk

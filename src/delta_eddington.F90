@@ -14,6 +14,8 @@ module tuvx_delta_eddington
    public :: delta_eddington_t
 
    type, extends(radiative_transfer_solver_t) :: delta_eddington_t
+     ! Radiative flux calculator that applies the delta-Eddington Approximation
+     ! (Joseph and Wiscombe, J. Atmos. Sci., 33, 2453-2459, 1976)
    contains
      procedure :: update_radiation_field
    end type delta_eddington_t

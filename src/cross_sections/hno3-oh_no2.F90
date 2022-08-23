@@ -37,8 +37,8 @@ contains
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_interpolate,              only : interpolator_conserving_t
     use tuvx_netcdf,                   only : netcdf_t
-    use tuvx_util,                     only : inter2
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     type(cross_section_hno3_oh_no2_t), pointer       :: this ! A :f:type:`~tuvx_cross_section_hno3_oh_no2/cross_section_hno3_oh_no2_t`
@@ -53,7 +53,6 @@ contains
     real(dk), parameter    :: rZERO = 0.0_dk
     real(dk), parameter    :: rONE  = 1.0_dk
 
-    integer :: retcode
     integer :: parmNdx, fileNdx, nParms
     real(dk), allocatable :: data_lambda(:)
     real(dk), allocatable :: data_parameter(:)
@@ -65,6 +64,7 @@ contains
     type(config_t)                :: tmp_config, extrap_config
     class(grid_t),    pointer     :: lambdaGrid => null( )
     type(string_t) :: required_keys(2), optional_keys(3)
+    type(interpolator_conserving_t) :: interpolator
 
     required_keys(1) = "type"
     required_keys(2) = "netcdf files"
@@ -123,11 +123,10 @@ file_loop: &
               call tmp_config%add( addpntKey, extrap_config, Iam )
               call this%add_points( tmp_config, data_lambda, data_parameter )
             endif
-            call inter2( xto = lambdaGrid%edge_,                              &
-                         yto = this%cross_section_parms(                      &
-                                               fileNdx )%array( :, parmNdx ), &
-                         xfrom = data_lambda,                                 &
-                         yfrom = data_parameter, ierr = retcode )
+            this%cross_section_parms( fileNdx )%array( :, parmNdx ) =         &
+                interpolator%interpolate( x_target = lambdaGrid%edge_,        &
+                                          x_source = data_lambda,             &
+                                          y_source = data_parameter )
           enddo
         else
           this%cross_section_parms( fileNdx )%array = netcdf_obj%parameters

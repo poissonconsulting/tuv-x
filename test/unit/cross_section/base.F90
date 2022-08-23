@@ -105,22 +105,22 @@ contains
   subroutine add_points( values, grid, lower_val, upper_val )
 
     use musica_constants,              only : dk => musica_dk
-    use tuvx_util,                     only : addpnt
+    use tuvx_util,                     only : add_point
 
     real(kind=dk), allocatable, intent(inout) :: values(:)
     real(kind=dk), allocatable, intent(inout) :: grid(:)
     real(kind=dk),              intent(in)    :: lower_val
     real(kind=dk),              intent(in)    :: upper_val
 
-    call addpnt( x = grid, y = values,                                        &
-                 xnew = ( 1.0_dk - 1.0e-5_dk ) * grid(1), ynew = lower_val )
-    call addpnt( x = grid, y = values,                                        &
-                 xnew = 0.0_dk, ynew = lower_val )
-    call addpnt( x = grid, y = values,                                        &
-                 xnew = ( 1.0_dk + 1.0e-5_dk ) * grid( size( grid ) ),        &
-                 ynew = upper_val )
-    call addpnt( x = grid, y = values,                                        &
-                 xnew = 1.0e38_dk, ynew = upper_val )
+    call add_point( x = grid, y = values,                                     &
+                    xnew = ( 1.0_dk - 1.0e-5_dk ) * grid(1), ynew = lower_val )
+    call add_point( x = grid, y = values,                                     &
+                    xnew = 0.0_dk, ynew = lower_val )
+    call add_point( x = grid, y = values,                                     &
+                    xnew = ( 1.0_dk + 1.0e-5_dk ) * grid( size( grid ) ),     &
+                    ynew = upper_val )
+    call add_point( x = grid, y = values,                                     &
+                    xnew = 1.0e38_dk, ynew = upper_val )
 
   end subroutine add_points
 
@@ -131,7 +131,7 @@ contains
 
     use musica_assert,                 only : assert, almost_equal
     use musica_constants,              only : dk => musica_dk
-    use tuvx_util,                     only : inter2
+    use tuvx_interpolate,              only : interpolator_conserving_t
 
     real(kind=dk), intent(in) :: results(:,:)
     real(kind=dk), intent(in) :: input(:)
@@ -141,8 +141,8 @@ contains
     integer :: i_level, i_wavelength
     real(kind=dk) :: output_grid(5) =                                         &
       (/ 100.0_dk, 101.5_dk, 102.0_dk, 103.0_dk, 104.5_dk /)
-    integer :: i_error
     real(kind=dk) :: output(4)
+    type(interpolator_conserving_t) :: interpolator
 
     call assert( 577098581, size( results, dim = 1 ) == n_levels )
     call assert( 696108875, size( results, dim = 2 ) == size( output ) )
@@ -154,9 +154,9 @@ contains
     end do
 
     ! x data are assumed to be at interfaces and y data at midpoints
-    call inter2( xto   = output_grid, yto   = output,                         &
-                 xfrom = input_grid,  yfrom = input,  ierr = i_error )
-    call assert( 271086324, i_error == 0 )
+    output = interpolator%interpolate( x_target = output_grid,                &
+                                       x_source = input_grid,                 &
+                                       y_source = input )
     call assert( 992044813, almost_equal( results( 1, 1 ), output( 1 ) ) )
     call assert( 871103388, almost_equal( results( 1, 2 ), output( 2 ) ) )
     call assert( 418471235, almost_equal( results( 1, 3 ), output( 3 ) ) )

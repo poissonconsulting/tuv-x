@@ -28,15 +28,15 @@ contains
       result( this )
     ! Initialize cross_section_bro_br_o_t object
 
-    use musica_assert,                 only : assert_msg, die_msg
+    use musica_assert,                 only : assert, assert_msg
     use musica_config,                 only : config_t
     use musica_constants,              only : dk => musica_dk
     use musica_string,                 only : string_t
     use tuvx_netcdf,                   only : netcdf_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_interpolate,              only : interpolator_fractional_target_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
-    use tuvx_util,                     only : inter4
 
     type(cross_section_bro_br_o_t), pointer  :: this ! This :f:type:`~tuvx_cross_section_bro_br_o/cross_section_bro_br_o_t`
     type(config_t),            intent(inout) :: config ! Cross section configuration data
@@ -51,12 +51,14 @@ contains
     integer :: parmNdx, fileNdx
     real(dk), allocatable :: data_lambda(:)
     real(dk), allocatable :: data_parameter(:)
+    real(dk), allocatable :: regridded_data(:)
     logical :: found
     character(len=:), allocatable :: msg
     type(netcdf_t),   allocatable :: netcdf_obj
     type(string_t),   allocatable :: netcdfFiles(:)
     class(grid_t),    pointer     :: lambdaGrid => null( )
     class(grid_t),    pointer     :: zGrid => null( )
+    type(interpolator_fractional_target_t) :: interpolator
     type(string_t) :: required_keys(2), optional_keys(1)
 
     required_keys(1) = "type"
@@ -88,12 +90,10 @@ file_loop: &
                      file_path = netcdfFiles( fileNdx )%to_char( ),           &
                      variable_name = Hdr )
         nParms = size( netcdf_obj%parameters, dim = 2 )
-        if( nParms < 1 ) then
-          write(msg,*) Iam//'File: ',                                         &
-                      trim( netcdfFiles( fileNdx )%to_char( ) ),              &
-                      '  parameters array has < 1 column'
-          call die_msg( 213420086, msg )
-        endif
+        call assert_msg( 253569252, nParms >= 1,                              &
+                         Iam//'File: '//                                      &
+                         trim( netcdfFiles( fileNdx )%to_char( ) )//          &
+                         ' parameters array has < 1 column' )
 
         ! interpolate from data to model wavelength grid
         if( allocated( netcdf_obj%wavelength ) ) then
@@ -105,11 +105,16 @@ file_loop: &
           do parmNdx = 1, nParms
             data_lambda    = netcdf_obj%wavelength
             data_parameter = netcdf_obj%parameters( :, parmNdx )
-            call inter4( xto = lambdaGrid%edge_,                              &
-                         yto = this%cross_section_parms(                      &
-                                                fileNdx )%array( :, parmNdx ),&
-                         xfrom = data_lambda,                                 &
-                         yfrom = data_parameter, fold_in = 1 )
+            if( allocated( regridded_data ) ) deallocate( regridded_data )
+            regridded_data = interpolator%interpolate(                        &
+                                                 x_target = lambdaGrid%edge_, &
+                                                 x_source = data_lambda,      &
+                                                 y_source = data_parameter,   &
+                                                 fold_in = 1 )
+            call assert( 412458124, size( regridded_data ) .eq.               &
+                        size( this%cross_section_parms( fileNdx )%array, 1 ) )
+            this%cross_section_parms( fileNdx )%array( :, parmNdx ) =         &
+                regridded_data( : )
           enddo
         else
           this%cross_section_parms( fileNdx )%array = netcdf_obj%parameters

@@ -14,16 +14,16 @@ module tuvx_cross_section
 
   type cross_section_parms_t
     ! local working type for holding cross section parameters
-    real(dk), allocatable :: temperature(:) ! in kelvin
-    real(dk), allocatable :: deltaT(:)
-    real(dk), allocatable :: array(:,:)
+    real(dk), allocatable :: temperature(:) ! Temperature grid [K]
+    real(dk), allocatable :: deltaT(:)      ! Temperature difference between grid sections [K]
+    real(dk), allocatable :: array(:,:)     ! Cross section parameters (wavelength, parameter type)
   end type cross_section_parms_t
 
   type cross_section_t
     ! Calculator for cross_section
     ! The cross section array
 
-    ! \todo what axis are these on? add to the comment block above
+    ! Cross section parameter sets
     type(cross_section_parms_t), allocatable :: cross_section_parms(:)
   contains
     !> Calculate the cross section
@@ -86,13 +86,13 @@ contains
       profile_warehouse )
     ! Initialize cross_section_t objects
 
+    use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
-    use tuvx_netcdf,                   only : netcdf_t
-    use tuvx_util,                     only : inter2
-    use musica_assert,                 only : die_msg
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_grid,                     only : grid_t
+    use tuvx_interpolate,              only : interpolator_conserving_t
+    use tuvx_netcdf,                   only : netcdf_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_profile,                  only : profile_t
 
@@ -105,7 +105,6 @@ contains
     character(len=*), parameter   :: Iam = 'base cross section initialize'
     character(len=*), parameter   :: Hdr = 'cross_section_'
 
-    integer :: retcode
     integer :: parmNdx, fileNdx
     integer :: nParms
     real(dk), allocatable :: data_lambda(:)
@@ -115,6 +114,7 @@ contains
     type(netcdf_t), allocatable :: netcdf_obj
     type(string_t), allocatable :: netcdfFiles(:)
     class(grid_t), pointer :: lambdaGrid
+    type(interpolator_conserving_t) :: interpolator
 
     !> Get model wavelength grids
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
@@ -150,11 +150,10 @@ file_loop: &
             data_lambda    = netcdf_obj%wavelength
             data_parameter = netcdf_obj%parameters( :, parmNdx )
             call new_obj%add_points( config, data_lambda, data_parameter )
-            call inter2(xto = lambdaGrid%edge_,                               &
-                        yto = new_obj%cross_section_parms(                    &
-                                                fileNdx )%array( :, parmNdx ),&
-                        xfrom = data_lambda,                                  &
-                        yfrom = data_parameter, ierr = retcode )
+            new_obj%cross_section_parms( fileNdx )%array( :, parmNdx ) =      &
+                interpolator%interpolate( x_target = lambdaGrid%edge_,        &
+                                          x_source = data_lambda,             &
+                                          y_source = data_parameter )
           enddo
         else
           new_obj%cross_section_parms( fileNdx )%array = netcdf_obj%parameters
@@ -227,12 +226,12 @@ file_loop: &
     use musica_assert,                 only : assert_msg, die_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
-    use tuvx_util,                     only : addpnt
+    use tuvx_util,                     only : add_point
 
     class(cross_section_t), intent(in)    :: this ! This :f:type:`~tuvx_cross_section/cross_section_t`
     type(config_t),         intent(inout) :: config ! The configuration used to build this object
-    real(dk), allocatable,  intent(inout) :: data_lambda(:) ! Wavelength, in meters /todo, verify units
-    real(dk), allocatable,  intent(inout) :: data_parameter(:) ! /todo what is this?
+    real(dk), allocatable,  intent(inout) :: data_lambda(:) ! Wavelength grid
+    real(dk), allocatable,  intent(inout) :: data_parameter(:) ! Parameters (wavelength)
 
     real(dk), parameter :: rZERO = 0.0_dk
     real(dk), parameter :: rONE  = 1.0_dk
@@ -290,16 +289,16 @@ file_loop: &
       endif
     endif
 
-    call addpnt( x = data_lambda, y = data_parameter,                         &
-                 xnew = ( rONE - deltax ) * lowerLambda,                      &
-                 ynew = addpnt_val_lower )
-    call addpnt( x = data_lambda, y = data_parameter, xnew = rZERO,           &
-                 ynew = addpnt_val_lower )
-    call addpnt( x = data_lambda, y = data_parameter,                         &
-                 xnew = ( rONE + deltax ) * upperLambda,                      &
-                 ynew = addpnt_val_upper )
-    call addpnt( x = data_lambda, y = data_parameter, xnew = 1.e38_dk,        &
-                 ynew = addpnt_val_upper )
+    call add_point( x = data_lambda, y = data_parameter,                      &
+                    xnew = ( rONE - deltax ) * lowerLambda,                   &
+                    ynew = addpnt_val_lower )
+    call add_point( x = data_lambda, y = data_parameter, xnew = rZERO,        &
+                    ynew = addpnt_val_lower )
+    call add_point( x = data_lambda, y = data_parameter,                      &
+                    xnew = ( rONE + deltax ) * upperLambda,                   &
+                    ynew = addpnt_val_upper )
+    call add_point( x = data_lambda, y = data_parameter, xnew = 1.e38_dk,     &
+                    ynew = addpnt_val_upper )
 
   end subroutine add_points
 

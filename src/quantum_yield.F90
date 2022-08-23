@@ -37,7 +37,7 @@ contains
 
   subroutine base_constructor( this, config, grid_warehouse,                  &
       profile_warehouse )
-    ! Performs default initialization for 
+    ! Performs default initialization for
     ! :f:type:`~tuvx_quantum_yield/quantum_yield_t` object
     ! Should only be called by sub-class constructors. Sub-classes can decide
     ! whether to call this function during construction to load standard
@@ -57,9 +57,9 @@ contains
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_interpolate,              only : interpolator_conserving_t
     use tuvx_netcdf,                   only : netcdf_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
-    use tuvx_util,                     only : inter2
 
     class(quantum_yield_t),    intent(inout) :: this ! This :f:type:`~tuvx_quantum_yield/quantum_yield_t` calculator
     type(config_t),            intent(inout) :: config ! Quantum yield configuration data
@@ -72,7 +72,6 @@ contains
     real(dk), parameter    :: rZERO = 0.0_dk
     real(dk), parameter    :: rONE  = 1.0_dk
 
-    integer :: retcode
     integer :: parmNdx, fileNdx
     integer :: nParms
     real(dk)    :: quantum_yield_constant
@@ -83,6 +82,7 @@ contains
     type(netcdf_t), allocatable   :: netcdf_obj
     type(string_t), allocatable   :: netcdfFiles(:)
     class(grid_t),  pointer       :: lambdaGrid => null( )
+    type(interpolator_conserving_t) :: interpolator
 
     ! Get model wavelength grid
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
@@ -117,10 +117,10 @@ file_loop: &
             data_lambda    = netcdf_obj%wavelength
             data_parameter = netcdf_obj%parameters(:,parmNdx)
             call this%add_points( config, data_lambda, data_parameter )
-            call inter2( xto = lambdaGrid%edge_,                              &
-               yto = this%quantum_yield_parms( fileNdx )%array( :, parmNdx ), &
-               xfrom = data_lambda,                                           &
-               yfrom = data_parameter, ierr = retcode )
+            this%quantum_yield_parms( fileNdx )%array( :, parmNdx ) =         &
+                interpolator%interpolate( x_target = lambdaGrid%edge_,        &
+                                          x_source = data_lambda,             &
+                                          y_source = data_parameter )
           enddo
         else
           this%quantum_yield_parms( fileNdx )%array = netcdf_obj%parameters
@@ -163,7 +163,7 @@ file_loop: &
     class(quantum_yield_t),    intent(in) :: this ! This :f:type:`~tuvx_quantum_yield/quantum_yield_t` calculator
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
-    real(dk), allocatable                    :: quantum_yield(:,:) ! /todo what are the units of this?
+    real(dk), allocatable                    :: quantum_yield(:,:) ! Calculated quantum yield (height, wavelength) [unitless]
 
     ! Local variables
     character(len=*), parameter :: Iam = 'base quantum yield calculate'
@@ -197,12 +197,12 @@ file_loop: &
     use musica_assert,                 only : assert_msg, die_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
-    use tuvx_util,                     only : addpnt
+    use tuvx_util,                     only : add_point
 
     class(quantum_yield_t), intent(in)    :: this ! This :f:type:`~tuvx_quantum_yield/quantum_yield_t` calculator
     type(config_t),         intent(inout) :: config ! Quantum yield configuration data
-    real(dk), allocatable,  intent(inout) :: data_lambda(:) ! wavelength, /todo what are the units?
-    real(dk), allocatable,  intent(inout) :: data_parameter(:) ! /todo, what is this?
+    real(dk), allocatable,  intent(inout) :: data_lambda(:) ! Wavelength grid
+    real(dk), allocatable,  intent(inout) :: data_parameter(:) ! Parameters (wavelength)
 
     real(dk), parameter :: rZERO = 0.0_dk
     real(dk), parameter :: rONE  = 1.0_dk
@@ -241,10 +241,10 @@ file_loop: &
                       "Bad extrapolation type: '"//addpnt_type//"'" )
       endif
     endif
-    call addpnt( x = data_lambda, y = data_parameter, xnew = rZERO,           &
-                 ynew = addpnt_val )
-    call addpnt( x = data_lambda, y = data_parameter,                         &
-                 xnew = ( rONE - deltax ) * lowerLambda, ynew = addpnt_val )
+    call add_point( x = data_lambda, y = data_parameter, xnew = rZERO,        &
+                    ynew = addpnt_val )
+    call add_point( x = data_lambda, y = data_parameter,                      &
+                    xnew = ( rONE - deltax ) * lowerLambda, ynew = addpnt_val )
 
     ! add endpoints to data arrays; now the upper bound
     addpnt_val = rZERO
@@ -263,10 +263,10 @@ file_loop: &
                       "Bad extrapolation type: '"//addpnt_type//"'" )
       endif
     endif
-    call addpnt( x = data_lambda, y = data_parameter,                         &
-                 xnew = ( rONE + deltax ) * upperLambda, ynew = addpnt_val )
-    call addpnt( x = data_lambda, y = data_parameter, xnew = 1.e38_dk, &
-                 ynew = addpnt_val )
+    call add_point( x = data_lambda, y = data_parameter,                      &
+                    xnew = ( rONE + deltax ) * upperLambda, ynew = addpnt_val )
+    call add_point( x = data_lambda, y = data_parameter, xnew = 1.e38_dk, &
+                    ynew = addpnt_val )
 
   end subroutine add_points
 

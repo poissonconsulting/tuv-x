@@ -161,7 +161,7 @@ contains
     use tuvx_constants, only : largest
 
     class(spherical_geometry_t), intent(in)  :: this ! This :f:type:`~tuvx_spherical_geometry/spherical_geometry_t`
-    real(dk),                    intent(in)  :: aircol(:) ! /todo define and describe this. I don't know what it is
+    real(dk),                    intent(in)  :: aircol(:) ! layer density of air (height) [molec cm-2]
     real(dk),                    intent(out) :: vcol(:) ! vertical air column, molec cm-2, above level iz
     real(dk),                    intent(out) :: scol(:) ! slant air column in direction of sun, above iz also in molec cm-2
 

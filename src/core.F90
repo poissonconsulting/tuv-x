@@ -68,7 +68,7 @@ contains
     type(config_t)              :: core_config, child_config
     class(iterator_t), pointer  :: iter
     class(profile_t),  pointer  :: aprofile
-    type(string_t)              :: required_keys(4), optional_keys(2)
+    type(string_t)              :: required_keys(4), optional_keys(3)
 
     call core_config%from_file( config%to_char() )
 
@@ -79,6 +79,7 @@ contains
     required_keys(4) = "O2 absorption"
     optional_keys(1) = "photolysis reactions"
     optional_keys(2) = "dose rates"
+    optional_keys(3) = "diagnostics"
     call assert_msg( 255400232,                                               &
                      core_config%validate( required_keys, optional_keys ),    &
                      "Bad configuration data format for tuv-x core." )
@@ -120,10 +121,8 @@ contains
                                   new_core%profile_warehouse_ )
 
     ! get optical depth diagnostics to output
-    !> \todo this should be moved out of the radiative transfer config if it
-    !!       is owned by the core
-    call child_config%get( "diagnostics", new_core%diagnostics_,              &
-                           Iam, found = found )
+    call core_config%get( "diagnostics", new_core%diagnostics_, Iam,          &
+                          found = found )
     if( .not. found ) allocate( new_core%diagnostics_( 0 ) )
 
     ! photolysis rate constants

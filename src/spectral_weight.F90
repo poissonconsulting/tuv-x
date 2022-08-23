@@ -16,8 +16,8 @@ module tuvx_spectral_weight
             base_constructor
 
   type spectral_weight_parms_t
-    real(dk), allocatable :: temperature(:)
-    real(dk), allocatable :: array(:,:)
+    real(dk), allocatable :: temperature(:) ! Temperature grid [K]
+    real(dk), allocatable :: array(:,:)     ! Spectral weight parameters (wavelength, parameter type)
   end type spectral_weight_parms_t
 
   type :: spectral_weight_t
@@ -83,10 +83,10 @@ contains
 
     use musica_assert,                 only : assert_msg
     use musica_string,                 only : string_t
+    use tuvx_interpolate,              only : interpolator_conserving_t
     use tuvx_grid,                     only : grid_t
     use tuvx_netcdf,                   only : netcdf_t
     use tuvx_profile,                  only : profile_t
-    use tuvx_util,                     only : inter2
 
     class(spectral_weight_t),  pointer       :: this   ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
     type(config_t),            intent(inout) :: config ! Spectral weight configuration data
@@ -99,7 +99,6 @@ contains
     character(len=*), parameter    :: Iam = 'base spectral weight initialize: '
     character(len=*), parameter    :: Hdr = 'spectral_weight_'
 
-    integer :: retcode
     integer :: parmNdx, fileNdx
     integer :: nParms
     real(dk), allocatable :: data_lambda(:)
@@ -108,6 +107,7 @@ contains
     type(netcdf_t), allocatable :: netcdf_obj
     type(string_t), allocatable :: netcdfFiles(:)
     class(grid_t), pointer      :: lambdaGrid => null()
+    type(interpolator_conserving_t) :: interpolator
 
     ! Get model wavelength grid
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
@@ -139,11 +139,10 @@ contains
             data_lambda    = netcdf_obj%wavelength
             data_parameter = netcdf_obj%parameters( :, parmNdx )
             call this%add_points( config, data_lambda, data_parameter )
-            call inter2(                                                      &
-              xto = lambdaGrid%edge_,                                         &
-              yto = this%spectral_weight_parms( fileNdx )%array( :, parmNdx ),&
-              xfrom = data_lambda,                                            &
-              yfrom = data_parameter, ierr = retcode )
+            this%spectral_weight_parms( fileNdx )%array( :, parmNdx ) =       &
+                interpolator%interpolate( x_target = lambdaGrid%edge_,        &
+                                          x_source = data_lambda,             &
+                                          y_source = data_parameter )
           enddo
         else
           this%spectral_weight_parms( fileNdx )%array = netcdf_obj%parameters
@@ -172,7 +171,7 @@ contains
     class(spectral_weight_t),  intent(in)     :: this ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
-    real(kind=dk), allocatable               :: spectral_weight(:) ! The calculated spectral weights /todo units
+    real(kind=dk), allocatable               :: spectral_weight(:) ! The calculated spectral weights (wavelength) [unitless]
 
     ! Local variables
     character(len=*), parameter :: Iam = 'spectral weight calculate: '
@@ -188,12 +187,12 @@ contains
 
     use musica_string,                 only : string_t
     use musica_assert,                 only : assert_msg, die_msg
-    use tuvx_util,                     only : addpnt
+    use tuvx_util,                     only : add_point
 
     class(spectral_weight_t), intent(in)    :: this ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
-    type(config_t),            intent(inout) :: config ! Spectral weight configuration data
-    real(dk), allocatable,    intent(inout) :: data_lambda(:) ! /todo units?
-    real(dk), allocatable,    intent(inout) :: data_parameter(:) ! /todo units? What is this?
+    type(config_t),           intent(inout) :: config ! Spectral weight configuration data
+    real(dk), allocatable,    intent(inout) :: data_lambda(:) ! Wavelength grid
+    real(dk), allocatable,    intent(inout) :: data_parameter(:) ! Parameters (wavelength)
 
     ! Local variables
     real(dk), parameter :: rZERO = 0.0_dk
@@ -252,16 +251,16 @@ contains
       endif
     endif
 
-    call addpnt( x = data_lambda, y = data_parameter,                         &
-                 xnew = ( rONE - deltax ) * lowerLambda,                      &
-                 ynew = addpnt_val_lower )
-    call addpnt( x = data_lambda, y = data_parameter, xnew = rZERO,           &
-                 ynew = addpnt_val_lower )
-    call addpnt( x = data_lambda, y = data_parameter,                         &
-                 xnew = ( rONE + deltax ) * upperLambda,                      &
-                 ynew = addpnt_val_upper )
-    call addpnt( x = data_lambda, y = data_parameter, xnew = 1.e38_dk,        &
-                 ynew = addpnt_val_upper )
+    call add_point( x = data_lambda, y = data_parameter,                      &
+                    xnew = ( rONE - deltax ) * lowerLambda,                   &
+                    ynew = addpnt_val_lower )
+    call add_point( x = data_lambda, y = data_parameter, xnew = rZERO,        &
+                    ynew = addpnt_val_lower )
+    call add_point( x = data_lambda, y = data_parameter,                      &
+                    xnew = ( rONE + deltax ) * upperLambda,                   &
+                    ynew = addpnt_val_upper )
+    call add_point( x = data_lambda, y = data_parameter, xnew = 1.e38_dk,     &
+                    ynew = addpnt_val_upper )
 
   end subroutine add_points
 

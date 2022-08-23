@@ -36,7 +36,7 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_grid,                     only : grid_t
     use tuvx_interpolate
-    use tuvx_util,                     only : addpnt
+    use tuvx_util,                     only : add_point
 
     type(profile_extraterrestrial_flux_t), pointer :: this ! This f:type:`~tuvx_profile_extraterrestrial_flux/profile_extraterrestrial_flux_t`
     type(config_t), intent(inout)          :: config ! A profile config
@@ -188,14 +188,14 @@ contains
         deallocate( tmpinputGrid )
       else
         ! extend inputGrid,inputData to cover model photolysis grid
-        call addpnt( x = inputGrid, y = inputData,                            &
+        call add_point( x = inputGrid, y = inputData,                         &
             xnew = ( 1.0_dk - deltax ) * inputGrid(1), ynew = 0.0_dk )
-        call addpnt( x = inputGrid, y = inputData,                            &
+        call add_point( x = inputGrid, y = inputData,                         &
             xnew = 0.0_dk, ynew = 0.0_dk )
-        call addpnt( x = inputGrid, y = inputData,                            &
+        call add_point( x = inputGrid, y = inputData,                         &
             xnew = ( 1.0_dk + deltax ) * inputGrid( size( inputGrid ) ),      &
             ynew = 0.0_dk )
-        call addpnt( x = inputGrid, y = inputData, xnew = 1.e38_dk,           &
+        call add_point( x = inputGrid, y = inputData, xnew = 1.e38_dk,        &
             ynew = 0.0_dk )
       endif
       ! assign interpolator for this dataset

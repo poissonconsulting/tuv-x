@@ -41,9 +41,9 @@ contains
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_interpolate,              only : interpolator_conserving_t
     use tuvx_netcdf,                   only : netcdf_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
-    use tuvx_util,                     only : inter2
 
     type(cross_section_o3_tint_t), pointer       :: this ! A :f:type:`~tuvx_cross_section_o3_tint/cross_section_o3_tint_t`
     type(config_t),            intent(inout) :: config ! Cross section configuration data
@@ -61,7 +61,7 @@ contains
     character(len=*), parameter :: Iam = 'o3 tint cross section constructor'
     character(len=*), parameter :: Hdr = 'cross_section_'
 
-    integer :: retcode, nmdlLambda
+    integer :: nmdlLambda
     integer :: parmNdx, fileNdx, Ndxl, Ndxu
     integer :: nParms, nTemps
     real(dk)              :: tmp
@@ -73,6 +73,7 @@ contains
     type(netcdf_t),   allocatable :: netcdf_obj
     type(string_t),   allocatable :: netcdfFiles(:)
     class(grid_t),    pointer     :: lambdaGrid => null( )
+    type(interpolator_conserving_t) :: interpolator
     type(string_t) :: required_keys(2), optional_keys(3)
 
     required_keys(1) = "type"
@@ -165,10 +166,10 @@ file_loop: &
           data_lambda    = netcdf_obj%wavelength
           data_parameter = netcdf_obj%parameters( :, parmNdx )
           call this%add_points( config, data_lambda, data_parameter )
-          call inter2( xto = lambdaGrid%edge_,                                &
-                       yto = Xsection%array( :, parmNdx ),                    &
-                       xfrom = data_lambda,                                   &
-                       yfrom = data_parameter, ierr = retcode )
+          Xsection%array( :, parmNdx ) =                                      &
+                interpolator%interpolate( x_target = lambdaGrid%edge_,        &
+                                          x_source = data_lambda,             &
+                                          y_source = data_parameter )
         enddo
       else
         Xsection%array = netcdf_obj%parameters

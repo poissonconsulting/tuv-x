@@ -61,12 +61,11 @@ contains
     character(len=*), parameter :: Iam = 'radiative transfer constructor: '
     type(string_t)       :: solver
     type(config_t) :: child_config
-    type(string_t) :: required_keys(2), optional_keys(2)
+    type(string_t) :: required_keys(2), optional_keys(1)
 
     required_keys(1) = "cross sections"
     required_keys(2) = "radiators"
     optional_keys(1) = "solver"
-    optional_keys(2) = "diagnostics"
 
     call assert_msg( 817033232,                                               &
                      config%validate( required_keys, optional_keys ),         &

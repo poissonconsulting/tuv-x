@@ -137,8 +137,8 @@
             "asymmetry factor": 0.61,
             "550 nm optical depth": 0.235
          }
-      ],
-      "diagnostics" : [ "air", "aerosols", "O2", "O3" ]
+      ]
    },
+   "diagnostics" : [ "air", "aerosols", "O2", "O3" ],
 #DOSE_RATES
 }

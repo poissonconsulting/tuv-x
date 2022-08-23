@@ -98,7 +98,7 @@
             "vertical profile": "O3",
             "vertical profile units": "molecule cm-3"
          }
-      ],
-      "diagnostics" : [ "O3" ]
-   }
+      ]
+   },
+   "diagnostics" : [ "O3" ]
 }

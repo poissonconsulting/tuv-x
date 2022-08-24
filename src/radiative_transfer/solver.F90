@@ -1,7 +1,7 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 !
-module tuvx_radiative_transfer_solver
+module tuvx_solver
 ! General interface for radiative transfer solvers
 
    use musica_constants,               only : dk => musica_dk
@@ -9,7 +9,7 @@ module tuvx_radiative_transfer_solver
    implicit none
 
    private
-   public :: radiative_transfer_solver_t, radiation_field_t
+   public :: solver_t, radiation_field_t
 
    type :: radiation_field_t
      real(dk), allocatable :: edr_(:,:) ! Contribution of the direct component to the total spectral irradiance (vertical interface, wavelength)
@@ -22,10 +22,10 @@ module tuvx_radiative_transfer_solver
      final :: finalize
    end type radiation_field_t
 
-   type, abstract :: radiative_transfer_solver_t
+   type, abstract :: solver_t
      contains
      procedure(update_radiation_field), deferred :: update_radiation_field
-   end type radiative_transfer_solver_t
+   end type solver_t
 
 interface
 
@@ -42,9 +42,9 @@ interface
      use tuvx_radiator_warehouse,      only : radiator_warehouse_t
      use tuvx_spherical_geometry,      only : spherical_geometry_t
 
-     import radiative_transfer_solver_t, radiation_field_t
+     import solver_t, radiation_field_t
 
-     class(radiative_transfer_solver_t), intent(inout) :: this
+     class(solver_t), intent(inout) :: this
      integer, intent(in)                       :: n_streams          ! Number of streams
      integer, intent(in)                       :: n_layers           ! Number of vertical layers
      real(dk), intent(in)                      :: solar_zenith_angle ! Solar zenith angle [degrees]
@@ -81,4 +81,4 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-end module tuvx_radiative_transfer_solver
+end module tuvx_solver

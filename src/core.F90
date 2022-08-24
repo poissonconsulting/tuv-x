@@ -1,9 +1,8 @@
 ! Copyright (C) 2021 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 !
-!> \file
-!> The photolysis_core_t and related procedures
 module tuvx_core
+  ! Top-level TUV-x interface
 
   use musica_config,                   only : config_t
   use musica_string,                   only : string_t
@@ -21,9 +20,11 @@ module tuvx_core
   implicit none
 
   private
-  public :: photolysis_core_t
+  public :: core_t
 
-  type :: photolysis_core_t
+  type :: core_t
+    ! The TUV-x core_t class defines the API for interactions
+    ! with a host application
     type(grid_warehouse_t),      pointer :: grid_warehouse_ => null()
     type(profile_warehouse_t),   pointer :: profile_warehouse_ => null()
     type(spherical_geometry_t),  pointer :: spherical_geometry_ => null()
@@ -37,17 +38,18 @@ module tuvx_core
     procedure :: output_photolysis_rate_constants
     procedure :: output_dose_rates
     final     :: finalize
-  end type photolysis_core_t
+  end type core_t
 
-  interface photolysis_core_t
+  interface core_t
     module procedure constructor
-  end interface photolysis_core_t
+  end interface core_t
 
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   function constructor( config ) result( new_core )
+    ! Constructor of TUV-x core objects
 
     use musica_assert,                 only : assert_msg
     use musica_iterator,               only : iterator_t
@@ -55,10 +57,9 @@ contains
     use tuvx_diagnostic_util,          only : diagout
     use tuvx_profile,                  only : profile_t
 
-    !> Configuration data
-    type(string_t), intent(in) :: config
+    type(string_t), intent(in) :: config ! Full TUV-x configuration data
 
-    class(photolysis_core_t), pointer :: new_core
+    class(core_t), pointer :: new_core
 
     ! Local variables
     character(len=*), parameter :: Iam = 'Photolysis core constructor: '
@@ -156,18 +157,17 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Perform calculations for specified photolysis and dose rates for a
-  !! given set of conditions
   subroutine run( this )
+    ! Performs calculations for specified photolysis and dose rates for a
+    ! given set of conditions
 
     use tuvx_profile,                    only : profile_t
     use tuvx_radiator_warehouse,         only : radiator_warehouse_t
     use tuvx_radiator,                   only : radiator_t
-    use tuvx_radiative_transfer_solver,  only : radiation_field_t
+    use tuvx_solver,                     only : radiation_field_t
     use tuvx_diagnostic_util,            only : diagout
 
-    !> Photolysis core
-    class(photolysis_core_t), intent(inout)  :: this
+    class(core_t), intent(inout)  :: this ! TUV-x core
 
     ! Local variables
     character(len=*), parameter       :: Iam = 'Photolysis core run: '
@@ -277,8 +277,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Outputs calculated photolysis rate constants
   subroutine output_photolysis_rate_constants( this, values, file_path )
+    ! Outputs calculated photolysis rate constants
 
     use musica_assert,                 only : assert
     use nc4fortran,                    only : netcdf_file
@@ -286,12 +286,9 @@ contains
     use tuvx_netcdf,                   only : clean_string
     use tuvx_profile,                  only : profile_t
 
-    !> TUV-x core
-    class(photolysis_core_t), intent(in) :: this
-    !> Photolysis rate constants (time, vertical level, reaction)
-    real(dk),                 intent(in) :: values(:,:,:)
-    !> File path to output to
-    character(len=*),         intent(in) :: file_path
+    class(core_t),    intent(in) :: this          ! TUV-x core
+    real(dk),         intent(in) :: values(:,:,:) ! Photolysis rate constants (time, vertical level, reaction)
+    character(len=*), intent(in) :: file_path     ! File path to output to
 
     type(netcdf_file)           :: output_file
     integer                     :: i_rxn
@@ -337,8 +334,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Outputs calculated dose rates
   subroutine output_dose_rates( this, values, file_path )
+    ! Outputs calculated dose rates
 
     use musica_assert,                 only : assert
     use nc4fortran,                    only : netcdf_file
@@ -346,12 +343,9 @@ contains
     use tuvx_netcdf,                   only : clean_string
     use tuvx_profile,                  only : profile_t
 
-    !> TUV-x core
-    class(photolysis_core_t), intent(in) :: this
-      !> Dose rates (time, vertical level, dose rate type)
-    real(dk),                 intent(in) :: values(:,:,:)
-    !> File path to output to
-    character(len=*),         intent(in) :: file_path
+    class(core_t),    intent(in) :: this          ! TUV-x core
+    real(dk),         intent(in) :: values(:,:,:) ! Dose rates (time, vertical level, dose rate type)
+    character(len=*), intent(in) :: file_path     ! File path to output to
 
     type(netcdf_file)           :: output_file
     integer                     :: i_rate
@@ -397,11 +391,11 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Finalize the photolysis core
   subroutine finalize( this )
+    ! Finalizes the core
 
     !> Photolysis core
-    type(photolysis_core_t), intent(inout) :: this
+    type(core_t), intent(inout) :: this
 
     if( associated( this%grid_warehouse_ ) ) then
       deallocate( this%grid_warehouse_ )

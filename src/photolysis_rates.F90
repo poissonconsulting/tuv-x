@@ -140,7 +140,7 @@ contains
     use tuvx_constants,                only : hc
     use tuvx_diagnostic_util,          only : diagout
     use tuvx_la_sr_bands,              only : la_sr_bands_t
-    use tuvx_radiative_transfer_solver,only : radiation_field_t
+    use tuvx_solver,                   only : radiation_field_t
     use tuvx_spherical_geometry,       only : spherical_geometry_t
 
     !> Photolysis rate constant calculator

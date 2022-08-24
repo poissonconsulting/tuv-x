@@ -9,8 +9,16 @@ Docker
 The quickest way to get started with TUV-x is with Docker.
 The only requirement is that you have `Docker Desktop <https://www.docker.com/get-started>`_
 installed and running.
+With Docker Desktop running, open a terminal window.
 
-With Docker Desktop running, open a terminal window and run the following command to start the TUV-x container:
+To get the latest release of TUV-x, run the following command to start the TUV-x container:
+
+.. code-block:: bash
+
+   docker run -it ghcr.io/NCAR/tuv-x:release bash
+
+
+To get the most recent, pre-release version of TUV-x instead run:
 
 .. code-block:: bash
 

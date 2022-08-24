@@ -17,3 +17,9 @@ add_subdirectory(unit)
 add_subdirectory(regression)
 
 ################################################################################
+# Run examples as tests
+
+add_test(NAME full_example COMMAND tuv-x examples/full_config.json
+         WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+################################################################################

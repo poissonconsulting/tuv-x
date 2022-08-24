@@ -1,31 +1,32 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 !
-module tuvx_delta_eddington
+module tuvx_solver_delta_eddington
 
-   use tuvx_radiative_transfer_solver, only : radiative_transfer_solver_t,    &
-                                              radiation_field_t
-   use musica_constants,               only : dk => musica_dk
-   use tuvx_constants,                 only : pi
+  use tuvx_solver, only : solver_t,     &
+                                             radiation_field_t
+  use musica_constants,               only : dk => musica_dk
+  use tuvx_constants,                 only : pi
 
-   implicit none
+  implicit none
 
-   private
-   public :: delta_eddington_t
+  private
+  public :: solver_delta_eddington_t
 
-   type, extends(radiative_transfer_solver_t) :: delta_eddington_t
+  type, extends(solver_t) ::                               &
      ! Radiative flux calculator that applies the delta-Eddington Approximation
      ! (Joseph and Wiscombe, J. Atmos. Sci., 33, 2453-2459, 1976)
-   contains
-     procedure :: update_radiation_field
-   end type delta_eddington_t
+      solver_delta_eddington_t
+  contains
+    procedure :: update_radiation_field
+  end type solver_delta_eddington_t
 
-   real(dk), parameter :: rZERO = 0.0_dk
-   real(dk), parameter :: rONE  = 1.0_dk
-   real(dk), parameter :: rTWO  = 2.0_dk
-   real(dk), parameter :: d2r   = pi/180._dk
+  real(dk), parameter :: rZERO = 0.0_dk
+  real(dk), parameter :: rONE  = 1.0_dk
+  real(dk), parameter :: rTWO  = 2.0_dk
+  real(dk), parameter :: d2r   = pi/180._dk
 
-   contains
+contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -37,7 +38,7 @@ module tuvx_delta_eddington
     use tuvx_diagnostic_util,          only : diagout
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_linear_algebra_linpack,   only : linalgebra_t
+    use tuvx_linear_algebra_linpack,   only : linear_algebra_linpack_t
     use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : Profile_warehouse_t
     use tuvx_radiator,                 only : radiator_t, radiator_state_t
@@ -45,7 +46,7 @@ module tuvx_delta_eddington
     use tuvx_radiator_warehouse,       only : warehouse_iterator_t
     use tuvx_spherical_geometry,       only : spherical_geometry_t
 
-    class(delta_eddington_t), intent(inout) :: this ! Delta-Eddington solver
+    class(solver_delta_eddington_t), intent(inout) :: this ! Delta-Eddington solver
 
     integer,                    intent(in)    :: n_streams ! not used in delta eddington
     integer,                    intent(in)    :: n_layers  ! number of vertical layers
@@ -86,7 +87,7 @@ module tuvx_delta_eddington
     real(dk) :: ssfc
 
     ! Linear algebra package, radiation field type
-    type(linalgebra_t) :: linpack
+    type(linear_algebra_linpack_t) :: linpack
 
     ! Local variables
     real(dk), parameter                  :: largest = 1.e36_dk
@@ -441,4 +442,4 @@ module tuvx_delta_eddington
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-end module tuvx_delta_eddington
+end module tuvx_solver_delta_eddington

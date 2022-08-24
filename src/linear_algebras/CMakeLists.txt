@@ -1,10 +1,10 @@
 ################################################################################
-# Radiator transfer source
+# Linear algebra source
 
-set(SRC aerosol.F90
+set(SRC linpack.F90
         )
 
 list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
-set(RADIATOR_SRC ${SRC} PARENT_SCOPE)
+set(LINEAR_ALGEBRA_SRC ${SRC} PARENT_SCOPE)
 
 ################################################################################

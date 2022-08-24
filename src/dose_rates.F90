@@ -111,7 +111,7 @@ contains
     use musica_assert,                 only : die_msg
     use tuvx_constants,                only : hc
     use tuvx_diagnostic_util,          only : diagout
-    use tuvx_radiative_transfer_solver,only : radiation_field_t
+    use tuvx_solver,                   only : radiation_field_t
 
     !> Dose rate constant calculator
     class(dose_rates_t),       intent(inout) :: this

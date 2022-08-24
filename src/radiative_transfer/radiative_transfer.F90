@@ -8,7 +8,7 @@ module tuvx_radiative_transfer
   use musica_constants,                only : dk => musica_dk
   use tuvx_cross_section_warehouse,    only : cross_section_warehouse_t
   use tuvx_radiator_warehouse,         only : radiator_warehouse_t
-  use tuvx_radiative_transfer_solver,  only : radiative_transfer_solver_t
+  use tuvx_solver,                     only : solver_t
 
   implicit none
   private
@@ -21,7 +21,7 @@ module tuvx_radiative_transfer
     ! Calculates the atmospheric radiation field
     private
     integer                                     :: n_streams_ = 0
-    class(radiative_transfer_solver_t), pointer :: solver_ => null()
+    class(solver_t), pointer                    :: solver_ => null()
     type(config_t)                              :: config_        ! Copy of the original radiative transfer component configuration
     type(cross_section_warehouse_t),    pointer :: cross_section_warehouse_   &
                                                        => null( ) ! Copy of original radiative transfer :f:type:`~tuvx_cross_section_warehouse/cross_section_warehouse_t`
@@ -49,7 +49,7 @@ contains
 
     use musica_assert,                 only : assert_msg, die_msg
     use musica_string,                 only : string_t
-    use tuvx_delta_eddington,          only : delta_eddington_t
+    use tuvx_solver_delta_eddington,   only : solver_delta_eddington_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
@@ -96,7 +96,7 @@ contains
       call die_msg( 900569062,                                                &
                     "Discrete ordinants method is not currently available" )
     else
-      allocate( delta_eddington_t :: new_radiative_transfer%solver_ )
+      allocate( solver_delta_eddington_t :: new_radiative_transfer%solver_ )
     endif
 
   end function constructor
@@ -144,7 +144,7 @@ contains
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_spherical_geometry,       only : spherical_geometry_t
     use tuvx_la_sr_bands,              only : la_sr_bands_t
-    use tuvx_radiative_transfer_solver,only : radiation_field_t
+    use tuvx_solver,                   only : radiation_field_t
 
     class(radiative_transfer_t),       intent(inout) :: this               ! A :f:type:`~tuvx_radiative_transfer/radxfer_component_core_t`
     type(grid_warehouse_t),            intent(inout) :: grid_warehouse     ! :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`

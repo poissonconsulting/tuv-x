@@ -8,9 +8,9 @@ module tuvx_linear_algebra_linpack
 
    implicit none
 
-   public :: linalgebra_t
+   public :: linear_algebra_linpack_t
 
-   type, extends(linear_algebra_t) :: linalgebra_t
+   type, extends(linear_algebra_t) :: linear_algebra_linpack_t
      ! Linear algebra functions using LINPACK
    contains
      procedure :: SGBCO
@@ -20,7 +20,7 @@ module tuvx_linear_algebra_linpack
      procedure :: SGEFA
      procedure :: SGESL
      procedure :: tridiag
-   end type linalgebra_t
+   end type linear_algebra_linpack_t
 
    real(dk), parameter ::    rZERO = 0.0_dk
    real(dk), parameter ::    rONE  = 1.0_dk
@@ -41,7 +41,7 @@ module tuvx_linear_algebra_linpack
 
     use tuvx_linear_algebra,           only : SASUM, SDOT, SASUM, SAXPY, SSCAL
 
-    class(linalgebra_t), intent(inout) :: this
+    class(linear_algebra_linpack_t), intent(inout) :: this
 
     real(dk), intent(inout) :: ABD(:,:) ! Banded matrix A(Ax = b) in a packed format
     integer,  intent(in)    :: N        ! Order of the original matrix
@@ -211,21 +211,21 @@ module tuvx_linear_algebra_linpack
     !
     !
     ! ROUTINES CALLED:  FROM BLAS:    SAXPY, SSCAL, isamax
-    !                   FROM FORTRAN: max, min
+    ! FROM FORTRAN: max, min
 
     use tuvx_linear_algebra, only : SAXPY, SSCAL, isamax
 
-    class(linalgebra_t), intent(inout) :: this
+    class(linear_algebra_linpack_t), intent(inout) :: this
     real(dk), intent(inout) ::  ABD(:,:) ! Banded matrix A(Ax = b) in a packed format
     integer,  intent(in)    ::  N        ! Order of the original matrix
     integer,  intent(in)    ::  ML       ! Number of diagonals below the main diagonal
     integer,  intent(in)    ::  MU       ! Number of diagonals above the main diagonal
     integer,  intent(out)   ::  INFO     ! = 0  NORMAL VALUE.
     ! = K  IF  U(K,K) .EQ. 0.0 .  THIS IS NOT AN ERROR
-    !      CONDITION FOR THIS SUBROUTINE, BUT IT DOES
-    !      INDICATE THAT SGBSL WILL DIVIDE BY ZERO IF
-    !      CALLED.  USE  RCOND  IN SBGCO FOR A RELIABLE
-    !      INDICATION OF SINGULARITY.
+    ! CONDITION FOR THIS SUBROUTINE, BUT IT DOES
+    ! INDICATE THAT SGBSL WILL DIVIDE BY ZERO IF
+    ! CALLED.  USE  RCOND  IN SBGCO FOR A RELIABLE
+    ! INDICATION OF SINGULARITY.
     integer,  intent(out)   ::  IPVT(:)  ! Pivot vector
 
     real(dk) :: T
@@ -299,7 +299,7 @@ module tuvx_linear_algebra_linpack
 
   subroutine SGBSL( this, ABD, N, ML, MU, IPVT, B, JOB )
     ! SOLVES THE REAL BAND SYSTEM
-    !   A * X = B  OR  TRANSPOSE(A) * X = B
+    ! A * X = B  OR  TRANSPOSE(A) * X = B
     ! USING THE FACTORS COMPUTED BY SBGCO OR SGBFA.
     !
     ! REVISION DATE:  8/1/82
@@ -316,18 +316,18 @@ module tuvx_linear_algebra_linpack
     !
     ! TO COMPUTE  INVERSE(A) * C  WHERE  C  IS A MATRIX
     ! WITH  P  COLUMNS
-    !     call SGBCO(ABD,LDA,N,ML,MU,IPVT,RCOND,Z)
-    !     if (RCOND IS TOO SMALL) GO TO ...
-    !       do 10 J = 1, P
-    !         call SGBSL(ABD,LDA,N,ML,MU,IPVT,C(1,J),0)
-    !        10 CONTINUE
+    ! call SGBCO(ABD,LDA,N,ML,MU,IPVT,RCOND,Z)
+    ! if (RCOND IS TOO SMALL) GO TO ...
+    ! do 10 J = 1, P
+    ! call SGBSL(ABD,LDA,N,ML,MU,IPVT,C(1,J),0)
+    ! 10 CONTINUE
     !
     ! ROUTINES CALLED:  FROM BLAS:    SAXPY, SDOT
-    !                   FROM FORTRAN: min
+    ! FROM FORTRAN: min
 
     use tuvx_linear_algebra, only : SAXPY, SDOT
 
-    class(linalgebra_t), intent(inout) :: this
+    class(linear_algebra_linpack_t), intent(inout) :: this
     real(dk), intent(in)    ::  ABD(:,:) ! Output from SGBCO or SGBFA
     integer,  intent(in)    ::  N        ! Order of the original matrix
     integer,  intent(in)    ::  ML       ! Number of diagonals below the main diagonal
@@ -399,7 +399,7 @@ module tuvx_linear_algebra_linpack
 
   subroutine SGESL( this, A, N, IPVT, B, JOB )
     ! SOLVES THE real SYSTEM
-    !   A * X = B  OR  TRANS(A) * X = B
+    ! A * X = B  OR  TRANS(A) * X = B
     ! USING THE FACTORS COMPUTED BY SGECO OR SGEFA.
     !
     ! REVISION DATE:  8/1/82
@@ -416,15 +416,15 @@ module tuvx_linear_algebra_linpack
     !
     ! TO COMPUTE  INVERSE(A) * C  WHERE  C  IS A MATRIX
     ! WITH  P  COLUMNS
-    !   call SGECO(A,LDA,N,IPVT,RCOND,Z)
-    !   if (RCOND IS TOO SMALL) GO TO ...
-    !     do 10 J = 1, P
-    !       call SGESL(A,LDA,N,IPVT,C(1,J),0)
-    !     10 CONTINUE
+    ! call SGECO(A,LDA,N,IPVT,RCOND,Z)
+    ! if (RCOND IS TOO SMALL) GO TO ...
+    ! do 10 J = 1, P
+    ! call SGESL(A,LDA,N,IPVT,C(1,J),0)
+    ! 10 CONTINUE
 
     use tuvx_linear_algebra, only : SAXPY, SDOT
 
-    class(linalgebra_t), intent(inout) :: this
+    class(linear_algebra_linpack_t), intent(inout) :: this
 
     integer,  intent(in)    :: N       ! Order of matrix A
     integer,  intent(in)    :: JOB     ! = 0  TO SOLVE  A*X = B ,
@@ -491,12 +491,12 @@ module tuvx_linear_algebra_linpack
     ! TO SOLVE  A*X = B , FOLLOW SGECO BY SGESL.
     !
     ! ROUTINES CALLED:  FROM LINPACK: SGEFA
-    !                   FROM BLAS:    SAXPY, SDOT, SSCAL, SASUM
-    !                   FROM FORTRAN: abs, Amax1, SIGN
+    ! FROM BLAS:    SAXPY, SDOT, SSCAL, SASUM
+    ! FROM FORTRAN: abs, Amax1, SIGN
 
     use tuvx_linear_algebra, only : SAXPY, SSCAL, SDOT, SASUM
 
-    class(linalgebra_t), intent(inout) :: this
+    class(linear_algebra_linpack_t), intent(inout) :: this
     real(dk), intent(inout) :: A(:,:) ! AN UPPER TRIANGULAR MATRIX AND THE MULTIPLIERS
     ! WHICH WERE USED TO OBTAIN IT.
     ! THE FACTORIZATION CAN BE WRITTEN  A = L*U , WHERE
@@ -509,7 +509,7 @@ module tuvx_linear_algebra_linpack
     ! IN  A  AND  B  OF SIZE  EPSILON  MAY CAUSE
     ! RELATIVE PERTURBATIONS IN  X  OF SIZE  EPSILON/RCOND .
     ! IF  RCOND  IS SO SMALL THAT THE LOGICAL EXPRESSION
-    !          1.0 + RCOND .EQ. 1.0
+    ! 1.0 + RCOND .EQ. 1.0
     ! IS TRUE, THEN  A  MAY BE SINGULAR TO WORKING
     ! PRECISION.  IN PARTICULAR,  RCOND  IS ZERO  IF
     ! EXACT SINGULARITY IS DETECTED OR THE ESTIMATE
@@ -657,7 +657,7 @@ module tuvx_linear_algebra_linpack
 
     use tuvx_linear_algebra, only : SAXPY, SSCAL, isamax
 
-    class(linalgebra_t), intent(inout) :: this
+    class(linear_algebra_linpack_t), intent(inout) :: this
     real(dk), intent(inout) :: A(:,:) ! AN UPPER TRIANGULAR MATRIX AND THE MULTIPLIERS
     ! WHICH WERE USED TO OBTAIN IT.
     ! THE FACTORIZATION CAN BE WRITTEN  A = L*U , WHERE
@@ -667,10 +667,10 @@ module tuvx_linear_algebra_linpack
     integer,  intent(out)   :: IPVT(:) ! Pivot vector
     integer,  intent(out)   ::  INFO   ! = 0  NORMAL VALUE.
     ! = K  REALU(K,K) .EQ. 0.0 .  THIS IS NOT AN ERROR
-    !      CONDITION FOR THIS SUBROUTINE, BUT IT doES
-    !      INDICATE THAT SGESL OR SGEDI WILL DIVIDE BY ZERO
-    !      if CALLED.  USE  RCOND  IN SGECO FOR A RELIABLE
-    !      INDICATION OF SINGULARITY.
+    ! CONDITION FOR THIS SUBROUTINE, BUT IT doES
+    ! INDICATE THAT SGESL OR SGEDI WILL DIVIDE BY ZERO
+    ! if CALLED.  USE  RCOND  IN SGECO FOR A RELIABLE
+    ! INDICATION OF SINGULARITY.
 
     real(dk)     :: T
     integer  :: J,K,KP1,L,NM1
@@ -721,15 +721,42 @@ module tuvx_linear_algebra_linpack
     !
     ! The system to be solved is:
     !
-    ! | b1 c1  0 ...                |   |  u1  |   |  r1  |
-    ! | a2 b2 c2 ...                |   |  u2  |   |  r2  |
-    ! |          ...                | * | ...  | = | ...  |
-    ! |          ... aN-1 bN-1 cN-1 |   | uN-1 |   | rN-1 |
-    ! |          ...  aN   bN   cN  |   |  uN  |   |  rN  |
+    ! .. math::
+    !
+    !    \begin{pmatrix}
+    !      b_1 & c_1 & 0   & \cdots &    0     &    0    &    0    \\
+    !      a_2 & b_2 & c_2 & \cdots &    0     &    0    &    0    \\
+    !          &     &     & \cdots &          &         &         \\
+    !       0  &  0  &  0  & \cdots & a_{N-1}  & b_{N-1} & c_{N-1} \\
+    !       0  &  0  &  0  & \cdots &    0     &   a_N   &   b_N
+    !    \end{pmatrix}
+    !    \times
+    !    \begin{pmatrix}
+    !      u_1 \\
+    !      u_2 \\
+    !      \cdots \\
+    !      u_{N-1} \\
+    !      u_N
+    !    \end{pmatrix}
+    !    =
+    !    \begin{pmatrix}
+    !      r_1 \\
+    !      r_2 \\
+    !      \cdots \\
+    !      r_{N-1} \\
+    !      r_N
+    !    \end{pmatrix}
+    !
+    ! ..
+    !   | b1 c1  0 ...                |   |  u1  |   |  r1  |
+    !   | a2 b2 c2 ...                |   |  u2  |   |  r2  |
+    !   |          ...                | * | ...  | = | ...  |
+    !   |          ... aN-1 bN-1 cN-1 |   | uN-1 |   | rN-1 |
+    !   |          ...   0   aN   bN  |   |  uN  |   |  rN  |
     !
     use musica_constants, only : dk => musica_dk
 
-    class(linalgebra_t), intent(in) :: this
+    class(linear_algebra_linpack_t), intent(in) :: this
     real(dk),            intent(in) :: a(:) ! lower diagonal
     real(dk),            intent(in) :: b(:) ! primary diagonal
     real(dk),            intent(in) :: c(:) ! upper diagonal

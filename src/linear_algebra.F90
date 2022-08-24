@@ -66,7 +66,7 @@ interface
 
   subroutine SGBSL( this, ABD, N, ML, MU, IPVT, B, JOB )
     ! Solves the real band system
-    !  A * X = B or transpose(A) * X = B
+    ! A * X = B or transpose(A) * X = B
     ! using the factors computed by SGBCO or SGBFA
     use musica_constants,              only : dk => musica_dk
     import linear_algebra_t
@@ -92,10 +92,10 @@ interface
     class(linear_algebra_t), intent(inout) :: this
     real(dk),                intent(inout) :: A(:,:) ! INPUT: The matrix to be factored
     ! OUTPUT: An Upper Triangular matrix and the multipliers
-    !         which were used to obtain it.
-    !         The factorization can be written  A = L*U , where
-    !         L  is a product of perumtation and unit lower
-    !         triangular matrices and  U  is upper triangular.
+    ! which were used to obtain it.
+    ! The factorization can be written  A = L*U , where
+    ! L  is a product of perumtation and unit lower
+    ! triangular matrices and  U  is upper triangular.
     integer,                 intent(in)    :: N       ! The order of matrix A
     integer,                 intent(out)   :: IPVT(:) ! Pivot vector
     real(dk),                intent(out)   :: RCOND   ! An estimate of the
@@ -124,25 +124,25 @@ interface
     class(linear_algebra_t), intent(inout) :: this
     real(dk),                intent(inout) :: A(:,:) ! INPUT: The matrix to be factored
     ! OUTPUT: An Upper Triangular matrix and the multipliers
-    !         which were used to obtain it.
-    !         The factorization can be written  A = L*U , where
-    !         L  is a product of perumtation and unit lower
-    !         triangular matrices and  U  is upper triangular.
+    ! which were used to obtain it.
+    ! The factorization can be written  A = L*U , where
+    ! L  is a product of perumtation and unit lower
+    ! triangular matrices and  U  is upper triangular.
     integer,                 intent(in)    :: N       ! The order of matrix A
     integer,                 intent(out)   :: IPVT(:) ! Pivot vector
     integer,                 intent(out)   :: INFO    ! 0 = normal value
     ! K = If  U(K,K) .EQ. 0.0 .  This is not an error
-    !     condition for this subroutine, but it does
-    !     indicate that SGESL or SGEDI will divide by zero
-    !     if called.  Use  RCOND  in SGECO for a reliable
-    !     indication of singularity.
+    ! condition for this subroutine, but it does
+    ! indicate that SGESL or SGEDI will divide by zero
+    ! if called.  Use  RCOND  in SGECO for a reliable
+    ! indication of singularity.
   end subroutine SGEFA
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine SGESL( this, A, N, IPVT, B, JOB )
     ! Solves the real system
-    !  A * X = B or transpose(A) * X = B
+    ! A * X = B or transpose(A) * X = B
     ! using the factors computed by SGECO or SGEFA
     use musica_constants,              only : dk => musica_dk
     import linear_algebra_t

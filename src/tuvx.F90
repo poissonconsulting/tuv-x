@@ -2,15 +2,15 @@
 ! SPDX-License-Identifier: Apache-2.0
 !
 program tuvx
-  ! Driver for the photolysis utility
+  ! Driver for stand-alone TUV-x
 
   use musica_string,                   only : string_t
-  use tuvx_core,                       only : photolysis_core_t
+  use tuvx_core,                       only : core_t
   use tuvx_diagnostic_util,            only : prepare_diagnostic_output
 
   implicit none
 
-  class(photolysis_core_t), pointer :: photolysis_core
+  class(core_t), pointer :: core
 
   ! Command-line options
   character(len=256) :: argument
@@ -28,12 +28,12 @@ program tuvx
   call prepare_diagnostic_output( )
 
   ! instatiate and initialize photolysis core object
-  photolysis_core => photolysis_core_t( configFileSpec )
+  core => core_t( configFileSpec )
 
   ! run photolysis
-  call photolysis_core%run()
+  call core%run()
 
-  deallocate( photolysis_core )
+  deallocate( core )
 
 contains
 

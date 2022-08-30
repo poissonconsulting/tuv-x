@@ -3,8 +3,7 @@
 !
 module tuvx_solver_delta_eddington
 
-  use tuvx_solver, only : solver_t,     &
-                                             radiation_field_t
+  use tuvx_solver,                    only : solver_t, radiation_field_t
   use musica_constants,               only : dk => musica_dk
   use tuvx_constants,                 only : pi
 
@@ -13,10 +12,16 @@ module tuvx_solver_delta_eddington
   private
   public :: solver_delta_eddington_t
 
-  type, extends(solver_t) ::                               &
-     ! Radiative flux calculator that applies the delta-Eddington Approximation
-     ! (Joseph and Wiscombe, J. Atmos. Sci., 33, 2453-2459, 1976)
-      solver_delta_eddington_t
+  type, extends(solver_t) :: solver_delta_eddington_t
+     ! Radiative flux calculator that applies the delta-Eddington Approximation.
+     !
+     ! Solves two-stream equations for multiple layers. These routines are based
+     ! on equations from: Toon et al., J.Geophys.Res., v94 (D13), Nov 20, 1989.
+     ! It contains 9 two-stream methods to choose from. A pseudo-spherical
+     ! correction has also been added.
+     !
+     ! The original delta-Eddington paper is:
+     ! Joseph and Wiscombe, J. Atmos. Sci., 33, 2453-2459, 1976
   contains
     procedure :: update_radiation_field
   end type solver_delta_eddington_t
@@ -44,6 +49,7 @@ contains
     use tuvx_radiator,                 only : radiator_t, radiator_state_t
     use tuvx_radiator_warehouse,       only : radiator_warehouse_t
     use tuvx_radiator_warehouse,       only : warehouse_iterator_t
+    use tuvx_solver,                   only : slant_optical_depth
     use tuvx_spherical_geometry,       only : spherical_geometry_t
 
     class(solver_delta_eddington_t), intent(inout) :: this ! Delta-Eddington solver
@@ -96,69 +102,20 @@ contains
     real(dk), parameter                  :: eps    = 1.e-3_dk
 
     integer                              :: nlambda, lambdaNdx
-    real(dk), allocatable                :: dscat(:,:)
-    real(dk), allocatable                :: dscat_accum(:,:)
-    real(dk), allocatable                :: dabs_accum(:,:)
-    real(dk), allocatable                :: asym_accum(:,:)
-    type(warehouse_iterator_t), pointer  :: iter => null( )
-    class(radiator_t),          pointer  :: aRadiator
     type(radiator_state_t)               :: atmRadiatorState
     class(grid_t),    pointer            :: zGrid => null( )
     class(grid_t),    pointer            :: lambdaGrid => null( )
     class(profile_t), pointer            :: surfaceAlbedo => null( )
-
-    allocate( radiation_field )
 
     zGrid => grid_warehouse%get_grid( "height", "km" )
     lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
     surfaceAlbedo => profile_warehouse%get_profile( "surface albedo", "none" )
 
     nlambda = lambdaGrid%ncells_
-    allocate( dscat(n_layers,nlambda) )
-    allocate( dscat_accum, mold=dscat )
-    allocate( dabs_accum,  mold=dscat )
-    allocate( asym_accum,  mold=dscat )
-    allocate( radiation_field%edr_(n_layers+1,nlambda) )
-    allocate( radiation_field%edn_, mold=radiation_field%edr_ )
-    allocate( radiation_field%eup_, mold=radiation_field%edr_ )
-    allocate( radiation_field%fdr_, mold=radiation_field%edr_ )
-    allocate( radiation_field%fdn_, mold=radiation_field%edr_ )
-    allocate( radiation_field%fup_, mold=radiation_field%edr_ )
-    ! initialize the accumulators
-    dscat_accum = rZERO
-    dabs_accum  = rZERO
-    asym_accum  = rZERO
+    radiation_field => radiation_field_t( n_layers + 1, nlambda )
 
-    ! iterate over radiators accumulating radiative properties
-    iter => radiator_warehouse%get_iterator()
-    do while( iter%next() )
-      aRadiator => radiator_warehouse%get_radiator( iter )
-      associate( OD  => aRadiator%state_%layer_OD_,                           &
-                 SSA => aRadiator%state_%layer_SSA_,                          &
-                 G   => aRadiator%state_%layer_G_ )
-        dscat       = OD * SSA
-        dscat_accum = dscat_accum + dscat
-        dabs_accum  = dabs_accum + OD*(rONE - SSA)
-        asym_accum  = asym_accum + G*dscat
-      end associate
-      nullify( aRadiator )
-    enddo
-    deallocate( iter )
-
-    ! set atmosphere radiative properties
-    dscat_accum = max( dscat_accum, kfloor )
-    dabs_accum  = max( dabs_accum, kfloor )
-
-    atmRadiatorState%layer_OD_ = dscat_accum + dabs_accum
-    allocate( atmRadiatorState%layer_SSA_,                                    &
-              mold = atmRadiatorState%layer_OD_ )
-    where( dscat_accum == kfloor )
-      atmRadiatorState%layer_SSA_ = kfloor
-    elsewhere
-      atmRadiatorState%layer_SSA_ = dscat_accum/atmRadiatorState%layer_OD_
-    endwhere
-
-    atmRadiatorState%layer_G_ = asym_accum/dscat_accum
+    ! Create cumulative state from all radiators
+    call radiator_warehouse%accumulate_states( atmRadiatorState )
 
     ! MU = cosine of solar zenith angle
     ! RSFC = surface albedo
@@ -211,20 +168,10 @@ contains
         call diagout( 'taun.new', taun )
       endif
 
-      ! calculate slant optical depth at the top of the atmosphere when zen>90.
-      ! in this case, higher altitude of the top layer is recommended which can
-      ! be easily changed in gridz.f.
-
+      ! calculate slant optical depth at the top of the atmosphere when
+      ! the solar zenith angle is > 90 degrees.
       if( mu < rZERO ) then
-        if( nid(0) < 0 ) then
-          tausla(0) = largest
-        else
-          sum = rZERO
-          do j = 1, nid(0)
-           sum = sum + rTWO * taun( j ) * dsdh( 0, j )
-          end do
-          tausla(0) = sum
-        end if
+        tausla(0) = slant_optical_depth( 0, nid(0), dsdh(0,:), taun )
       end if
 
       layer_loop: do i = 1, n_layers
@@ -240,18 +187,9 @@ contains
         om = min( om, rONE - precis )
 
         ! calculate slant optical depth
+        tausla( i ) = slant_optical_depth( i, nid( i ), dsdh( i, : ), taun )
 
-        if( nid( i ) < 0 ) then
-          tausla( i ) = largest
-        else
-          sum = rZERO
-          do j = 1, min( nid( i ), i )
-            sum = sum + taun( j ) * dsdh( i, j )
-          enddo
-          do j = min( nid( i ), i ) + 1, nid( i )
-            sum = sum + rTWO * taun( j ) * dsdh( i, j )
-          enddo
-          tausla( i ) = sum
+        if( nid( i ) >= 0 ) then
           if( tausla( i ) == tausla( i - 1 ) ) then
             mu2( i ) = sqrt( largest )
           else

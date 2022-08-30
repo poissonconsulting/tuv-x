@@ -19,6 +19,8 @@ module tuvx_radiator
     real(kind=dk), allocatable :: layer_SSA_(:,:) ! layer single scattering albedo (vertical layer, wavelength bin)
     real(kind=dk), allocatable :: layer_G_(:,:) ! layer asymmetry factor (vertical layer, wavelength bin)
   contains
+    ! Accumulates a net radiator state for a set of radiators
+    procedure :: accumulate
     final :: finalize
   end type radiator_state_t
 
@@ -31,7 +33,7 @@ module tuvx_radiator
     type(string_t)         :: cross_section_name_ ! Name of the absorption cross-section to use
     type(radiator_state_t) :: state_ ! Optical properties, a :f:type:`~tuvx_radiator/radiator_state_t`
   contains
-    !> Update radiator for new environmental conditions
+    ! Update radiator for new environmental conditions
     procedure :: update_state
   end type radiator_t
 
@@ -184,6 +186,63 @@ contains
     deallocate( radiator_cross_section )
 
   end subroutine update_state
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine accumulate( this, radiators )
+    ! Create a single radiator state that corresponds to the cumulative
+    ! state of a set of radiators, such that the optical properties of the
+    ! accumulated state can be used to solve radiative transfer equations for
+    ! the set of radiators
+
+    class(radiator_state_t), intent(inout) :: this
+    class(radiator_ptr),     intent(in)    :: radiators(:)
+
+    real(dk), parameter :: kfloor = 1.0_dk / 1.0e36_dk ! smallest value for radiative properties
+
+    integer :: i_radiator
+    real(dk), allocatable :: dscat(:,:)
+    real(dk), allocatable :: dscat_accum(:,:)
+    real(dk), allocatable :: dabs_accum(:,:)
+    real(dk), allocatable :: asym_accum(:,:)
+
+    allocate( dscat,       mold = radiators(1)%val_%state_%layer_OD_ )
+    allocate( dscat_accum, mold = dscat )
+    allocate( dabs_accum,  mold = dscat )
+    allocate( asym_accum,  mold = dscat )
+
+    dscat_accum = 0.0_dk
+    dabs_accum  = 0.0_dk
+    asym_accum  = 0.0_dk
+
+    ! iterate over radiators accumulating radiative properties
+    do i_radiator = 1, size( radiators )
+      associate( OD  => radiators( i_radiator )%val_%state_%layer_OD_,        &
+                 SSA => radiators( i_radiator )%val_%state_%layer_SSA_,       &
+                 G   => radiators( i_radiator )%val_%state_%layer_G_ )
+        dscat       = OD * SSA
+        dscat_accum = dscat_accum + dscat
+        dabs_accum  = dabs_accum + OD * ( 1.0_dk - SSA )
+        asym_accum  = asym_accum + G * dscat
+      end associate
+    end do
+
+    ! set atmosphere radiative properties
+    dscat_accum = max( dscat_accum, kfloor )
+    dabs_accum  = max( dabs_accum, kfloor )
+
+    this%layer_OD_ = dscat_accum + dabs_accum
+    if( .not. allocated( this%layer_SSA_ ) ) then
+      allocate( this%layer_SSA_, mold = this%layer_OD_ )
+    end if
+    where( dscat_accum == kfloor )
+      this%layer_SSA_ = kfloor
+    elsewhere
+      this%layer_SSA_ = dscat_accum / this%layer_OD_
+    endwhere
+    this%layer_G_ = asym_accum / dscat_accum
+
+  end subroutine accumulate
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

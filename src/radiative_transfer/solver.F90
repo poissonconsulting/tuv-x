@@ -4,28 +4,32 @@
 module tuvx_solver
 ! General interface for radiative transfer solvers
 
-   use musica_constants,               only : dk => musica_dk
+  use musica_constants,               only : dk => musica_dk
 
-   implicit none
+  implicit none
 
-   private
-   public :: solver_t, radiation_field_t
+  private
+  public :: solver_t, radiation_field_t, slant_optical_depth
 
-   type :: radiation_field_t
-     real(dk), allocatable :: edr_(:,:) ! Contribution of the direct component to the total spectral irradiance (vertical interface, wavelength)
-     real(dk), allocatable :: eup_(:,:) ! Contribution of the diffuse upwelling component to the total spectral irradiance (vertical interface, wavelength)
-     real(dk), allocatable :: edn_(:,:) ! Contribution of the diffuse downwelling component to the total spectral irradiance (vertical interface, wavelength)
-     real(dk), allocatable :: fdr_(:,:) ! Contribution of the direct component to the total actinic flux (vertical interface, wavelength)
-     real(dk), allocatable :: fup_(:,:) ! Contribution of the diffuse upwelling component to the total actinic flux (vertical interface, wavelength)
-     real(dk), allocatable :: fdn_(:,:) ! Contribution of the diffuse downwelling component to the total actinic flux (vertical interface, wavelength)
-   contains
-     final :: finalize
-   end type radiation_field_t
+  type :: radiation_field_t
+    real(dk), allocatable :: edr_(:,:) ! Contribution of the direct component to the total spectral irradiance (vertical interface, wavelength)
+    real(dk), allocatable :: eup_(:,:) ! Contribution of the diffuse upwelling component to the total spectral irradiance (vertical interface, wavelength)
+    real(dk), allocatable :: edn_(:,:) ! Contribution of the diffuse downwelling component to the total spectral irradiance (vertical interface, wavelength)
+    real(dk), allocatable :: fdr_(:,:) ! Contribution of the direct component to the total actinic flux (vertical interface, wavelength)
+    real(dk), allocatable :: fup_(:,:) ! Contribution of the diffuse upwelling component to the total actinic flux (vertical interface, wavelength)
+    real(dk), allocatable :: fdn_(:,:) ! Contribution of the diffuse downwelling component to the total actinic flux (vertical interface, wavelength)
+  contains
+    final :: finalize
+  end type radiation_field_t
 
-   type, abstract :: solver_t
-     contains
-     procedure(update_radiation_field), deferred :: update_radiation_field
-   end type solver_t
+  type, abstract :: solver_t
+    contains
+    procedure(update_radiation_field), deferred :: update_radiation_field
+  end type solver_t
+
+  interface radiation_field_t
+    module procedure :: field_constructor
+  end interface radiation_field_t
 
 interface
 
@@ -65,6 +69,26 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  function field_constructor( n_vertical_interfaces, n_wavelength_bins )      &
+      result( field )
+    ! Constructor of radiation field objects
+
+    class(radiation_field_t), pointer :: field
+    integer, intent(in) :: n_vertical_interfaces
+    integer, intent(in) :: n_wavelength_bins
+
+    allocate( field )
+    allocate( field%edr_( n_vertical_interfaces, n_wavelength_bins ) )
+    allocate( field%edn_( n_vertical_interfaces, n_wavelength_bins ) )
+    allocate( field%eup_( n_vertical_interfaces, n_wavelength_bins ) )
+    allocate( field%fdr_( n_vertical_interfaces, n_wavelength_bins ) )
+    allocate( field%fdn_( n_vertical_interfaces, n_wavelength_bins ) )
+    allocate( field%fup_( n_vertical_interfaces, n_wavelength_bins ) )
+
+  end function field_constructor
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   subroutine finalize( this )
     ! Cleans up memory for a radiative transfer solver
 
@@ -78,6 +102,35 @@ contains
     if( allocated( this%fdn_ ) ) deallocate( this%fdn_ )
 
   end subroutine finalize
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  pure real(dk) function slant_optical_depth( i_layer, n_layers_crossed,      &
+      slant_path, optical_depth )
+    ! Calculates the total slant-path optical depth at a given vertical layer
+
+    integer, intent(in) :: i_layer ! Index of the interface to be calculated for (0 = top of the atmosphere, increasing with decreasing altitude)
+    integer, intent(in) :: n_layers_crossed ! number of layers crossed by the direct beam when travelling from the top of the atmosphere to layer ``i_layer``
+    real(dk), intent(in) :: slant_path(:) ! slant path of direct beam through each layer crossed when travelling from the top of the atmosphere to layer ``i_layer``
+    real(dk), intent(in) :: optical_depth(:) ! scaled optical depth in layer ``i_layer``
+
+    integer :: j_layer
+
+    if( n_layers_crossed < 0 ) then
+      slant_optical_depth = 1.0e36
+      return
+    end if
+    slant_optical_depth = 0.0_dk
+    do j_layer = 1, min( n_layers_crossed, i_layer )
+      slant_optical_depth = slant_optical_depth +                             &
+                            optical_depth( j_layer ) * slant_path( j_layer )
+    end do
+    do j_layer = min( n_layers_crossed, i_layer ) + 1, n_layers_crossed
+      slant_optical_depth = slant_optical_depth +                             &
+                   2.0_dk * optical_depth( j_layer ) * slant_path( j_layer )
+    end do
+
+  end function slant_optical_depth
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

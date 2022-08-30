@@ -2,9 +2,9 @@
 ! SPDX-License-Identifier: Apache-2.0
 
 module tuvx_radiator_warehouse
-! A class that holds and gives out 
+! A class that holds and gives out
 ! :f:type:`~tuvx_radiator/radiator_t`'s built by the
-! :f:mod:`~tuvx_radiator_factory`. 
+! :f:mod:`~tuvx_radiator_factory`.
 
 
   use musica_constants,                only : musica_dk
@@ -36,6 +36,8 @@ module tuvx_radiator_warehouse
     procedure :: in_warehouse
     !> Gets an iterator for the warehouse
     procedure :: get_iterator
+    !> Accumulates the state of all radiators in the warehouse
+    procedure :: accumulate_states
     !> Cleans up memory
     final     :: finalize
   end type radiator_warehouse_t
@@ -228,6 +230,21 @@ contains
     end select
 
   end function get_iterator
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine accumulate_states( this, state )
+    ! Accumulates the states off all radiators in the warehouse into a
+    ! single representative state.
+
+    use tuvx_radiator,                 only : radiator_state_t
+
+    class(radiator_warehouse_t), intent(in)    :: this
+    class(radiator_state_t),     intent(inout) :: state
+
+    call state%accumulate( this%radiators_ )
+
+  end subroutine accumulate_states
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

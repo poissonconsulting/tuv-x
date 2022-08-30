@@ -79,8 +79,8 @@ contains
     type(config_t) :: reaction_config
     type(config_t) :: cross_section_config, quantum_yield_config
     class(iterator_t), pointer :: iter
-    type(cross_section_ptr) :: cross_section_ptr
-    type(quantum_yield_ptr) :: quantum_yield_ptr
+    type(cross_section_ptr) :: a_cross_section_ptr
+    type(quantum_yield_ptr) :: a_quantum_yield_ptr
     character(len=64)           :: keychar
     type(string_t)              :: netcdfFile, Object
     type(string_t)              :: reaction_key
@@ -105,15 +105,15 @@ contains
 
       ! get cross section first
       call reaction_config%get( "cross section", cross_section_config, Iam )
-      cross_section_ptr%val_ => cross_section_builder( cross_section_config,  &
+      a_cross_section_ptr%val_ => cross_section_builder( cross_section_config,  &
                                             grid_warehouse, profile_warehouse )
-      rates%cross_sections_ = [ rates%cross_sections_, cross_section_ptr ]
+      rates%cross_sections_ = [ rates%cross_sections_, a_cross_section_ptr ]
 
       ! now get quantum yield
       call reaction_config%get( "quantum yield", quantum_yield_config, Iam )
-      quantum_yield_ptr%val_ => quantum_yield_builder( quantum_yield_config,  &
+      a_quantum_yield_ptr%val_ => quantum_yield_builder( quantum_yield_config,  &
                                             grid_warehouse, profile_warehouse )
-      rates%quantum_yields_ = [ rates%quantum_yields_, quantum_yield_ptr ]
+      rates%quantum_yields_ = [ rates%quantum_yields_, a_quantum_yield_ptr ]
 
       ! finally get scaling factor factor
       call reaction_config%get( "scaling factor",                             &

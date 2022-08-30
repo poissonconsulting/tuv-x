@@ -233,8 +233,6 @@ file_loop: &
     real(dk), allocatable,  intent(inout) :: data_lambda(:) ! Wavelength grid
     real(dk), allocatable,  intent(inout) :: data_parameter(:) ! Parameters (wavelength)
 
-    real(dk), parameter :: rZERO = 0.0_dk
-    real(dk), parameter :: rONE  = 1.0_dk
     real(dk), parameter :: deltax = 1.e-5_dk
     character(len=*), parameter :: Iam = 'cross_section; addpnts: '
 

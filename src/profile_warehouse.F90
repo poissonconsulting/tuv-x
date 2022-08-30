@@ -79,7 +79,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function get_profile_char( this, name, units ) result( profile_ptr )
+  function get_profile_char( this, name, units ) result( a_profile_ptr )
     ! Get copy of a profile object
 
     use musica_assert,     only : assert_msg
@@ -88,7 +88,7 @@ contains
     class(profile_warehouse_t), intent(inout) :: this
     character(len=*),           intent(in)    :: name
     character(len=*),           intent(in)    :: units
-    class(profile_t),           pointer       :: profile_ptr
+    class(profile_t),           pointer       :: a_profile_ptr
 
     ! Local variables
     character(len=*), parameter :: Iam = 'profile warehouse get_profile: '
@@ -109,13 +109,13 @@ contains
                      "Profile '"//name//"' has units of '"//                  &
                      this%profile_objs_( ndx )%val_%units( )//"' not '"//     &
                      units//"' as requested." )
-    allocate( profile_ptr, source = this%profile_objs_( ndx )%val_ )
+    allocate( a_profile_ptr, source = this%profile_objs_( ndx )%val_ )
 
   end function get_profile_char
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function get_profile_string( this, name, units ) result( profile_ptr )
+  function get_profile_string( this, name, units ) result( a_profile_ptr )
     ! Get a copy of a profile object
 
     use musica_string,                 only : string_t
@@ -124,9 +124,9 @@ contains
     class(profile_warehouse_t), intent(inout) :: this
     type(string_t),             intent(in)    :: name
     type(string_t),             intent(in)    :: units
-    class(profile_t), pointer                 :: profile_ptr
+    class(profile_t), pointer                 :: a_profile_ptr
 
-    profile_ptr => this%get_profile_char( name%to_char( ), units%to_char( ) )
+    a_profile_ptr => this%get_profile_char( name%to_char( ), units%to_char( ) )
 
   end function get_profile_string
 

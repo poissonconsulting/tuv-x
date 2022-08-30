@@ -7,7 +7,7 @@ program test_cross_section
 
   use tuvx_cross_section, only : cross_section_t
   use tuvx_cross_section_h2o2_oh_oh
-  use tuvx_test_cross_section_utils, only : check_values
+  use tuvx_test_utils, only : check_values
 
   implicit none
 

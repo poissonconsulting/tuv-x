@@ -162,6 +162,7 @@ contains
     ! Computes equivalent optical depths for O2 absorption, and O2 effective
     ! absorption cross sections, parameterized in the Lyman-alpha and SR bands
 
+    use musica_assert,                 only : assert_msg
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
@@ -208,6 +209,11 @@ contains
       nw   = lambdaGrid%ncells_ + iONE
       nzm1 = zGrid%ncells_
       nz   = nzm1 +  iONE
+
+      call assert_msg( 543202773, size( air_slant_column, dim=1) == nz,       &
+                     'invalid dimension size of the air slant column.' //     &
+                     'The slant air column must be one larger than the ' //    &
+                     'number of cells in the vertical grid')
 
       ! O2 slant column
       o2scol(:) = o2Vmr * air_slant_column(:)

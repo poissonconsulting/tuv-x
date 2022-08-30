@@ -1,4 +1,4 @@
-module tuvx_test_cross_section_utils
+module tuvx_test_utils
 
   implicit none
   public
@@ -31,4 +31,4 @@ contains
 
   end subroutine check_values
 
-end module tuvx_test_cross_section_utils
+end module tuvx_test_utils

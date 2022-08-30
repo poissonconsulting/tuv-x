@@ -76,7 +76,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function get_grid_char( this, name, units ) result( grid_ptr )
+  function get_grid_char( this, name, units ) result( a_grid_ptr )
     ! Get copy of a grid object
 
     use musica_assert,                 only : assert_msg
@@ -86,7 +86,7 @@ contains
     class(grid_warehouse_t), intent(inout) :: this     ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     character(len=*),        intent(in)    :: name     ! The name of a grid, see :ref:`configuration-grids` for grid names
     character(len=*),        intent(in)    :: units    ! The units of the grid
-    class(grid_t), pointer                 :: grid_ptr ! The :f:type:`~tuvx_grid/grid_t` which matches the name passed in
+    class(grid_t), pointer                 :: a_grid_ptr ! The :f:type:`~tuvx_grid/grid_t` which matches the name passed in
 
     integer :: ndx
     logical :: found
@@ -104,13 +104,13 @@ contains
                      "Grid '"//name//"' has units of '"//                     &
                      this%grid_objs_( ndx )%val_%units( )//"' not '"//        &
                      units//"' as requested." )
-    allocate( grid_ptr, source = this%grid_objs_( ndx )%val_ )
+    allocate( a_grid_ptr, source = this%grid_objs_( ndx )%val_ )
 
   end function get_grid_char
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function get_grid_string( this, name, units ) result( grid_ptr )
+  function get_grid_string( this, name, units ) result( a_grid_ptr )
     ! Get a copy of a grid object
 
     use musica_string,                 only : string_t
@@ -119,9 +119,9 @@ contains
     class(grid_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     type(string_t),          intent(in)    :: name ! The name of a grid, see :ref:`configuration-grids` for grid names
     type(string_t),          intent(in)    :: units ! The units of the grid
-    class(grid_t), pointer                 :: grid_ptr ! The :f:type:`~tuvx_grid/grid_t` which matches the name passed in
+    class(grid_t), pointer                 :: a_grid_ptr ! The :f:type:`~tuvx_grid/grid_t` which matches the name passed in
 
-    grid_ptr => this%get_grid_char( name%to_char( ), units%to_char( ) )
+    a_grid_ptr => this%get_grid_char( name%to_char( ), units%to_char( ) )
 
   end function get_grid_string
 

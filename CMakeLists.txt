@@ -18,6 +18,14 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake-modules)
 # options
 
 option(ENABLE_COVERAGE "Enable code coverage output" ON)
+option(ENABLE_MPI "Enable MPI parallel support" OFF)
+
+################################################################################
+# MPI
+
+if(ENABLE_MPI)
+  add_definitions(-DMUSICA_USE_MPI)
+endif()
 
 ################################################################################
 # Test code coverage

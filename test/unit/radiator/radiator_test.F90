@@ -8,6 +8,8 @@
 program radiator_test
 
   use musica_string,                   only : string_t
+  use musica_mpi,                      only : musica_mpi_init,                &
+                                              musica_mpi_finalize
   use radiator_core,                   only : radiator_core_t
 
   implicit none
@@ -17,6 +19,8 @@ program radiator_test
   ! Command-line options
   character(len=256) :: argument
   type(string_t)     :: configFileSpec
+
+  call musica_mpi_init( )
 
   ! Get the model configuration file and options from the command line
   argument = 'test/data/radiator.test.config.json'
@@ -33,6 +37,8 @@ program radiator_test
 
   ! test radiator_state_t functions
   call test_state( )
+
+  call musica_mpi_finalize( )
 
   contains
 

@@ -21,3 +21,7 @@ jobs:
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: coverage.info
+    - name: build Docker image for MPI tests
+      run: docker build -t tuv-x-mpi-test . -f Dockerfile.mpi
+    - name: run MPI tests in container
+      run: docker run -t tuv-x-mpi-test bash -c 'cd build; make test'

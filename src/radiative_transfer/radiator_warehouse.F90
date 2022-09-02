@@ -34,10 +34,18 @@ module tuvx_radiator_warehouse
     !> @}
     !> Returns whether a radiator exists in the warehouse
     procedure :: in_warehouse
+    !> Returns the name for a radiator from an iterator
+    procedure :: name => get_name
     !> Gets an iterator for the warehouse
     procedure :: get_iterator
     !> Accumulates the state of all radiators in the warehouse
     procedure :: accumulate_states
+    !> Returns the number of bytes required to pack the warehouse onto a binary buffer
+    procedure :: pack_size
+    !> Packs the warehouse onto a character buffer
+    procedure :: mpi_pack
+    !> Unpacks a warehouse from a character buffer
+    procedure :: mpi_unpack
     !> Cleans up memory
     final     :: finalize
   end type radiator_warehouse_t
@@ -214,6 +222,18 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  type(string_t) function get_name( this, iterator )
+    ! Returns the name of a radiator from an iterator
+
+    class(radiator_warehouse_t), intent(in) :: this
+    class(warehouse_iterator_t), intent(in) :: iterator
+
+    get_name = this%handle_( iterator%id_ )
+
+  end function get_name
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   function get_iterator( this )
     ! Gets an iterator for the radiator warehouse
 
@@ -245,6 +265,116 @@ contains
     call state%accumulate( this%radiators_ )
 
   end subroutine accumulate_states
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function pack_size( this, comm )
+    ! Returns the size of a character buffer required to pack the warehouse
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack_size
+    use tuvx_radiator_factory,         only : radiator_type_name
+
+    class(radiator_warehouse_t), intent(in) :: this ! warehouse to be packed
+    integer, optional,           intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: i_radiator
+    type(string_t) :: type_name
+
+    call assert( 208683985, allocated( this%radiators_ ) )
+    call assert( 263163771, allocated( this%handle_ ) )
+    call assert( 710531617,                                                   &
+                 size( this%radiators_ ) .eq. size( this%handle_ ) )
+    pack_size = musica_mpi_pack_size( size( this%radiators_ ), comm )
+    do i_radiator = 1, size( this%radiators_ )
+    associate( radiator => this%radiators_( i_radiator )%val_ )
+      type_name = radiator_type_name( radiator )
+      pack_size = pack_size +                                                 &
+                  type_name%pack_size( comm ) +                               &
+                  radiator%pack_size( comm ) +                                &
+                  this%handle_( i_radiator )%pack_size( comm )
+    end associate
+    end do
+#else
+    pack_size = 0
+#endif
+
+  end function pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_pack( this, buffer, position, comm )
+    ! Packs the warehouse onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+    use tuvx_radiator_factory,         only : radiator_type_name
+
+    class(radiator_warehouse_t), intent(in)    :: this      ! warehouse to be packed
+    character,                   intent(inout) :: buffer(:) ! memory buffer
+    integer,                     intent(inout) :: position  ! currently buffer position
+    integer, optional,           intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos, i_radiator
+    type(string_t) :: type_name
+
+    prev_pos = position
+    call assert( 629181647, allocated( this%radiators_ ) )
+    call assert( 459024743, allocated( this%handle_ ) )
+    call assert( 906392589,                                                   &
+                 size( this%radiators_ ) .eq. size( this%handle_ ) )
+    call musica_mpi_pack( buffer, position, size( this%radiators_ ), comm )
+    do i_radiator = 1, size( this%radiators_ )
+    associate( radiator => this%radiators_( i_radiator )%val_ )
+      type_name = radiator_type_name( radiator )
+      call type_name%mpi_pack( buffer, position, comm )
+      call radiator%mpi_pack( buffer, position, comm )
+      call this%handle_( i_radiator )%mpi_pack( buffer, position, comm )
+    end associate
+    end do
+    call assert( 463435654, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_unpack( this, buffer, position, comm )
+    ! Unpacks a warehouse from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+    use tuvx_radiator_factory,         only : radiator_allocate
+
+    class(radiator_warehouse_t), intent(out)   :: this      ! warehouse to unpack
+    character,                   intent(inout) :: buffer(:) ! memory buffer
+    integer,                     intent(inout) :: position  ! current buffer position
+    integer, optional,           intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos, i_radiator, n_radiators
+    type(string_t) :: type_name
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, n_radiators, comm )
+    if( allocated( this%radiators_ ) ) deallocate( this%radiators_ )
+    if( allocated( this%handle_   ) ) deallocate( this%handle_   )
+    allocate( this%radiators_( n_radiators ) )
+    allocate( this%handle_(   n_radiators ) )
+    do i_radiator = 1, n_radiators
+    associate( radiator => this%radiators_( i_radiator )%val_ )
+      call type_name%mpi_unpack( buffer, position, comm )
+      radiator => radiator_allocate( type_name )
+      call radiator%mpi_unpack( buffer, position, comm )
+      call this%handle_( i_radiator )%mpi_unpack( buffer, position, comm )
+    end associate
+    end do
+    call assert( 928789078, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

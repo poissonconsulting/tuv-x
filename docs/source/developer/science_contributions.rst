@@ -991,6 +991,26 @@ Then, inside the ``radiator_builder()`` function, add these lines to the
 Now, when you add a radiator of type ``foo`` to the configuration data, an instance
 of your new subclass will be created.
 
+You must also add lines to the functions for getting a type by name and allocating
+a variable by type name.
+Inside the ``radiator_type_name()`` function, add these lines to the
+``select type`` block:
+
+.. code-block:: fortran
+
+   type is( radiator_foo_t )
+     name = "radiator_foo_t"
+
+Then, inside the ``radiator_allocate()`` function, add these lines
+to the ``select case`` block:
+
+.. code-block:: fortran
+
+   case( 'radiator_foo_t' )
+     allocate( radiator_foo_t :: radiator )
+
+These two functions allow your type to be passed among MPI processes
+in an HPC environment.
 
 
 .. _radiator-create-unit-test:

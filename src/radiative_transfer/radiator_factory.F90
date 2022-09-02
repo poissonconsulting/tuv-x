@@ -11,7 +11,7 @@ module tuvx_radiator_factory
   implicit none
 
   private
-  public :: radiator_builder
+  public :: radiator_builder, radiator_type_name, radiator_allocate
 
 contains
 
@@ -47,6 +47,52 @@ contains
     end select
 
   end function radiator_builder
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  type(string_t) function radiator_type_name( radiator ) result( name )
+    ! Returns the type of a radiator as a string
+
+    use musica_assert,                 only : die
+    use musica_string,                 only : string_t
+
+    class(radiator_t), intent(in) :: radiator
+
+    select type( radiator )
+      type is( radiator_t )
+        name = "radiator_t"
+      type is( radiator_aerosol_t )
+        name = "radiator_aerosol_t"
+      class default
+        call die( 365718517 )
+    end select
+
+  end function radiator_type_name
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function radiator_allocate( type_name ) result( radiator )
+    ! Allocates a radiator pointer as the base or a subclass by type name
+
+    use musica_assert,                 only : die_msg
+    use musica_string,                 only : string_t
+
+    type(string_t), intent(in) :: type_name ! Name of the type to allocate
+    class(radiator_t), pointer :: radiator  ! Allocated radiator
+
+    radiator => null( )
+
+    select case( type_name%to_char( ) )
+      case( 'radiator_t' )
+        allocate( radiator_t :: radiator )
+      case( 'radiator_aerosol_t' )
+        allocate( radiator_aerosol_t :: radiator )
+      case default
+        call die_msg( 670539061, "Invalid radiator type: '"//                 &
+                                 type_name//"'" )
+    end select
+
+  end function radiator_allocate
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

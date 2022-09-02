@@ -21,6 +21,12 @@ module tuvx_radiator
   contains
     ! Accumulates a net radiator state for a set of radiators
     procedure :: accumulate
+    ! Returns the number of bytes needed to pack the object onto a buffer
+    procedure :: pack_size => state_pack_size
+    ! Packs the object onto a character buffer
+    procedure :: mpi_pack => state_mpi_pack
+    ! Unpacks data from a character buffer into the object
+    procedure :: mpi_unpack => state_mpi_unpack
     final :: finalize
   end type radiator_state_t
 
@@ -35,6 +41,12 @@ module tuvx_radiator
   contains
     ! Update radiator for new environmental conditions
     procedure :: update_state
+    ! Returns the number of bytes needed to pack the object onto a buffer
+    procedure :: pack_size
+    ! Packs the object onto a character buffer
+    procedure :: mpi_pack
+    ! Unpacks data from a character buffer into the object
+    procedure :: mpi_unpack
   end type radiator_t
 
   interface radiator_t
@@ -189,6 +201,82 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  integer function pack_size( this, comm )
+    ! Returns the size of a character buffer required to pack the radiator
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(radiator_t), intent(in) :: this ! radiator to be packed
+    integer, optional, intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    pack_size = this%handle_%pack_size( comm ) +                              &
+                this%vertical_profile_name_%pack_size( comm ) +               &
+                this%vertical_profile_units_%pack_size( comm ) +              &
+                this%cross_section_name_%pack_size( comm ) +                  &
+                this%state_%pack_size( comm )
+#else
+    pack_size = 0
+#endif
+
+  end function pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_pack( this, buffer, position, comm )
+    ! Packs the radiator onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(radiator_t), intent(in)    :: this      ! radiator to be packed
+    character,         intent(inout) :: buffer(:) ! memory buffer
+    integer,           intent(inout) :: position  ! current buffer position
+    integer, optional, intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call this%handle_%mpi_pack(                 buffer, position, comm )
+    call this%vertical_profile_name_%mpi_pack(  buffer, position, comm )
+    call this%vertical_profile_units_%mpi_pack( buffer, position, comm )
+    call this%cross_section_name_%mpi_pack(     buffer, position, comm )
+    call this%state_%mpi_pack(                  buffer, position, comm )
+    call assert( 449676235, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_unpack( this, buffer, position, comm )
+    ! Unpacks a radiator from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(radiator_t), intent(out)   :: this      ! radiator to be unpacked
+    character,         intent(inout) :: buffer(:) ! memory buffer
+    integer,           intent(inout) :: position  ! current buffer position
+    integer, optional, intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call this%handle_%mpi_unpack(                 buffer, position, comm )
+    call this%vertical_profile_name_%mpi_unpack(  buffer, position, comm )
+    call this%vertical_profile_units_%mpi_unpack( buffer, position, comm )
+    call this%cross_section_name_%mpi_unpack(     buffer, position, comm )
+    call this%state_%mpi_unpack(                  buffer, position, comm )
+    call assert( 216868760, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_unpack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   subroutine accumulate( this, radiators )
     ! Create a single radiator state that corresponds to the cumulative
     ! state of a set of radiators, such that the optical properties of the
@@ -243,6 +331,77 @@ contains
     this%layer_G_ = asym_accum / dscat_accum
 
   end subroutine accumulate
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function state_pack_size( this, comm ) result( pack_size )
+    ! Returns the size of a character buffer required to pack the radiator
+    ! state
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(radiator_state_t), intent(in) :: this ! radiator state to be packed
+    integer, optional,       intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    pack_size = musica_mpi_pack_size( this%layer_OD_,  comm ) +               &
+                musica_mpi_pack_size( this%layer_SSA_, comm ) +               &
+                musica_mpi_pack_size( this%layer_G_,   comm )
+#else
+    pack_size = 0
+#endif
+
+  end function state_pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine state_mpi_pack( this, buffer, position, comm )
+    ! Packs the radiator state onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(radiator_state_t), intent(in)    :: this      ! radiator state to be packed
+    character,               intent(inout) :: buffer(:) ! memory buffer
+    integer,                 intent(inout) :: position  ! current buffer position
+    integer, optional,       intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position, this%layer_OD_,  comm )
+    call musica_mpi_pack( buffer, position, this%layer_SSA_, comm )
+    call musica_mpi_pack( buffer, position, this%layer_G_,   comm )
+    call assert( 942613664, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine state_mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine state_mpi_unpack( this, buffer, position, comm )
+    ! Unpacks a radiator state from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(radiator_state_t), intent(out)   :: this      ! radiator state to be unpacked
+    character,               intent(inout) :: buffer(:) ! memory buffer
+    integer,                 intent(inout) :: position  ! current buffer position
+    integer, optional,       intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, this%layer_OD_,  comm )
+    call musica_mpi_unpack( buffer, position, this%layer_SSA_, comm )
+    call musica_mpi_unpack( buffer, position, this%layer_G_,   comm )
+    call assert( 709806189, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine state_mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

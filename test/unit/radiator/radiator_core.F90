@@ -91,25 +91,29 @@ contains
 
   subroutine run( this )
 
-  use tuvx_radiator_warehouse, only : warehouse_iterator_t
+    use musica_mpi
+    use tuvx_radiator_warehouse,       only : warehouse_iterator_t
 
-  !> Arguments
-  class(radiator_core_t), intent(inout)  :: this
+    class(radiator_core_t), intent(inout)  :: this
 
-  !> Local variables
-  character(len=*), parameter :: Iam = 'radiator core run: '
+    ! Local variables
+    character(len=*), parameter :: Iam = 'radiator core run: '
 
-  real(dk)                    :: tstCrossSection
-  real(dk), allocatable       :: aCrossSection(:,:)
+    real(dk)                    :: tstCrossSection
+    real(dk), allocatable       :: aCrossSection(:,:)
 
-  class(grid_t), pointer       :: zGrid, lambdaGrid
-  class(profile_t), pointer       :: AirProfile, TemperatureProfile
-  class(cross_section_t), pointer :: RaylieghCrossSection
-  class(radiator_t), pointer     :: RaylieghRadiator
-  class(radiator_t), pointer     :: aRadiator
-  type(warehouse_iterator_t), pointer :: iter
-  type(string_t)                      :: Handle
-  type(radiator_state_t), allocatable :: RadiatorState
+    class(grid_t), pointer       :: zGrid, lambdaGrid
+    class(profile_t), pointer       :: AirProfile, TemperatureProfile
+    class(cross_section_t), pointer :: RaylieghCrossSection
+    class(radiator_t), pointer     :: RaylieghRadiator
+    class(radiator_t), pointer     :: aRadiator
+    type(warehouse_iterator_t), pointer :: iter
+    type(string_t)                      :: Handle
+    type(radiator_state_t), allocatable :: RadiatorState
+    type(radiator_warehouse_t), pointer :: radiators
+    character, allocatable :: buffer(:)
+    integer :: pos, pack_size
+    logical :: found
 
     write(*,*) Iam // 'entering'
 
@@ -160,11 +164,37 @@ contains
     write(*,'(1p10g15.7)') aCrossSection(1,:)
     call assert( 412238775, all( aCrossSection(1,:) == aCrossSection(zGrid%ncells_,:) ) )
 
-    !> Get copy of the rayliegh radiator
-    Handle = 'air'
-    RaylieghRadiator => this%theRadiatorWarehouse_%get_radiator( Handle )
-    call RaylieghRadiator%update_state( this%theGridWareHouse_, this%theProfileWareHouse_, &
-                                       this%theradXferXsectWareHouse_ )
+    ! Get copy of the rayliegh radiator and test MPI functions
+    if( musica_mpi_rank( ) == 0 ) then
+      Handle = 'air'
+      RaylieghRadiator => this%theRadiatorWarehouse_%get_radiator( Handle )
+      call RaylieghRadiator%update_state( this%theGridWareHouse_,             &
+                                          this%theProfileWareHouse_,          &
+                                          this%theradXferXsectWareHouse_ )
+      radiators => this%theRadiatorWarehouse_
+      pack_size = RaylieghRadiator%pack_size( ) +                             &
+                  radiators%pack_size( )
+      allocate( buffer( pack_size ) )
+      pos = 0
+      call RaylieghRadiator%mpi_pack( buffer, pos )
+      call radiators%mpi_pack( buffer, pos )
+      call assert( 994121788, pos <= pack_size )
+    end if
+
+    call musica_mpi_bcast( pack_size )
+    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer )
+
+    if( musica_mpi_rank( ) .ne. 0 ) then
+      pos = 0
+      allocate( RaylieghRadiator )
+      allocate( radiators        )
+      call RaylieghRadiator%mpi_unpack( buffer, pos )
+      call radiators%mpi_unpack( buffer, pos )
+      call assert( 761314313, pos <= pack_size )
+    end if
+
+    ! Evaluate radiator state
     call assert( 312238775, all( RaylieghRadiator%state_%layer_OD_ >= 0._dk ) )
     write(*,*) Iam // 'layer_OD_ is (',size(RaylieghRadiator%state_%layer_OD_,dim=1),' x ', &
                       size(RaylieghRadiator%state_%layer_OD_,dim=2),')'
@@ -183,13 +213,23 @@ contains
     write(*,'(1p10g15.7)') RaylieghRadiator%state_%layer_OD_(1,:)
 
     write(*,*) Iam // 'Before radiator iterator test'
-    !> Test warehouse iterator
-    iter => this%theRadiatorWareHouse_%get_iterator()
+
+    !> Test warehouse iterator and MPI passed warehouse
+    found = .false.
+    iter => radiators%get_iterator()
     do while( iter%next() )
-      aRadiator => this%theRadiatorWareHouse_%get_radiator( iter )
-      write(*,*) Iam // 'radiator = ',aRadiator%handle_%to_char()
+      nullify( aRadiator )
+      aRadiator => radiators%get_radiator( iter )
+      if( radiators%name( iter ) == 'air' ) then
+        found = .true.
+        call assert( 356694336, all( aRadiator%state_%layer_OD_ >= 0._dk ) )
+        call assert( 869070582, all( aRadiator%state_%layer_SSA_ >= 0._dk ) )
+        call assert( 133963180, all( aRadiator%state_%layer_G_ >= 0._dk ) )
+        call assert( 298855777, all( aRadiator%state_%layer_SSA_ == 1._dk ) )
+      end if
     enddo
     deallocate(iter)
+    call assert( 771640568, found )
 
     deallocate( zGrid )
     deallocate( lambdaGrid )
@@ -227,5 +267,7 @@ contains
     end if
 
   end subroutine finalize
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 end module radiator_core

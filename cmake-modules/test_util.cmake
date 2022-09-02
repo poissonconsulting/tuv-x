@@ -24,9 +24,15 @@ endfunction(create_standard_test)
 # Add a test
 
 function(add_tuvx_test test_name test_binary test_args working_dir)
-  add_test(NAME ${test_name}
-           COMMAND ${test_binary} ${test_args}
-           WORKING_DIRECTORY ${working_dir})
+  if(ENABLE_MPI)
+    add_test(NAME ${test_name}
+      COMMAND mpirun -v -np 2 ${CMAKE_BINARY_DIR}/${test_binary} ${test_args}
+             WORKING_DIRECTORY ${working_dir})
+  else()
+    add_test(NAME ${test_name}
+             COMMAND ${test_binary} ${test_args}
+             WORKING_DIRECTORY ${working_dir})
+  endif()
   if(MEMORYCHECK_COMMAND)
     set(MEMORYCHECK_COMMAND_OPTIONS "--error-exitcode=1 --trace-children=yes --leak-check=full")
     set(memcheck "${MEMORYCHECK_COMMAND} ${MEMORYCHECK_COMMAND_OPTIONS}")

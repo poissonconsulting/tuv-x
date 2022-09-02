@@ -7,9 +7,14 @@
 !> Test module for the grid_t type
 program test_grid
 
+  use musica_mpi,                      only : musica_mpi_init,                &
+                                              musica_mpi_finalize
+
   implicit none
 
+  call musica_mpi_init( )
   call test_grids( )
+  call musica_mpi_finalize( )
 
 contains
 
@@ -53,14 +58,19 @@ contains
 
   end subroutine test_grid_t
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   !> Tests of the grid_t type
   subroutine test_grids( )
 
-    use musica_config,    only : config_t
-    use musica_string,    only : string_t
-    use musica_constants, only : ik => musica_ik, dk => musica_dk
-    use tuvx_grid_warehouse, only : grid_warehouse_t
-    use tuvx_grid,    only : grid_t
+    use musica_assert,                 only : assert
+    use musica_config,                 only : config_t
+    use musica_string,                 only : string_t
+    use musica_constants,              only : ik => musica_ik, dk => musica_dk
+    use musica_mpi
+    use tuvx_grid,                     only : grid_t
+    use tuvx_grid_factory,             only : grid_type_name, grid_allocate
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
 
     !> local variables
     character(len=*), parameter :: config_flsp = 'test/data/grid.test.config.json'
@@ -68,6 +78,9 @@ contains
     type(grid_warehouse_t), pointer :: thewarehouse
     class(grid_t), pointer   :: aGrid
     integer :: i
+    character, allocatable :: buffer(:)
+    integer :: pos, pack_size
+    type(string_t) :: type_name
 
     integer :: eq_area_grid_cells = 120
     real(dk) :: eq_area_edges(121), eq_area_midpoints(120), eq_area_deltas(120)
@@ -164,8 +177,35 @@ contains
     config_midpoints = [13.00000,15.00000,17.00000,19.00000]
     config_deltas = [2.0, 2.0, 2.0, 2.0]
 
-    call grid_tst_config%from_file( config_flsp )
-    thewarehouse => grid_warehouse_t( grid_tst_config )
+    if( musica_mpi_rank( ) == 0 ) then
+      call grid_tst_config%from_file( config_flsp )
+      thewarehouse => grid_warehouse_t( grid_tst_config )
+      aGrid => thewarehouse%get_grid( "height", "km" )
+      type_name = grid_type_name( aGrid )
+      pack_size = thewarehouse%pack_size( ) + type_name%pack_size( ) + aGrid%pack_size( )
+      allocate( buffer( pack_size ) )
+      pos = 0
+      call thewarehouse%mpi_pack( buffer, pos )
+      call type_name%mpi_pack(    buffer, pos )
+      call aGrid%mpi_pack(        buffer, pos )
+      call assert( 319321152, pos <= pack_size )
+    end if
+
+    call musica_mpi_bcast( pack_size )
+    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer )
+
+    if( musica_mpi_rank( ) .ne. 0 ) then
+      pos = 0
+      allocate( thewarehouse )
+      call thewarehouse%mpi_unpack( buffer, pos )
+      call type_name%mpi_unpack(    buffer, pos )
+      aGrid => grid_allocate( type_name )
+      call aGrid%mpi_unpack(        buffer, pos )
+    end if
+
+    call test_grid_t(aGrid, eq_area_grid_cells, eq_area_edges, eq_area_midpoints, eq_area_deltas)
+    deallocate( aGrid )
 
     aGrid => thewarehouse%get_grid( "height", "km" )
     call test_grid_t(aGrid, eq_area_grid_cells, eq_area_edges, eq_area_midpoints, eq_area_deltas)

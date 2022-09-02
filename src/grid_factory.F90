@@ -13,7 +13,7 @@ module tuvx_grid_factory
   implicit none
 
   private
-  public :: grid_builder
+  public :: grid_builder, grid_type_name, grid_allocate
 
 contains
 
@@ -51,6 +51,55 @@ contains
     end select
 
   end function grid_builder
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  type(string_t) function grid_type_name( grid ) result( name )
+    ! Returns the type of a grid as a string
+
+    use musica_assert,                 only : die
+    use musica_string,                 only : string_t
+
+    class(grid_t), intent(in) :: grid
+
+    select type( grid )
+      type is( equal_delta_t )
+        name = "equal_delta_t"
+      type is( from_csv_file_t )
+        name = "from_csv_file_t"
+      type is( from_config_t )
+        name = "from_config_t"
+      class default
+        call die( 983843127 )
+    end select
+
+  end function grid_type_name
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function grid_allocate( type_name ) result( grid )
+    ! Allocates a grid pointer as a subclass by type
+
+    use musica_assert,                 only : die_msg
+    use musica_string,                 only : string_t
+
+    type(string_t), intent(in) :: type_name ! name of the type to allocate
+    class(grid_t),  pointer    :: grid      ! allocated grid
+
+    grid => null( )
+
+    select case( type_name%to_char( ) )
+      case( 'equal_delta_t' )
+        allocate( equal_delta_t :: grid )
+      case( 'from_csv_file_t' )
+        allocate( from_csv_file_t :: grid )
+      case( 'from_config_t' )
+        allocate( from_config_t :: grid )
+      case default
+        call die_msg( 351430046, "Invalid grid type: '"//type_name//"'" )
+    end select
+
+  end function grid_allocate
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

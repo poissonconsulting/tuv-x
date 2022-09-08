@@ -5,11 +5,15 @@
 !> Tests for the base cross_section_t type
 program test_cross_section
 
+  use musica_mpi,                      only : musica_mpi_init,                &
+                                              musica_mpi_finalize
   use tuvx_cross_section
 
   implicit none
 
+  call musica_mpi_init( )
   call test_cross_section_t( )
+  call musica_mpi_finalize( )
 
 contains
 
@@ -21,6 +25,10 @@ contains
     use musica_constants,              only : dk => musica_dk
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
+    use musica_mpi
+    use musica_string,                 only : string_t
+    use tuvx_cross_section_factory,    only : cross_section_type_name,        &
+                                              cross_section_allocate
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
@@ -37,6 +45,9 @@ contains
       (/ 5.0_dk, 10.0_dk, 40.0_dk, 50.0_dk /)
     real(kind=dk) :: input_grid_base(4) =                                     &
       (/ 101.0_dk, 102.0_dk, 103.0_dk, 104.0_dk /)
+    character, allocatable :: buffer(:)
+    type(string_t) :: type_name
+    integer :: pos, pack_size
 
     ! load test grids
     call config%from_file( "test/data/grid.simple.config.json" )
@@ -54,7 +65,30 @@ contains
     ! load and test cross section w/o extrapolation
     call assert( 560066370, iter%next( ) )
     call cs_set%get( iter, cs_config, Iam )
-    cross_section => cross_section_t( cs_config, grids, profiles )
+    if( musica_mpi_rank( ) == 0 ) then
+      cross_section => cross_section_t( cs_config, grids, profiles )
+      type_name = cross_section_type_name( cross_section )
+      pack_size = type_name%pack_size( ) + cross_section%pack_size( )
+      allocate( buffer( pack_size ) )
+      pos = 0
+      call type_name%mpi_pack(     buffer, pos )
+      call cross_section%mpi_pack( buffer, pos )
+      call assert( 670090024, pos <= pack_size )
+    end if
+
+    call musica_mpi_bcast( pack_size )
+    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer )
+
+    if( musica_mpi_rank( ) .ne. 0 ) then
+      pos = 0
+      call type_name%mpi_unpack( buffer, pos )
+      cross_section => cross_section_allocate( type_name )
+      call cross_section%mpi_unpack( buffer, pos )
+      call assert( 782408369, pos <= pack_size )
+    end if
+    deallocate( buffer )
+
     results = cross_section%calculate( grids, profiles )
     input = input_base
     input_grid = input_grid_base
@@ -68,7 +102,30 @@ contains
     ! extrapolation
     call assert( 102622205, iter%next( ) )
     call cs_set%get( iter, cs_config, Iam )
-    cross_section => cross_section_t( cs_config, grids, profiles )
+    if( musica_mpi_rank( ) == 0 ) then
+      cross_section => cross_section_t( cs_config, grids, profiles )
+      type_name = cross_section_type_name( cross_section )
+      pack_size = type_name%pack_size( ) + cross_section%pack_size( )
+      allocate( buffer( pack_size ) )
+      pos = 0
+      call type_name%mpi_pack(     buffer, pos )
+      call cross_section%mpi_pack( buffer, pos )
+      call assert( 836888155, pos <= pack_size )
+    end if
+
+    call musica_mpi_bcast( pack_size )
+    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer )
+
+    if( musica_mpi_rank( ) .ne. 0 ) then
+      pos = 0
+      call type_name%mpi_unpack( buffer, pos )
+      cross_section => cross_section_allocate( type_name )
+      call cross_section%mpi_unpack( buffer, pos )
+      call assert( 949206500, pos <= pack_size )
+    end if
+    deallocate( buffer )
+
     results = cross_section%calculate( grids, profiles, at_mid_point = .true. )
     input = input_base
     input_grid = input_grid_base
@@ -82,7 +139,30 @@ contains
     ! fixed upper extrpolation
     call assert( 101168966, iter%next( ) )
     call cs_set%get( iter, cs_config, Iam )
-    cross_section => cross_section_t( cs_config, grids, profiles )
+    if( musica_mpi_rank( ) == 0 ) then
+      cross_section => cross_section_t( cs_config, grids, profiles )
+      type_name = cross_section_type_name( cross_section )
+      pack_size = type_name%pack_size( ) + cross_section%pack_size( )
+      allocate( buffer( pack_size ) )
+      pos = 0
+      call type_name%mpi_pack(     buffer, pos )
+      call cross_section%mpi_pack( buffer, pos )
+      call assert( 491310040, pos <= pack_size )
+    end if
+
+    call musica_mpi_bcast( pack_size )
+    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer )
+
+    if( musica_mpi_rank( ) .ne. 0 ) then
+      pos = 0
+      call type_name%mpi_unpack( buffer, pos )
+      cross_section => cross_section_allocate( type_name )
+      call cross_section%mpi_unpack( buffer, pos )
+      call assert( 603628385, pos <= pack_size )
+    end if
+    deallocate( buffer )
+
     results = cross_section%calculate( grids, profiles, at_mid_point = .false. )
     input = input_base
     input_grid = input_grid_base

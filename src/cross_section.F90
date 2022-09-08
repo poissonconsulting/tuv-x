@@ -17,6 +17,13 @@ module tuvx_cross_section
     real(dk), allocatable :: temperature(:) ! Temperature grid [K]
     real(dk), allocatable :: deltaT(:)      ! Temperature difference between grid sections [K]
     real(dk), allocatable :: array(:,:)     ! Cross section parameters (wavelength, parameter type)
+  contains
+    ! Returns the number of bytes needed to pack the parameters onto a buffer
+    procedure :: pack_size => parms_pack_size
+    ! Packs the parameters onto a character buffer
+    procedure :: mpi_pack => parms_mpi_pack
+    ! Unpacks parameters from a character buffer
+    procedure :: mpi_unpack => parms_mpi_unpack
   end type cross_section_parms_t
 
   type cross_section_t
@@ -30,6 +37,14 @@ module tuvx_cross_section
     procedure :: calculate => run
     !> Add points to the cross section grid based on configuration data
     procedure :: add_points
+    ! Returns the number of bytes needed to pack the cross section onto a
+    ! buffer
+    procedure :: pack_size
+    ! Packs the cross section onto a character buffer
+    procedure :: mpi_pack
+    ! Unpacks the cross section from a character buffer into the object
+    procedure :: mpi_unpack
+    ! Unpacks a cross section from a character buffer into the object
     final     :: finalize
   end type cross_section_t
 
@@ -299,6 +314,172 @@ file_loop: &
                     ynew = addpnt_val_upper )
 
   end subroutine add_points
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function pack_size( this, comm )
+    ! Returns the number of bytes required to pack the cross section onto a
+    ! buffer
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(cross_section_t), intent(in) :: this ! cross section to be packed
+    integer, optional,      intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: i_param
+
+    pack_size =                                                               &
+        musica_mpi_pack_size( allocated( this%cross_section_parms ), comm )
+    if( allocated( this%cross_section_parms ) ) then
+      pack_size = pack_size +                                                 &
+                musica_mpi_pack_size( size( this%cross_section_parms ), comm )
+      do i_param = 1, size( this%cross_section_parms )
+        pack_size = pack_size +                                               &
+                    this%cross_section_parms( i_param )%pack_size( comm )
+      end do
+    end if
+#else
+    pack_size = 0
+#endif
+
+  end function pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_pack( this, buffer, position, comm )
+    ! Packs the cross section onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(cross_section_t), intent(in)    :: this      ! cross section to be packed
+    character,              intent(inout) :: buffer(:) ! memory buffer
+    integer,                intent(inout) :: position  ! current buffer position
+    integer, optional,      intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos, i_param
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position,                                   &
+                          allocated( this%cross_section_parms ), comm )
+    if( allocated( this%cross_section_parms ) ) then
+      call musica_mpi_pack( buffer, position,                                 &
+                            size( this%cross_section_parms ), comm )
+      do i_param = 1, size( this%cross_section_parms )
+        call this%cross_section_parms( i_param )%mpi_pack( buffer, position,  &
+                                                           comm )
+      end do
+    end if
+    call assert( 345613473, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_unpack( this, buffer, position, comm )
+    ! Unpacks the cross section from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(cross_section_t), intent(out)   :: this      ! cross section to be unpacked
+    character,              intent(inout) :: buffer(:) ! memory buffer
+    integer,                intent(inout) :: position  ! current buffer position
+    integer, optional,      intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos, i_param, n_params
+    logical :: alloced
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( allocated( this%cross_section_parms ) )                               &
+        deallocate( this%cross_section_parms )
+    if( alloced ) then
+      call musica_mpi_unpack( buffer, position, n_params, comm )
+      allocate( this%cross_section_parms( n_params ) )
+      do i_param = 1, n_params
+        call this%cross_section_parms( i_param )%mpi_unpack( buffer, position,&
+                                                             comm )
+      end do
+    end if
+    call assert( 764657896, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_unpack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function parms_pack_size( this, comm ) result( pack_size )
+    ! Returns the size of a character buffer required to pack the parameters
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(cross_section_parms_t), intent(in) :: this ! parameters to be packed
+    integer, optional,            intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    pack_size = musica_mpi_pack_size( this%temperature, comm ) +              &
+                musica_mpi_pack_size( this%deltaT,      comm ) +              &
+                musica_mpi_pack_size( this%array,       comm )
+#else
+    pack_size = 0
+#endif
+
+  end function parms_pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine parms_mpi_pack( this, buffer, position, comm )
+    ! Packs the parameters onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(cross_section_parms_t), intent(in)    :: this      ! parameters to be packed
+    character,                    intent(inout) :: buffer(:) ! memory buffer
+    integer,                      intent(inout) :: position  ! current buffer position
+    integer, optional,            intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position, this%temperature, comm )
+    call musica_mpi_pack( buffer, position, this%deltaT,      comm )
+    call musica_mpi_pack( buffer, position, this%array,       comm )
+    call assert( 841935272, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine parms_mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine parms_mpi_unpack( this, buffer, position, comm )
+    ! Unpacks parameters from a character buffer into the object
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(cross_section_parms_t), intent(out)   :: this      ! parameters to be unpacked
+    character,                    intent(inout) :: buffer(:) ! memory buffer
+    integer,                      intent(inout) :: position  ! current buffer position
+    integer, optional,            intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, this%temperature, comm )
+    call musica_mpi_unpack( buffer, position, this%deltaT,      comm )
+    call musica_mpi_unpack( buffer, position, this%array,       comm )
+    call assert( 363886174, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine parms_mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

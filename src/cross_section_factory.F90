@@ -40,7 +40,8 @@ module tuvx_cross_section_factory
   implicit none
 
   private
-  public :: cross_section_builder
+  public :: cross_section_builder, cross_section_type_name,                   &
+            cross_section_allocate
 
 contains
 
@@ -156,6 +157,147 @@ contains
     end select
 
   end function cross_section_builder
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  type(string_t) function cross_section_type_name( cross_section )            &
+      result( name )
+    ! Returns the type of a cross section as a string
+
+    use musica_assert,                 only : die
+    use musica_string,                 only : string_t
+
+    class(cross_section_t), intent(in) :: cross_section ! Cross section to return type for
+
+    select type( cross_section )
+      type is( cross_section_t )
+        name = "cross_section_t"
+      type is( cross_section_rayliegh_t )
+        name = "cross_section_rayliegh_t"
+      type is( cross_section_bro_br_o_t )
+        name = "cross_section_bro_br_o_t"
+      type is( cross_section_ccl4_t )
+        name = "cross_section_ccl4_t"
+      type is( cross_section_cfc11_t )
+        name = "cross_section_cfc11_t"
+      type is( cross_section_chcl3_t )
+        name = "cross_section_chcl3_t"
+      type is( cross_section_nitroxy_ethanol_t )
+        name = "cross_section_nitroxy_ethanol_t"
+      type is( cross_section_ch2o_t )
+        name = "cross_section_ch2o_t"
+      type is( cross_section_nitroxy_acetone_t )
+        name = "cross_section_nitroxy_acetone_t"
+      type is( cross_section_ch3coch3_ch3co_ch3_t )
+        name = "cross_section_ch3coch3_ch3co_ch3_t"
+      type is( cross_section_ch3ono2_ch3o_no2_t )
+        name = "cross_section_ch3ono2_ch3o_no2_t"
+      type is( cross_section_chbr3_t )
+        name = "cross_section_chbr3_t"
+      type is( cross_section_cl2_cl_cl_t )
+        name = "cross_section_cl2_cl_cl_t"
+      type is( cross_section_clono2_t )
+        name = "cross_section_clono2_t"
+      type is( cross_section_h2o2_oh_oh_t )
+        name = "cross_section_h2o2_oh_oh_t"
+      type is( cross_section_hcfc_t )
+        name = "cross_section_hcfc_t"
+      type is( cross_section_hno3_oh_no2_t )
+        name = "cross_section_hno3_oh_no2_t"
+      type is( cross_section_hobr_oh_br_t )
+        name = "cross_section_hobr_oh_br_t"
+      type is( cross_section_n2o_n2_o1d_t )
+        name = "cross_section_n2o_n2_o1d_t"
+      type is( cross_section_n2o5_no2_no3_t )
+        name = "cross_section_n2o5_no2_no3_t"
+      type is( cross_section_no2_tint_t )
+        name = "cross_section_no2_tint_t"
+      type is( cross_section_o3_tint_t )
+        name = "cross_section_o3_tint_t"
+      type is( cross_section_oclo_t )
+        name = "cross_section_oclo_t"
+      type is( cross_section_rono2_t )
+        name = "cross_section_rono2_t"
+      type is( cross_section_t_butyl_nitrate_t )
+        name = "cross_section_t_butyl_nitrate_t"
+      type is( cross_section_tint_t )
+        name = "cross_section_tint_t"
+      class default
+        call die( 692607640 )
+    end select
+
+  end function cross_section_type_name
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function cross_section_allocate( type_name ) result( cross_section )
+    ! Allocates a cross section pointer as the base or a subclass by type
+
+    use musica_assert,                 only : die_msg
+    use musica_string,                 only : string_t
+
+    type(string_t),         intent(in) :: type_name     ! Name of the type to allocate
+    class(cross_section_t), pointer    :: cross_section ! Allocated cross section
+
+    select case( type_name%to_char( ) )
+      case( 'cross_section_t' )
+        allocate( cross_section_t :: cross_section )
+      case( 'cross_section_rayliegh_t' )
+        allocate( cross_section_rayliegh_t :: cross_section )
+      case( 'cross_section_bro_br_o_t' )
+        allocate( cross_section_bro_br_o_t :: cross_section )
+      case( 'cross_section_ccl4_t' )
+        allocate( cross_section_ccl4_t :: cross_section )
+      case( 'cross_section_cfc11_t' )
+        allocate( cross_section_cfc11_t :: cross_section )
+      case( 'cross_section_chcl3_t' )
+        allocate( cross_section_chcl3_t :: cross_section )
+      case( 'cross_section_nitroxy_ethanol_t' )
+        allocate( cross_section_nitroxy_ethanol_t :: cross_section )
+      case( 'cross_section_ch2o_t' )
+        allocate( cross_section_ch2o_t :: cross_section )
+      case( 'cross_section_nitroxy_acetone_t' )
+        allocate( cross_section_nitroxy_acetone_t :: cross_section )
+      case( 'cross_section_ch3coch3_ch3co_ch3_t' )
+        allocate( cross_section_ch3coch3_ch3co_ch3_t :: cross_section )
+      case( 'cross_section_ch3ono2_ch3o_no2_t' )
+        allocate( cross_section_ch3ono2_ch3o_no2_t :: cross_section )
+      case( 'cross_section_chbr3_t' )
+        allocate( cross_section_chbr3_t :: cross_section )
+      case( 'cross_section_cl2_cl_cl_t' )
+        allocate( cross_section_cl2_cl_cl_t :: cross_section )
+      case( 'cross_section_clono2_t' )
+        allocate( cross_section_clono2_t :: cross_section )
+      case( 'cross_section_h2o2_oh_oh_t' )
+        allocate( cross_section_h2o2_oh_oh_t :: cross_section )
+      case( 'cross_section_hcfc_t' )
+        allocate( cross_section_hcfc_t :: cross_section )
+      case( 'cross_section_hno3_oh_no2_t' )
+        allocate( cross_section_hno3_oh_no2_t :: cross_section )
+      case( 'cross_section_hobr_oh_br_t' )
+        allocate( cross_section_hobr_oh_br_t :: cross_section )
+      case( 'cross_section_n2o_n2_o1d_t' )
+        allocate( cross_section_n2o_n2_o1d_t :: cross_section )
+      case( 'cross_section_n2o5_no2_no3_t' )
+        allocate( cross_section_n2o5_no2_no3_t :: cross_section )
+      case( 'cross_section_no2_tint_t' )
+        allocate( cross_section_no2_tint_t :: cross_section )
+      case( 'cross_section_o3_tint_t' )
+        allocate( cross_section_o3_tint_t :: cross_section )
+      case( 'cross_section_oclo_t' )
+        allocate( cross_section_oclo_t :: cross_section )
+      case( 'cross_section_rono2_t' )
+        allocate( cross_section_rono2_t :: cross_section )
+      case( 'cross_section_t_butyl_nitrate_t' )
+        allocate( cross_section_t_butyl_nitrate_t :: cross_section )
+      case( 'cross_section_tint_t' )
+        allocate( cross_section_tint_t :: cross_section )
+      case default
+        call die_msg( 828010698, "Invalid cross section type: '"//            &
+                                 type_name//"'" )
+    end select
+
+  end function cross_section_allocate
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

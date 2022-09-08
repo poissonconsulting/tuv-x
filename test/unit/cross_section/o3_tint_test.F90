@@ -5,13 +5,17 @@
 !> Tests for the base cross_section_t type
 program test_cross_section
 
+  use musica_mpi,                      only : musica_mpi_init,                &
+                                              musica_mpi_finalize
   use tuvx_cross_section, only : cross_section_t
   use tuvx_cross_section_o3_tint
   use tuvx_test_utils, only : check_values
 
   implicit none
 
+  call musica_mpi_init( )
   call test_cross_section_o3_tint_t( )
+  call musica_mpi_finalize( )
 
 contains
 
@@ -23,6 +27,10 @@ contains
     use musica_constants,              only : dk => musica_dk
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
+    use musica_mpi
+    use musica_string,                 only : string_t
+    use tuvx_cross_section_factory,    only : cross_section_type_name,        &
+                                              cross_section_allocate
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
@@ -37,6 +45,9 @@ contains
     real(dk), allocatable :: no_extrap(:,:)
     real(dk), allocatable :: lower_extrap(:,:)
     real(dk), allocatable :: upper_extrap(:,:)
+    character, allocatable :: buffer(:)
+    type(string_t) :: type_name
+    integer :: pos, pack_size
     allocate(no_extrap(10, 6))
     allocate(lower_extrap(10, 6))
     allocate(upper_extrap(10, 6))
@@ -102,7 +113,30 @@ contains
     ! load and test cross section w/o extrapolation
     call assert( 101264914, iter%next( ) )
     call cs_set%get( iter, cs_config, Iam )
-    cross_section => cross_section_o3_tint_t( cs_config, grids, profiles )
+    if( musica_mpi_rank( ) == 0 ) then
+      cross_section => cross_section_o3_tint_t( cs_config, grids, profiles )
+      type_name = cross_section_type_name( cross_section )
+      pack_size = type_name%pack_size( ) + cross_section%pack_size( )
+      allocate( buffer( pack_size ) )
+      pos = 0
+      call type_name%mpi_pack(     buffer, pos )
+      call cross_section%mpi_pack( buffer, pos )
+      call assert( 535713507, pos <= pack_size )
+    end if
+
+    call musica_mpi_bcast( pack_size )
+    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer )
+
+    if( musica_mpi_rank( ) .ne. 0 ) then
+      pos = 0
+      call type_name%mpi_unpack( buffer, pos )
+      cross_section => cross_section_allocate( type_name )
+      call cross_section%mpi_unpack( buffer, pos )
+      call assert( 648031852, pos <= pack_size )
+    end if
+    deallocate( buffer )
+
     results = cross_section%calculate( grids, profiles )
     call check_values( results, no_extrap, .01_dk )
     deallocate( cross_section )
@@ -110,7 +144,30 @@ contains
     ! load and test cross section with lower extrapolation
     call assert( 101264915, iter%next( ) )
     call cs_set%get( iter, cs_config, Iam )
-    cross_section => cross_section_o3_tint_t( cs_config, grids, profiles )
+    if( musica_mpi_rank( ) == 0 ) then
+      cross_section => cross_section_o3_tint_t( cs_config, grids, profiles )
+      type_name = cross_section_type_name( cross_section )
+      pack_size = type_name%pack_size( ) + cross_section%pack_size( )
+      allocate( buffer( pack_size ) )
+      pos = 0
+      call type_name%mpi_pack(     buffer, pos )
+      call cross_section%mpi_pack( buffer, pos )
+      call assert( 872668542, pos <= pack_size )
+    end if
+
+    call musica_mpi_bcast( pack_size )
+    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer )
+
+    if( musica_mpi_rank( ) .ne. 0 ) then
+      pos = 0
+      call type_name%mpi_unpack( buffer, pos )
+      cross_section => cross_section_allocate( type_name )
+      call cross_section%mpi_unpack( buffer, pos )
+      call assert( 984986887, pos <= pack_size )
+    end if
+    deallocate( buffer )
+
     results = cross_section%calculate( grids, profiles )
     call check_values( results, lower_extrap, .01_dk )
     deallocate( cross_section )
@@ -118,7 +175,30 @@ contains
     ! load and test cross section with upper extrapolation
     call assert( 101264914, iter%next( ) )
     call cs_set%get( iter, cs_config, Iam )
-    cross_section => cross_section_o3_tint_t( cs_config, grids, profiles )
+    if( musica_mpi_rank( ) == 0 ) then
+      cross_section => cross_section_o3_tint_t( cs_config, grids, profiles )
+      type_name = cross_section_type_name( cross_section )
+      pack_size = type_name%pack_size( ) + cross_section%pack_size( )
+      allocate( buffer( pack_size ) )
+      pos = 0
+      call type_name%mpi_pack(     buffer, pos )
+      call cross_section%mpi_pack( buffer, pos )
+      call assert( 704417172, pos <= pack_size )
+    end if
+
+    call musica_mpi_bcast( pack_size )
+    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer )
+
+    if( musica_mpi_rank( ) .ne. 0 ) then
+      pos = 0
+      call type_name%mpi_unpack( buffer, pos )
+      cross_section => cross_section_allocate( type_name )
+      call cross_section%mpi_unpack( buffer, pos )
+      call assert( 534260268, pos <= pack_size )
+    end if
+    deallocate( buffer )
+
     results = cross_section%calculate( grids, profiles )
     call check_values( results, upper_extrap, .01_dk )
     deallocate( cross_section )

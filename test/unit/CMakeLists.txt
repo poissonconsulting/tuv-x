@@ -16,6 +16,7 @@ add_subdirectory(spectral_weight)
 ################################################################################
 # TUV-x tests
 
+create_standard_test(NAME cross_section_warehouse SOURCES cross_section_warehouse.F90)
 create_standard_test(NAME la_sr_bands SOURCES test_ls_sr_bands.F90 test_utils.F90)
 
 ################################################################################

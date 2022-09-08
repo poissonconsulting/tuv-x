@@ -19,6 +19,13 @@ module tuvx_cross_section_o3_tint
   contains
     !> Calculate the cross section
     procedure :: calculate => run
+    !> Returns the number of bytes required to pack the cross section onto
+    !> a buffer
+    procedure :: pack_size
+    !> Packs the cross section onto a character buffer
+    procedure :: mpi_pack
+    !> Unpacks a cross section from a character buffer into the object
+    procedure :: mpi_unpack
     !> refraction
     procedure :: refraction
   end type cross_section_o3_tint_t
@@ -281,6 +288,80 @@ lambda_loop:                                                                  &
     deallocate( mdlTemperature )
 
   end function run
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function pack_size( this, comm )
+    ! Returns the size of a character buffer required to pack the cross
+    ! section
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(cross_section_o3_tint_t), intent(in) :: this ! cross section to be packed
+    integer, optional,              intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    pack_size = this%cross_section_t%pack_size( comm ) +                      &
+                musica_mpi_pack_size( this%v185(1), comm ) +                  &
+                musica_mpi_pack_size( this%v195(1), comm ) +                  &
+                musica_mpi_pack_size( this%v345(1), comm )
+#else
+    pack_size = this%cross_section_t%pack_size( comm )
+#endif
+
+  end function pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_pack( this, buffer, position, comm )
+    ! Packs the cross section onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(cross_section_o3_tint_t), intent(in)    :: this      ! cross section to be packed
+    character,                      intent(inout) :: buffer(:) ! memory buffer
+    integer,                        intent(inout) :: position  ! current buffer position
+    integer, optional,              intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call this%cross_section_t%mpi_pack( buffer, position, comm )
+    call musica_mpi_pack( buffer, position, this%v185(1), comm )
+    call musica_mpi_pack( buffer, position, this%v195(1), comm )
+    call musica_mpi_pack( buffer, position, this%v345(1), comm )
+    call assert( 582324821, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_unpack( this, buffer, position, comm )
+    ! Unpacks a cross section from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(cross_section_o3_tint_t), intent(out)   :: this      ! cross section to be unpacked
+    character,                      intent(inout) :: buffer(:) ! memory buffer
+    integer,                        intent(inout) :: position  ! current buffer position
+    integer, optional,              intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call this%cross_section_t%mpi_unpack( buffer, position, comm )
+    call musica_mpi_unpack( buffer, position, this%v185(1), comm )
+    call musica_mpi_unpack( buffer, position, this%v195(1), comm )
+    call musica_mpi_unpack( buffer, position, this%v345(1), comm )
+    call assert( 560718944, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

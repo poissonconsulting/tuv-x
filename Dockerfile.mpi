@@ -21,6 +21,7 @@ RUN sudo dnf -y install \
         lcov \
         python3 \
         python3-pip \
+#        valgrind-openmpi \
     && sudo dnf clean all
 
 ENV PATH="${PATH}:/usr/lib64/openmpi/bin/"

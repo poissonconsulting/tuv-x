@@ -3,3 +3,5 @@ sphinx-book-theme
 myst-parser
 six
 numpy
+matplotlib
+Pillow

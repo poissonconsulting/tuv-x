@@ -4,10 +4,11 @@
 module tuvx_spectral_weight
   ! The spectral_weight type and related functions
 
-  use musica_constants,                only : dk => musica_dk
-  use musica_config,                   only : config_t
-  use tuvx_grid_warehouse,             only : grid_warehouse_t
-  use tuvx_profile_warehouse,          only : profile_warehouse_t
+  use musica_constants,       only : dk => musica_dk
+  use musica_constants,       only : ik => musica_ik
+  use musica_config,          only : config_t
+  use tuvx_grid_warehouse,    only : grid_warehouse_t
+  use tuvx_profile_warehouse, only : profile_warehouse_t
 
   implicit none
 
@@ -27,6 +28,9 @@ module tuvx_spectral_weight
     procedure :: calculate => run
     procedure, private :: add_points
     final     :: finalize
+    procedure :: pack_size
+    procedure :: mpi_pack
+    procedure :: mpi_unpack
   end type spectral_weight_t
 
   !> Pointer type for building sets of dose rate constants
@@ -263,6 +267,127 @@ contains
                     ynew = addpnt_val_upper )
 
   end subroutine add_points
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function pack_size(this, comm)
+    ! Calculate the size, in bytes, needed to pack the spectral_weight_parms
+    ! spectral_weight_parms is a variable length array of two more variable
+    ! length arrays. The two sub-arrays may or may not exist.
+    ! The pack size will represent the total size of the subarrays plus
+    ! one byte per subarray that indicates if it exists or not
+
+    use musica_mpi, only : musica_mpi_pack_size
+
+    class(spectral_weight_t), intent(in) :: this ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
+    integer, optional, intent(in) :: comm        ! MPI communicator
+
+    integer :: ndx
+    logical :: is_allocated
+
+    pack_size = 0
+
+#ifdef MUSICA_USE_MPI
+    is_allocated = allocated( this%spectral_weight_parms )
+
+    pack_size = pack_size + musica_mpi_pack_size(is_allocated, comm)
+
+    if (is_allocated) then
+      pack_size = pack_size + musica_mpi_pack_size(                             &
+        size( this%spectral_weight_parms ), comm )
+
+      do ndx = 1,size( this%spectral_weight_parms )
+
+        pack_size = pack_size + musica_mpi_pack_size(                         &
+          this%spectral_weight_parms( ndx )%array, comm )
+
+        pack_size = pack_size + musica_mpi_pack_size(                         &
+          this%spectral_weight_parms( ndx )%temperature, comm )
+      enddo
+    endif
+#endif
+
+  end function pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_pack(this, buffer, pos, comm)
+    ! Pack the given value to the buffer, advancing position
+
+    use musica_mpi, only : musica_mpi_pack
+    use musica_assert,                 only : assert
+
+    class(spectral_weight_t), intent(in) :: this ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
+    character, intent(inout) :: buffer(:)        ! Memory buffer
+    integer, intent(inout) :: pos                ! Current buffer position
+    integer, optional, intent(in) :: comm        ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_position, ndx
+    logical :: is_allocated
+    is_allocated = allocated( this%spectral_weight_parms )
+
+    prev_position = pos
+
+    call musica_mpi_pack( buffer, pos, is_allocated, comm )
+
+    if (is_allocated) then
+      ! first pack the number of arrays we have
+      call musica_mpi_pack( buffer, pos, size(this%spectral_weight_parms), comm )
+
+      do ndx = 1,size( this%spectral_weight_parms )
+        call musica_mpi_pack( buffer, pos,                                      &
+          this%spectral_weight_parms( ndx )%array, comm )
+        call musica_mpi_pack( buffer, pos,                                      &
+          this%spectral_weight_parms( ndx )%temperature, comm )
+      enddo
+    endif
+
+    call assert(243454577, &
+         pos - prev_position <= this%pack_size(comm))
+#endif
+
+  end subroutine mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_unpack(this, buffer, pos, comm)
+    ! Unpack the given value from the buffer, advancing position
+
+    use musica_mpi, only : musica_mpi_unpack
+    use musica_assert,                 only : assert
+
+    class(spectral_weight_t), intent(out) :: this ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
+    character,         intent(inout) :: buffer(:) ! memory buffer
+    integer,           intent(inout) :: pos       ! current buffer position
+    integer, optional, intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_position, ndx, n_params
+    logical :: is_allocated
+
+    prev_position = pos
+
+    call musica_mpi_unpack( buffer, pos, is_allocated, comm )
+
+    if (is_allocated) then
+      call musica_mpi_unpack( buffer, pos, n_params, comm )
+
+      allocate( this%spectral_weight_parms( n_params) )
+
+      do ndx = 1, n_params
+        call musica_mpi_unpack( buffer, pos,                                    &
+          this%spectral_weight_parms( ndx )%array, comm )
+        call musica_mpi_unpack( buffer, pos,                                    &
+          this%spectral_weight_parms( ndx )%temperature, comm )
+      enddo
+    endif
+
+    call assert(567335412, &
+         pos - prev_position <= this%pack_size(comm))
+#endif
+
+  end subroutine mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

@@ -79,7 +79,7 @@ contains
     profiles => profile_warehouse_t( config, grids )
 
     ! get cross section config data
-    call config%from_file( "test/data/cross_section.oclo.config.json" )
+    call config%from_file( "test/data/cross_sections/cross_section.oclo.config.json" )
     call config%get( "cross sections", cs_set, Iam )
     iter => cs_set%get_iterator( )
 

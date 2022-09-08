@@ -2,19 +2,19 @@
   "cross sections" : [
     {
       "name": "no extrapolation",
-      "netcdf files": [ "test/data/cross_section.oclo.nc" ],
-      "type": "OClO+hv->Products"
+      "netcdf files": [ "test/data/cross_sections/cross_section.rono2.nc" ],
+      "type": "RONO2"
     },
     {
       "name": "lower extrapolation",
-      "type": "OClO+hv->Products",
-      "netcdf files": [ "test/data/cross_section.oclo.nc" ],
+      "type": "RONO2",
+      "netcdf files": [ "test/data/cross_sections/cross_section.rono2.nc" ],
       "lower extrapolation": { "type": "constant", "value" : 300 }
     },
     {
       "name": "upper extrapolation",
-      "type": "OClO+hv->Products",
-      "netcdf files": [ "test/data/cross_section.oclo.nc" ],
+      "type": "RONO2",
+      "netcdf files": [ "test/data/cross_sections/cross_section.rono2.nc" ],
       "lower extrapolation": { "type": "boundary" },
       "upper extrapolation": { "type": "constant", "value": 310 }
     }

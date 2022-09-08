@@ -2,19 +2,19 @@
   "cross sections" : [
     {
       "name": "no extrapolation",
-      "netcdf files": [ "test/data/cross_section.chcl3.nc" ],
-      "type": "CHCl3+hv->Products"
+      "netcdf files": [ "test/data/cross_sections/cross_section.clono2.nc" ],
+      "type": "ClONO2+hv->Cl+NO3"
     },
     {
       "name": "lower extrapolation",
-      "type": "CHCl3+hv->Products",
-      "netcdf files": [ "test/data/cross_section.chcl3.nc" ],
+      "type": "ClONO2+hv->Cl+NO3",
+      "netcdf files": [ "test/data/cross_sections/cross_section.clono2.nc" ],
       "lower extrapolation": { "type": "constant", "value" : 188 }
     },
     {
       "name": "upper extrapolation",
-      "type": "CHCl3+hv->Products",
-      "netcdf files": [ "test/data/cross_section.chcl3.nc" ],
+      "type": "ClONO2+hv->Cl+NO3",
+      "netcdf files": [ "test/data/cross_sections/cross_section.clono2.nc" ],
       "lower extrapolation": { "type": "boundary" },
       "upper extrapolation": { "type": "constant", "value": 212 }
     }

@@ -11,6 +11,7 @@ add_subdirectory(grid)
 add_subdirectory(profile)
 add_subdirectory(radiative_transfer)
 add_subdirectory(radiator)
+add_subdirectory(spectral_weight)
 
 ################################################################################
 # TUV-x tests

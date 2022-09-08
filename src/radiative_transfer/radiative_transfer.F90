@@ -31,6 +31,12 @@ module tuvx_radiative_transfer
     procedure :: name => component_name
     procedure :: description
     procedure :: calculate
+    ! Returns the number of bytes needed to pack the object onto a buffer
+    procedure :: pack_size
+    ! Packs the object onto a character buffer
+    procedure :: mpi_pack
+    ! Unpacks data from a character buffer into the object
+    procedure :: mpi_unpack
     final :: finalize
   end type radiative_transfer_t
 
@@ -202,6 +208,102 @@ contains
     end associate
 
   end subroutine calculate
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function pack_size( this, comm ) 
+    ! Returns the size of a character buffer required to pack the radiator
+    ! state
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(radiative_transfer_t), intent(inout) :: this ! radiative transfer state to be packed
+    integer, optional,       intent(in)     :: comm ! MPI communicator
+
+    pack_size = 0
+
+#ifdef MUSICA_USE_MPI
+    pack_size = pack_size + musica_mpi_pack_size( this%n_streams_, comm ) +   &
+                this%config_%pack_size( comm ) +                              &
+                this%solver_%pack_size( comm ) +                              &
+                this%cross_section_warehouse_%pack_size( comm ) +             &
+                this%radiator_warehouse_%pack_size( comm )
+#endif
+
+  end function pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_pack( this, buffer, position, comm )
+    ! Packs the radiator state onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(radiative_transfer_t), intent(inout)    :: this      ! radiator state to be packed
+    character,                   intent(inout) :: buffer(:) ! memory buffer
+    integer,                     intent(inout) :: position  ! current buffer position
+    integer, optional,           intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+    prev_pos = position
+
+    call musica_mpi_pack( buffer, position, this%n_streams_,  comm )
+    call this%config_%mpi_pack( buffer, position, comm )
+    call this%solver_%mpi_pack( buffer, position, comm )
+    call this%cross_section_warehouse_%mpi_pack( buffer, position, comm )
+    call this%radiator_warehouse_%mpi_pack( buffer, position, comm )
+
+    call assert( 742641642, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_unpack( this, buffer, position, comm )
+    ! Unpacks a radiator state from a character buffer
+
+    use musica_assert,                 only : assert, die_msg
+    use musica_string,                 only : string_t
+    use musica_mpi,                    only : musica_mpi_unpack
+    use tuvx_solver_delta_eddington,   only : solver_delta_eddington_t
+
+    class(radiative_transfer_t), intent(out)   :: this      ! radiator state to be packed
+    character,                   intent(inout) :: buffer(:) ! memory buffer
+    integer,                     intent(inout) :: position  ! current buffer position
+    integer, optional,           intent(in)    :: comm      ! MPI communicator
+    type(string_t)                             :: solver
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+
+    allocate( this%cross_section_warehouse_ )
+    allocate( this%radiator_warehouse_ )
+  
+    call musica_mpi_unpack( buffer, position, this%n_streams_,  comm )
+    call this%config_%mpi_unpack( buffer, position, comm )
+
+    call this%config_%get( "solver", solver, "", default="Delta Eddington" )
+    if( solver == 'discrete ordinants' ) then
+      call die_msg( 900569062,                                                &
+                    "Discrete ordinants method is not currently available" )
+    else
+      allocate( solver_delta_eddington_t :: this%solver_ )
+    endif
+
+    call this%solver_%mpi_unpack( buffer, position, comm )
+
+    call this%cross_section_warehouse_%mpi_unpack( buffer, position, comm )
+    call this%radiator_warehouse_%mpi_unpack( buffer, position, comm )
+
+    call assert( 559826176, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

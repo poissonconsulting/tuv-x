@@ -19,12 +19,24 @@ module tuvx_solver
     real(dk), allocatable :: fup_(:,:) ! Contribution of the diffuse upwelling component to the total actinic flux (vertical interface, wavelength)
     real(dk), allocatable :: fdn_(:,:) ! Contribution of the diffuse downwelling component to the total actinic flux (vertical interface, wavelength)
   contains
+    ! Returns the number of bytes needed to pack the object onto a buffer
+    procedure :: pack_size => field_pack_size
+    ! Packs the object onto a character buffer
+    procedure :: mpi_pack => field_pack
+    ! Unpacks data from a character buffer into the object
+    procedure :: mpi_unpack => field_unpack
     final :: finalize
   end type radiation_field_t
 
   type, abstract :: solver_t
     contains
     procedure(update_radiation_field), deferred :: update_radiation_field
+    ! Returns the number of bytes needed to pack the object onto a buffer
+    procedure :: pack_size => solver_pack_size
+    ! Packs the object onto a character buffer
+    procedure :: mpi_pack => solver_pack
+    ! Unpacks data from a character buffer into the object
+    procedure :: mpi_unpack => solver_unpack
   end type solver_t
 
   interface radiation_field_t
@@ -69,6 +81,62 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  integer function solver_pack_size( this, comm ) 
+    ! Returns the size of a character buffer required to pack the radiator
+    ! state
+
+    use musica_mpi, only : musica_mpi_pack_size
+
+    class(solver_t),   intent(in) :: this ! solver state to be packed
+    integer, optional, intent(in) :: comm ! MPI communicator
+
+    solver_pack_size = 0
+
+#ifdef MUSICA_USE_MPI
+    ! nothing to do for now
+#endif
+  end function solver_pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine solver_pack( this, buffer, position, comm )
+    ! Packs the radiator state onto a character buffer
+
+    use musica_assert, only : assert
+    use musica_mpi,    only : musica_mpi_pack
+
+    class(solver_t), intent(in)    :: this              ! solver state to be packed
+    character,               intent(inout) :: buffer(:) ! memory buffer
+    integer,                 intent(inout) :: position  ! current buffer position
+    integer, optional,       intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    ! nothing to do for now
+#endif
+  end subroutine solver_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine solver_unpack( this, buffer, position, comm )
+    ! Unpacks a radiator state from a character buffer
+
+    use musica_assert, only : assert
+    use musica_mpi,    only : musica_mpi_pack
+
+    class(solver_t),         intent(out)   :: this      ! solver state to be packed
+    character,               intent(inout) :: buffer(:) ! memory buffer
+    integer,                 intent(inout) :: position  ! current buffer position
+    integer, optional,       intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    ! nothing to do for now
+#endif
+  end subroutine solver_unpack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   function field_constructor( n_vertical_interfaces, n_wavelength_bins )      &
       result( field )
     ! Constructor of radiation field objects
@@ -86,6 +154,89 @@ contains
     allocate( field%fup_( n_vertical_interfaces, n_wavelength_bins ) )
 
   end function field_constructor
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function field_pack_size( this, comm ) result( pack_size )
+    ! Returns the size of a character buffer required to pack the radiator
+    ! state
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(radiation_field_t), intent(in) :: this ! radiation field state to be packed
+    integer, optional,        intent(in) :: comm ! MPI communicator
+
+    pack_size = 0
+
+#ifdef MUSICA_USE_MPI
+    pack_size = musica_mpi_pack_size( this%edr_, comm) +                      &
+                musica_mpi_pack_size( this%eup_, comm) +                      &
+                musica_mpi_pack_size( this%edn_, comm) +                      &
+                musica_mpi_pack_size( this%fdr_, comm) +                      &
+                musica_mpi_pack_size( this%fup_, comm) +                      &
+                musica_mpi_pack_size( this%fdn_, comm) 
+#endif
+
+  end function field_pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine field_pack( this, buffer, position, comm )
+    ! Packs the radiator state onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(radiation_field_t), intent(in)    :: this     ! radiation field state to be packed
+    character,               intent(inout) :: buffer(:) ! memory buffer
+    integer,                 intent(inout) :: position  ! current buffer position
+    integer, optional,       intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position, this%edr_, comm)
+    call musica_mpi_pack( buffer, position, this%eup_, comm)
+    call musica_mpi_pack( buffer, position, this%edn_, comm)
+    call musica_mpi_pack( buffer, position, this%fdr_, comm)
+    call musica_mpi_pack( buffer, position, this%fup_, comm)
+    call musica_mpi_pack( buffer, position, this%fdn_, comm)
+
+    call assert( 942613664, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine field_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine field_unpack( this, buffer, position, comm )
+    ! Unpacks a radiator state from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(radiation_field_t), intent(out)   :: this      ! radiation field state to be unpacked
+    character,                intent(inout) :: buffer(:) ! memory buffer
+    integer,                  intent(inout) :: position  ! current buffer position
+    integer, optional,        intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, this%edr_, comm)
+    call musica_mpi_unpack( buffer, position, this%eup_, comm)
+    call musica_mpi_unpack( buffer, position, this%edn_, comm)
+    call musica_mpi_unpack( buffer, position, this%fdr_, comm)
+    call musica_mpi_unpack( buffer, position, this%fup_, comm)
+    call musica_mpi_unpack( buffer, position, this%fdn_, comm)
+    call assert( 709806189, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine field_unpack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

@@ -7,14 +7,18 @@
 !> Test module for the Profile_t type
 program test_Profile
 
-  use musica_string,    only : string_t
+  use musica_mpi,                      only : musica_mpi_init,                &
+                                              musica_mpi_finalize
+  use musica_string,                   only : string_t
 
   implicit none
 
   type(string_t)     :: configFileSpec
 
+  call musica_mpi_init( )
   configFileSpec = 'test/data/profile.test.config.json'
   call test_Profile_t( configFileSpec )
+  call musica_mpi_finalize( )
 
 contains
 
@@ -26,6 +30,7 @@ contains
     use musica_config,    only : config_t
     use musica_string,    only : string_t
     use musica_assert,    only : assert, almost_equal
+    use musica_mpi
     use musica_constants, only : ik => musica_ik, dk => musica_dk
     use tuvx_diagnostic_util,          only : prepare_diagnostic_output
     use tuvx_grid_warehouse, only : grid_warehouse_t
@@ -43,6 +48,8 @@ contains
     type(Profile_warehouse_t), pointer :: theProfileWarehouse
     class(profile_t), pointer      :: aProfile
     type(string_t)                  :: Handle
+    character, allocatable :: buffer(:)
+    integer :: pos, pack_size
 
     call prepare_diagnostic_output( )
 
@@ -62,9 +69,28 @@ contains
     lambdaGrid => theGridWarehouse%get_grid( "wavelength", "nm" )
 
     !> Initialize profile warehouse
-    call tst_config%get( "profiles", child_config, Iam )
-    theProfileWarehouse =>                                                    &
-        Profile_warehouse_t( child_config, theGridWareHouse )
+    if( musica_mpi_rank( ) == 0 ) then
+      call tst_config%get( "profiles", child_config, Iam )
+      theProfileWarehouse =>                                                  &
+          Profile_warehouse_t( child_config, theGridWareHouse )
+      pack_size = theProfileWarehouse%pack_size( )
+      allocate( buffer( pack_size ) )
+      pos = 0
+      call theProfileWarehouse%mpi_pack( buffer, pos )
+      call assert( 423920648, pos <= pack_size )
+    end if
+
+    call musica_mpi_bcast( pack_size )
+    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer )
+
+    if( musica_mpi_rank( ) .ne. 0 ) then
+      pos = 0
+      allocate( theProfileWarehouse )
+      call theProfileWarehouse%mpi_unpack( buffer, pos )
+      call assert( 743629523, pos <= pack_size )
+    end if
+    deallocate( buffer )
 
     !> Get copy of the Air Profile
         aProfile => theProfileWarehouse%get_profile( "air", "molecule cm-3" )
@@ -93,7 +119,7 @@ contains
     deallocate( aProfile )
 
     aProfile => theProfileWarehouse%get_profile( "Earth-Sun distance", "AU" )
-    
+
     call assert( 412238374,                                                   &
       almost_equal(aProfile%mid_val_(1), 0.9962_dk, 0.01_dk ))
     call assert( 412238375,                                                   &

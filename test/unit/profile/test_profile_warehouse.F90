@@ -4,9 +4,14 @@
 program test_profile_warehouse
   ! Test module for the profile warehouse
 
+  use musica_mpi,                      only : musica_mpi_init,                &
+                                              musica_mpi_finalize
+
   implicit none
 
+  call musica_mpi_init( )
   call profile_warehouse_test( )
+  call musica_mpi_finalize( )
 
 contains
 
@@ -15,6 +20,7 @@ contains
   subroutine profile_warehouse_test()
     use musica_assert,              only : assert, almost_equal
     use musica_config,              only : config_t
+    use musica_mpi
     use tuvx_grid_warehouse,        only : grid_warehouse_t
     use tuvx_profile_warehouse,     only : profile_warehouse_t
     use tuvx_profile,               only : profile_t
@@ -26,14 +32,35 @@ contains
     class(grid_warehouse_t), pointer :: grid_warehouse => null()
     class(profile_warehouse_t), pointer :: profile_warehouse => null()
     class(profile_t),           pointer :: profile_ptr => null()
+    character, allocatable :: buffer(:)
+    integer :: pos, pack_size
 
     call grid_tst_config%from_file( grid_config )
     grid_warehouse => grid_warehouse_t( grid_tst_config )
 
-    call profile_tst_config%from_file( profile_config )
-    profile_warehouse => profile_warehouse_t( profile_tst_config,             &
-      grid_warehouse )
-    
+    if( musica_mpi_rank( ) == 0 ) then
+      call profile_tst_config%from_file( profile_config )
+      profile_warehouse =>                                                    &
+          profile_warehouse_t( profile_tst_config, grid_warehouse )
+      pack_size = profile_warehouse%pack_size( )
+      allocate( buffer( pack_size ) )
+      pos = 0
+      call profile_warehouse%mpi_pack( buffer, pos )
+      call assert( 893633789, pos <= pack_size )
+    end if
+
+    call musica_mpi_bcast( pack_size )
+    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer )
+
+    if( musica_mpi_rank( ) .ne. 0 ) then
+      pos = 0
+      allocate( profile_warehouse )
+      call profile_warehouse%mpi_unpack( buffer, pos )
+      call assert( 436189624, pos <= pack_size )
+    end if
+    deallocate( buffer )
+
     profile_ptr => profile_warehouse%get_profile( "temperature", "K" )
 
     call assert( 418832741, associated(profile_ptr) )

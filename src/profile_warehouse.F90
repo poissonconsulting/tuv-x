@@ -3,7 +3,7 @@
 
 module tuvx_profile_warehouse
   ! The profile warehouse type and related functions. Holds one or more
-  ! :f:type:`~tuvx_profile/profile_t` s created by the 
+  ! :f:type:`~tuvx_profile/profile_t` s created by the
   ! :f:mod:`tuvx_profile_factory`
 
   use tuvx_profile, only : profile_ptr
@@ -15,12 +15,18 @@ module tuvx_profile_warehouse
 
   type profile_warehouse_t
     private
-    type(profile_ptr), allocatable :: profile_objs_(:)
+    type(profile_ptr), allocatable :: profiles_(:)
   contains
     procedure, private :: get_profile_char, get_profile_string
     generic :: get_profile => get_profile_char, get_profile_string
     procedure :: exists_char, exists_string
     generic :: exists => exists_char, exists_string
+    ! returns the number of bytes required to pack the warehouse onto a buffer
+    procedure :: pack_size
+    ! packs the warehouse onto a character buffer
+    procedure :: mpi_pack
+    ! unpacks a warehouse from a character buffer into the object
+    procedure :: mpi_unpack
     final :: finalize
   end type profile_warehouse_t
 
@@ -33,8 +39,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function constructor( config, grid_warehouse) &
-    result( profile_warehouse )
+  function constructor( config, grid_warehouse ) result( profile_warehouse )
     ! profile warehouse constructor
 
     use musica_config,        only : config_t
@@ -44,7 +49,7 @@ contains
     use tuvx_profile_factory, only : profile_builder
 
     type(config_t),             intent(inout) :: config ! profile configuration data
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(grid_warehouse_t),     intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     class(profile_warehouse_t), pointer       :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     ! local variables
@@ -57,7 +62,7 @@ contains
     class(profile_warehouse_t), pointer :: profile_warehouse_ptr
 
     allocate( profile_warehouse )
-    allocate( profile_warehouse%profile_objs_(0) )
+    allocate( profile_warehouse%profiles_(0) )
 
     ! iterate over profiles
     iter => config%get_iterator( )
@@ -69,8 +74,8 @@ contains
 
       ! Build profile objects
       profile_obj%val_ => profile_builder( profile_config, grid_warehouse )
-      profile_warehouse%profile_objs_ =                                       &
-          [ profile_warehouse%profile_objs_, profile_obj ]
+      profile_warehouse%profiles_ =                                       &
+          [ profile_warehouse%profiles_, profile_obj ]
     end do
 
     deallocate( iter )
@@ -96,8 +101,8 @@ contains
     logical :: found
 
     found = .false.
-    do ndx = 1, size( this%profile_objs_ )
-      if( name .eq. this%profile_objs_( ndx )%val_%handle_ ) then
+    do ndx = 1, size( this%profiles_ )
+      if( name .eq. this%profiles_( ndx )%val_%handle_ ) then
         found = .true.
         exit
       endif
@@ -105,11 +110,11 @@ contains
 
     call assert_msg( 460768214, found, "Invalid profile handle: '"//name//"'" )
     call assert_msg( 465479557,                                               &
-                     units .eq. this%profile_objs_( ndx )%val_%units( ),      &
+                     units .eq. this%profiles_( ndx )%val_%units( ),      &
                      "Profile '"//name//"' has units of '"//                  &
-                     this%profile_objs_( ndx )%val_%units( )//"' not '"//     &
+                     this%profiles_( ndx )%val_%units( )//"' not '"//     &
                      units//"' as requested." )
-    allocate( a_profile_ptr, source = this%profile_objs_( ndx )%val_ )
+    allocate( a_profile_ptr, source = this%profiles_( ndx )%val_ )
 
   end function get_profile_char
 
@@ -145,8 +150,8 @@ contains
     integer :: ndx
 
     exists = .false.
-    do ndx = 1, size( this%profile_objs_ )
-      if( name .eq. this%profile_objs_( ndx )%val_%handle_ ) then
+    do ndx = 1, size( this%profiles_ )
+      if( name .eq. this%profiles_( ndx )%val_%handle_ ) then
         exists  = .true.
         exit
       endif
@@ -172,6 +177,108 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  integer function pack_size( this, comm )
+    ! returns the number of bytes required to pack the warehouse onto a buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack_size
+    use musica_string,                 only : string_t
+    use tuvx_profile_factory,          only : profile_type_name
+
+    class(profile_warehouse_t), intent(in) :: this ! warehouse to be packed
+    integer, optional,          intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: i_profile
+    type(string_t) :: type_name
+
+    call assert( 821308000, allocated( this%profiles_ ) )
+    pack_size = musica_mpi_pack_size( size( this%profiles_ ) )
+    do i_profile = 1, size( this%profiles_ )
+    associate( profile => this%profiles_( i_profile )%val_ )
+      type_name = profile_type_name( profile )
+      pack_size = pack_size                                                   &
+                  + type_name%pack_size( comm )                               &
+                  + profile%pack_size(   comm )
+    end associate
+    end do
+#else
+    pack_size = 0
+#endif
+
+  end function pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_pack( this, buffer, position, comm )
+    ! packs the warehouse onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+    use musica_string,                 only : string_t
+    use tuvx_profile_factory,          only : profile_type_name
+
+    class(profile_warehouse_t), intent(in)    :: this      ! warehouse to be packed
+    character,                  intent(inout) :: buffer(:) ! memory buffer
+    integer,                    intent(inout) :: position  ! current buffer position
+    integer, optional,          intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos, i_profile
+    type(string_t) :: type_name
+
+    prev_pos = position
+    call assert( 333182583, allocated( this%profiles_ ) )
+    call musica_mpi_pack( buffer, position, size( this%profiles_ ), comm )
+    do i_profile = 1, size( this%profiles_ )
+    associate( profile => this%profiles_( i_profile )%val_ )
+      type_name = profile_type_name( profile )
+      call type_name%mpi_pack( buffer, position, comm )
+      call profile%mpi_pack(   buffer, position, comm )
+    end associate
+    end do
+    call assert( 777643951, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_unpack( this, buffer, position, comm )
+    ! unpacks a warehouse from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+    use musica_string,                 only : string_t
+    use tuvx_profile_factory,          only : profile_allocate
+
+    class(profile_warehouse_t), intent(out)   :: this      ! warehouse to be unpacked
+    character,                  intent(inout) :: buffer(:) ! memory buffer
+    integer,                    intent(inout) :: position  ! current buffer position
+    integer, optional,          intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos, i_profile, n_profiles
+    type(string_t) :: type_name
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, n_profiles, comm )
+    if( allocated( this%profiles_ ) ) deallocate( this%profiles_ )
+    allocate( this%profiles_( n_profiles ) )
+    do i_profile = 1, n_profiles
+    associate( profile => this%profiles_( i_profile )%val_ )
+      call type_name%mpi_unpack( buffer, position, comm )
+      profile => profile_allocate( type_name )
+      call profile%mpi_unpack( buffer, position, comm )
+    end associate
+    end do
+    call assert( 294782841, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_unpack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   subroutine finalize( this )
     ! Finalize profile warehouse
 
@@ -183,13 +290,13 @@ contains
     integer(kind=ik) :: ndx
     character(len=*), parameter :: Iam = 'profile warehouse finalize: '
 
-    if( allocated( this%profile_objs_ ) ) then
-      do ndx = 1, size( this%profile_objs_ )
-        if( associated( this%profile_objs_( ndx )%val_ ) ) then
-          deallocate( this%profile_objs_( ndx )%val_ )
+    if( allocated( this%profiles_ ) ) then
+      do ndx = 1, size( this%profiles_ )
+        if( associated( this%profiles_( ndx )%val_ ) ) then
+          deallocate( this%profiles_( ndx )%val_ )
         end if
       end do
-      deallocate( this%profile_objs_ )
+      deallocate( this%profiles_ )
     endif
 
   end subroutine finalize

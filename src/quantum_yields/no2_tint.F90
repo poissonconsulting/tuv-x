@@ -16,14 +16,26 @@ module tuvx_quantum_yield_no2_tint
     real(dk), allocatable :: temperature(:) ! Temperature grid [K]
     real(dk), allocatable :: deltaT(:)      ! Temperature difference between grid points [K]
     real(dk), allocatable :: array(:,:)     ! Quantum yield parameters (wavelength, temperature)
+  contains
+    ! Returns the number of bytes required to pack the data
+    procedure :: pack_size => data_pack_size
+    ! Packs the data onto a character buffer
+    procedure :: mpi_pack => data_mpi_pack
+    ! Unpacks data from a character buffer
+    procedure :: mpi_unpack => data_mpi_unpack
   end type quantum_yield_data_t
 
   type, extends(quantum_yield_t) :: quantum_yield_no2_tint_t
     ! Calculator for tint quantum yield
-    type(quantum_yield_data_t), allocatable :: quantum_yield(:)
+    type(quantum_yield_data_t), allocatable :: parameters(:)
   contains
     procedure :: calculate => run
-    final     :: finalize
+    ! Returns the number of bytes required to pack the quantum yield
+    procedure :: pack_size
+    ! Packs the quantum yield onto a character buffer
+    procedure :: mpi_pack
+    ! Unpacks a quantum yield from a character buffer
+    procedure :: mpi_unpack
   end type quantum_yield_no2_tint_t
 
   interface quantum_yield_no2_tint_t
@@ -81,7 +93,7 @@ contains
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
     call assert_msg( 252847407, found,                                        &
                      Iam//'must have at least one netcdf input file' )
-    allocate( this%quantum_yield( size( netcdfFiles ) ) )
+    allocate( this%parameters( size( netcdfFiles ) ) )
     file_loop: do fileNdx = 1, size( netcdfFiles )
       allocate( netcdf_obj )
       ! read netcdf file quantum yield data
@@ -92,7 +104,7 @@ contains
       call assert_msg( 235314124, nParms >= 2, Iam//'File: '//                &
                        trim( netcdfFiles( fileNdx )%to_char( ) )//            &
                        ' array must have 2 or more parameters' )
-      associate( Qyield => this%quantum_yield( fileNdx ) )
+      associate( Qyield => this%parameters( fileNdx ) )
       ! interpolation temperatures must be in netcdf file
       call assert_msg( 264376965, allocated( netcdf_obj%temperature ),        &
                        Iam//'File: '//                                        &
@@ -130,21 +142,21 @@ contains
       endif
       ! interpolate from data to model wavelength grid
       if( allocated( netcdf_obj%wavelength ) ) then
-        if( .not. allocated( this%quantum_yield( fileNdx )%array) ) then
-          allocate( this%quantum_yield( fileNdx )%array(                      &
+        if( .not. allocated( this%parameters( fileNdx )%array) ) then
+          allocate( this%parameters( fileNdx )%array(                         &
                                               lambdaGrid%ncells_, nParms ) )
         endif
         do parmNdx = 1, nParms
           data_lambda    = netcdf_obj%wavelength
           data_parameter = netcdf_obj%parameters( :, parmNdx )
           call this%add_points( config, data_lambda, data_parameter )
-          this%quantum_yield( fileNdx )%array( :, parmNdx ) =                 &
+          this%parameters( fileNdx )%array( :, parmNdx ) =                    &
                 interpolator%interpolate( x_target = lambdaGrid%edge_,        &
                                           x_source = data_lambda,             &
                                           y_source = data_parameter )
         enddo
       else
-        this%quantum_yield( fileNdx )%array = netcdf_obj%parameters
+        this%parameters( fileNdx )%array = netcdf_obj%parameters
       endif
       end associate
       deallocate( netcdf_obj )
@@ -188,9 +200,9 @@ contains
     allocate( wrkQuantumYield( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )
     wrkQuantumYield = 0.0_dk
 
-    do fileNdx = 1, size( this%quantum_yield )
-      associate( Temp => this%quantum_yield( fileNdx )%temperature,           &
-                 wrkQyield => this%quantum_yield( fileNdx ) )
+    do fileNdx = 1, size( this%parameters )
+      associate( Temp => this%parameters( fileNdx )%temperature,              &
+                 wrkQyield => this%parameters( fileNdx ) )
       nTemp = size( Temp )
       do vertNdx = 1, zGrid%ncells_ + 1
         Tadj  = mdlTemperature%edge_val_( vertNdx )
@@ -203,7 +215,7 @@ contains
         Tstar = ( Tadj - Temp( tNdx ) ) / wrkQyield%deltaT( tNdx )
         WrkQuantumYield( :, vertNdx ) = WrkQuantumYield( :, vertNdx ) +       &
                     wrkQyield%array( :, tNdx ) +                              &
-                    Tstar * ( wrkQyield%array( :, tNdx + 1 ) -             &
+                    Tstar * ( wrkQyield%array( :, tNdx + 1 ) -                &
                               wrkQyield%array( :, tNdx ) )
       enddo
       end associate
@@ -219,31 +231,164 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine finalize( this )
-    ! finalize the quantum yield type
+  integer function pack_size( this, comm )
+    ! Returns the number of bytes required to pack the quantum yield
 
-    type(quantum_yield_no2_tint_t), intent(inout) :: this
+    use musica_mpi,                    only : musica_mpi_pack_size
 
-    integer     :: ndx
+    class(quantum_yield_no2_tint_t), intent(in) :: this ! quantum yield to pack
+    integer, optional,               intent(in) :: comm ! MPI communicator
 
-    if( allocated( this%quantum_yield ) ) then
-      do ndx = 1, size( this%quantum_yield )
-        associate( Qyield => this%quantum_yield( ndx ) )
-        if( allocated( Qyield%array ) ) then
-          deallocate( Qyield%array )
-        endif
-        if( allocated( Qyield%temperature ) ) then
-         deallocate( Qyield%temperature )
-        endif
-        if( allocated( Qyield%deltaT ) ) then
-          deallocate( Qyield%deltaT )
-        endif
-        end associate
-      enddo
-      deallocate( this%quantum_yield )
-    endif
+#ifdef MUSICA_USE_MPI
+    integer :: i_data
 
-  end subroutine finalize
+    pack_size = this%quantum_yield_t%pack_size( comm )                        &
+                + musica_mpi_pack_size( allocated( this%parameters ), comm )
+    if( allocated( this%parameters ) ) then
+      pack_size = pack_size                                                   &
+                  + musica_mpi_pack_size( size( this%parameters ), comm )
+      do i_data = 1, size( this%parameters )
+        pack_size = pack_size + this%parameters( i_data )%pack_size( comm )
+      end do
+    end if
+#else
+    pack_size = 0
+#endif
+
+  end function pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_pack( this, buffer, position, comm )
+    ! Packs the quantum yield onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(quantum_yield_no2_tint_t), intent(in)    :: this      ! quantum yield to pack
+    character,                       intent(inout) :: buffer(:) ! memory buffer
+    integer,                         intent(inout) :: position  ! current buffer position
+    integer, optional,               intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos, i_data
+
+    prev_pos = position
+    call this%quantum_yield_t%mpi_pack( buffer, position, comm )
+    call musica_mpi_pack( buffer, position, allocated( this%parameters ),     &
+                          comm )
+    if( allocated( this%parameters ) ) then
+      call musica_mpi_pack( buffer, position, size( this%parameters ), comm )
+      do i_data = 1, size( this%parameters )
+        call this%parameters( i_data )%mpi_pack( buffer, position, comm )
+      end do
+    end if
+    call assert( 284574988, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_unpack( this, buffer, position, comm )
+    ! Unpacks a quantum yield from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(quantum_yield_no2_tint_t), intent(out)   :: this      ! quantum yield to be unpacked
+    character,                       intent(inout) :: buffer(:) ! memory buffer
+    integer,                         intent(inout) :: position  ! current buffer position
+    integer, optional,               intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos, i_data, n_data
+    logical :: alloced
+
+    prev_pos = position
+    call this%quantum_yield_t%mpi_unpack( buffer, position, comm )
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( alloced ) then
+      call musica_mpi_unpack( buffer, position, n_data, comm )
+      allocate( this%parameters( n_data ) )
+      do i_data = 1, n_data
+        call this%parameters( i_data )%mpi_unpack( buffer, position, comm )
+      end do
+    end if
+    call assert( 247628485, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_unpack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function data_pack_size( this, comm ) result( pack_size )
+    ! Returns the number of bytes required to pack the data
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(quantum_yield_data_t), intent(in) :: this ! data to be packed
+    integer, optional,           intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    pack_size = musica_mpi_pack_size( this%temperature ) +                    &
+                musica_mpi_pack_size( this%deltaT      ) +                    &
+                musica_mpi_pack_size( this%array       )
+#else
+    pack_size = 0
+#endif
+
+  end function data_pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine data_mpi_pack( this, buffer, position, comm )
+    ! Packs the data onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(quantum_yield_data_t), intent(in)    :: this      ! data to be packed
+    character,                   intent(inout) :: buffer(:) ! memory buffer
+    integer,                     intent(inout) :: position  ! current buffer position
+    integer, optional,           intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position, this%temperature, comm )
+    call musica_mpi_pack( buffer, position, this%deltaT,      comm )
+    call musica_mpi_pack( buffer, position, this%array,       comm )
+    call assert( 768462639, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine data_mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine data_mpi_unpack( this, buffer, position, comm )
+    ! Unpacks data from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(quantum_yield_data_t), intent(out)   :: this      ! data to be unpacked
+    character,                   intent(inout) :: buffer(:) ! memory buffer
+    integer,                     intent(inout) :: position  ! current buffer position
+    integer, optional,           intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, this%temperature, comm )
+    call musica_mpi_unpack( buffer, position, this%deltaT,      comm )
+    call musica_mpi_unpack( buffer, position, this%array,       comm )
+    call assert( 811412867, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine data_mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

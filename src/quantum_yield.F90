@@ -15,6 +15,13 @@ module tuvx_quantum_yield
   type quantum_yield_parms_t
     real(dk), allocatable :: temperature(:) ! temperature in Kelvin
     real(dk), allocatable :: array(:,:) ! Parameters for calculating quantum yields (wavelength, parameter)
+  contains
+    ! returns the number of bytes needed to pack the parameters onto a buffer
+    procedure :: pack_size => parms_pack_size
+    ! packs the parameters onto a character buffer
+    procedure :: mpi_pack => parms_mpi_pack
+    ! unpacks parameters from a charcater buffer
+    procedure :: mpi_unpack => parms_mpi_unpack
   end type quantum_yield_parms_t
 
   type quantum_yield_t
@@ -23,7 +30,12 @@ module tuvx_quantum_yield
   contains
     procedure :: calculate => run
     procedure :: add_points
-    final     :: finalize
+    ! returns the number of bytes required to pack the object onto a buffer
+    procedure :: pack_size
+    ! packs the object onto a character buffer
+    procedure :: mpi_pack
+    ! unpacks an object from a character buffer
+    procedure :: mpi_unpack
   end type quantum_yield_t
 
   type quantum_yield_ptr
@@ -272,25 +284,166 @@ file_loop: &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine finalize( this )
-    ! Finalizes the quantum yield object
+  integer function pack_size( this, comm )
+    ! Returns the number of bytes required to pack the object onto a buffer
 
-    type(quantum_yield_t), intent(inout) :: this ! This :f:type:`~tuvx_quantum_yield/quantum_yield_t` calculator
+    use musica_mpi,                    only : musica_mpi_pack_size
 
-    integer :: ndx
+    class(quantum_yield_t), intent(in) :: this ! quantum yield to be packed
+    integer, optional,      intent(in) :: comm ! MPI communicator
 
+#ifdef MUSICA_USE_MPI
+    integer :: i_param
+
+    pack_size =                                                               &
+      musica_mpi_pack_size( allocated( this%quantum_yield_parms ), comm )
     if( allocated( this%quantum_yield_parms ) ) then
-      do ndx = 1, size( this%quantum_yield_parms )
-        if( allocated( this%quantum_yield_parms( ndx )%array ) ) then
-          deallocate( this%quantum_yield_parms( ndx )%array )
-        endif
-        if( allocated( this%quantum_yield_parms( ndx )%temperature ) ) then
-          deallocate( this%quantum_yield_parms( ndx )%temperature )
-        endif
-      enddo
-      deallocate( this%quantum_yield_parms )
-    endif
-  end subroutine finalize
+      pack_size = pack_size +                                                 &
+        musica_mpi_pack_size( size( this%quantum_yield_parms ), comm )
+      do i_param = 1, size( this%quantum_yield_parms )
+        pack_size = pack_size +                                               &
+          this%quantum_yield_parms( i_param )%pack_size( comm )
+      end do
+    end if
+#else
+    pack_size = 0
+#endif
+
+  end function pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_pack( this, buffer, position, comm )
+    ! Packs the quantum yield onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(quantum_yield_t), intent(in)    :: this      ! quantum yield to pack
+    character,              intent(inout) :: buffer(:) ! memory buffer
+    integer,                intent(inout) :: position  ! current buffer position
+    integer, optional,      intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos, i_param
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position,                                   &
+                          allocated( this%quantum_yield_parms ), comm )
+    if( allocated( this%quantum_yield_parms ) ) then
+      call musica_mpi_pack( buffer, position,                                 &
+                            size( this%quantum_yield_parms ), comm )
+      do i_param = 1, size( this%quantum_yield_parms )
+        call this%quantum_yield_parms( i_param )%mpi_pack( buffer, position,  &
+                                                           comm )
+      end do
+    end if
+    call assert( 165656641, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_unpack( this, buffer, position, comm )
+    ! Unpacks a quantum yield from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(quantum_yield_t), intent(out)   :: this      ! quantum yield to be unpacked
+    character,              intent(inout) :: buffer(:) ! memory buffer
+    integer,                intent(inout) :: position  ! current buffer position
+    integer, optional,      intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos, i_param, n_params
+    logical :: alloced
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( allocated( this%quantum_yield_parms ) )                               &
+        deallocate( this%quantum_yield_parms )
+    if( alloced ) then
+      call musica_mpi_unpack( buffer, position, n_params, comm )
+      allocate( this%quantum_yield_parms( n_params ) )
+      do i_param = 1, n_params
+        call this%quantum_yield_parms( i_param )%mpi_unpack( buffer,          &
+                                                             position, comm )
+      end do
+    end if
+    call assert( 865270779, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_unpack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function parms_pack_size( this, comm ) result( pack_size )
+    ! Returns the number of bytes required to pack the parameters onto a
+    ! buffer.
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(quantum_yield_parms_t), intent(in) :: this ! parameters to pack
+    integer, optional,            intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    pack_size = musica_mpi_pack_size( this%temperature, comm )                &
+                + musica_mpi_pack_size( this%array, comm )
+#else
+    pack_size = 0
+#endif
+
+  end function parms_pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine parms_mpi_pack( this, buffer, position, comm )
+    ! Packs the parameters onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(quantum_yield_parms_t), intent(in)    :: this      ! quantum yield to pack
+    character,                    intent(inout) :: buffer(:) ! memory buffer
+    integer,                      intent(inout) :: position  ! current buffer position
+    integer, optional,            intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position, this%temperature, comm )
+    call musica_mpi_pack( buffer, position, this%array,       comm )
+    call assert( 220419984, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine parms_mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine parms_mpi_unpack( this, buffer, position, comm )
+    ! Unpacks parameters from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(quantum_yield_parms_t), intent(out)   :: this      ! parameter to be unpacked
+    character,                    intent(inout) :: buffer(:) ! memory buffer
+    integer,                      intent(inout) :: position  ! current buffer position
+    integer, optional,            intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, this%temperature, comm )
+    call musica_mpi_unpack( buffer, position, this%array,       comm )
+    call assert( 203626119, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine parms_mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

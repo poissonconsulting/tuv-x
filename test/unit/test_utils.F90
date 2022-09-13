@@ -3,9 +3,38 @@ module tuvx_test_utils
   implicit none
   public
 
+  interface check_values
+    procedure :: check_values_1D, check_values_2D
+  end interface
+
 contains
 
-  subroutine check_values( results, expected_results, relative_tolerance )
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine check_values_1D( results, expected_results, relative_tolerance )
+
+    use musica_assert,                 only : assert, almost_equal
+    use musica_constants,              only : dk => musica_dk
+
+    real(kind=dk), intent(in) :: results(:)
+    real(kind=dk), intent(in) :: expected_results(:)
+    real(kind=dk), intent(in) :: relative_tolerance
+
+    integer :: i_elem
+
+    call assert( 572877200, size( results ) == size( expected_results ) )
+    do i_elem = 1, size( results )
+      call assert( 743034104, almost_equal(                                  &
+        results( i_elem ),                                                   &
+        expected_results( i_elem ),                                          &
+        relative_tolerance))
+    end do
+
+  end subroutine check_values_1D
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine check_values_2D( results, expected_results, relative_tolerance )
 
     use musica_assert,                 only : assert, almost_equal
     use musica_constants,              only : dk => musica_dk
@@ -29,6 +58,8 @@ contains
       end do
     end do
 
-  end subroutine check_values
+  end subroutine check_values_2D
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 end module tuvx_test_utils

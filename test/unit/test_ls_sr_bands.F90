@@ -60,6 +60,7 @@ contains
     call la_sr_bands_%optical_depth( grid_warehouse, profile_warehouse,       &
       air_vertical_column, air_slant_column, o2_optical_depth )
 
+    deallocate( height_grid )
     deallocate( o2_optical_depth )
     deallocate( air_vertical_column )
     deallocate( air_slant_column )

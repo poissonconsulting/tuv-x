@@ -30,10 +30,14 @@ program test_spectral_weight_mpi_pack
   profile_warehouse => profile_warehouse_t( profile_config, grid_warehouse )
   spectral_weight => spectral_weight_t( weights_config, grid_warehouse,       &
     profile_warehouse)
-  
+
   call musica_mpi_init( )
 
   call test_mpi_pack( spectral_weight )
+
+  deallocate( spectral_weight )
+  deallocate( profile_warehouse )
+  deallocate( grid_warehouse )
 
   call musica_mpi_finalize( )
 

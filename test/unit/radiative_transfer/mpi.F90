@@ -32,6 +32,10 @@ program test_radiative_transfer_mpi
 
   call test_mpi( radiative_transfer )
 
+  deallocate( profile_warehouse )
+  deallocate( grid_warehouse )
+  deallocate( radiative_transfer )
+
   call musica_mpi_finalize( )
 
 contains

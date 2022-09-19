@@ -33,6 +33,7 @@ contains
     use musica_string,                 only : string_t
     use tuvx_constants,                only : hc, deltax
     use tuvx_diagnostic_util,          only : diagout
+    use tuvx_diagnostic_util,          only : prepare_diagnostic_output
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_grid,                     only : grid_t
     use tuvx_interpolate
@@ -65,13 +66,14 @@ contains
     type(string_t)                 :: defaultInterpolator
     type(string_t), allocatable    :: Filespec(:), Interpolator(:)
     class(interpolator_t), pointer :: theInterpolator
-    type(string_t) :: required_keys(4), optional_keys(1)
+    type(string_t) :: required_keys(4), optional_keys(2)
 
     required_keys(1) = "type"
     required_keys(2) = "units"
     required_keys(3) = "file path"
     required_keys(4) = "interpolator"
     optional_keys(1) = "name"
+    optional_keys(2) = "diagnostic_output"
 
     call assert_msg( 389428513,                                               &
                      config%validate( required_keys, optional_keys ),         &
@@ -79,6 +81,11 @@ contains
                      "extraterrestrial flux profile." )
 
     allocate( this )
+
+    call config%get( 'diagnostic_output', this%enable_diagnostics, Iam,       &
+      default=.false. )
+
+    call prepare_diagnostic_output( this%enable_diagnostics )
 
     defaultInterpolator = 'conserving'
 
@@ -229,27 +236,29 @@ contains
       endwhere
 
       ! test diagnostics
+      associate( enable => this%enable_diagnostics )
       if( index( Filespec( fileNdx )%to_char( ), 'susim' ) /= 0 ) then
-        call diagout( 'susim.inputGrid.new', inputGrid )
-        call diagout( 'susim.inputData.new', inputData )
-        call diagout( 'susim.interpolated.new', interpolatedEtfl )
-        call diagout( 'susim.etfl.new', this%mid_val_ )
+        call diagout( 'susim.inputGrid.new', inputGrid, enable )
+        call diagout( 'susim.inputData.new', inputData, enable )
+        call diagout( 'susim.interpolated.new', interpolatedEtfl, enable )
+        call diagout( 'susim.etfl.new', this%mid_val_, enable )
       elseif( index( Filespec( fileNdx )%to_char( ), 'atlas' ) /= 0 ) then
-        call diagout( 'atlas.inputGrid.new', inputGrid )
-        call diagout( 'atlas.inputData.new', inputData )
-        call diagout( 'atlas.interpolated.new', interpolatedEtfl )
-        call diagout( 'atlas.etfl.new', this%mid_val_ )
+        call diagout( 'atlas.inputGrid.new', inputGrid, enable )
+        call diagout( 'atlas.inputData.new', inputData, enable )
+        call diagout( 'atlas.interpolated.new', interpolatedEtfl, enable )
+        call diagout( 'atlas.etfl.new', this%mid_val_, enable )
       elseif( index( Filespec( fileNdx )%to_char( ), 'neckel' ) /= 0 ) then
-        call diagout( 'neckel.inputGrid.new', inputGrid )
-        call diagout( 'neckel.inputData.new', inputData )
-        call diagout( 'neckel.interpolated.new', interpolatedEtfl )
-        call diagout( 'neckel.etfl.new', this%mid_val_ )
+        call diagout( 'neckel.inputGrid.new', inputGrid, enable )
+        call diagout( 'neckel.inputData.new', inputData, enable )
+        call diagout( 'neckel.interpolated.new', interpolatedEtfl, enable )
+        call diagout( 'neckel.etfl.new', this%mid_val_, enable )
       elseif( index( Filespec( fileNdx )%to_char( ), 'sao2010' ) /= 0 ) then
-        call diagout( 'sao2010.inputGrid.new', inputGrid )
-        call diagout( 'sao2010.inputData.new', inputData )
-        call diagout( 'sao2010.interpolated.new', interpolatedEtfl )
-        call diagout( 'sao2010.etfl.new', this%mid_val_ )
+        call diagout( 'sao2010.inputGrid.new', inputGrid, enable )
+        call diagout( 'sao2010.inputData.new', inputData, enable )
+        call diagout( 'sao2010.interpolated.new', interpolatedEtfl, enable )
+        call diagout( 'sao2010.etfl.new', this%mid_val_, enable )
       endif
+      end associate
 
       deallocate( inputGrid, inputData )
       deallocate( theInterpolator )
@@ -259,7 +268,7 @@ contains
     deallocate( lambdaGrid )
 
     ! test diagnostics
-    call diagout( 'etfl.new', this%mid_val_ )
+    call diagout( 'etfl.new', this%mid_val_, this%enable_diagnostics )
 
   end function constructor
 

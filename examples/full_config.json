@@ -73,6 +73,7 @@
          }
       },
       "extraterrestrial flux": {
+         "diagnostic_output" : true,
          "type": "extraterrestrial flux",
          "units": "photon cm-2 s-1",
          "file path": ["data/profiles/solar/susim_hi.flx",

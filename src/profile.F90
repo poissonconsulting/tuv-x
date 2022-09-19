@@ -23,6 +23,7 @@ module tuvx_profile
     real(musica_dk), allocatable :: layer_dens_(:) ! layer densities
     real(musica_dk), allocatable :: exo_layer_dens_(:) ! layer densities including "exo" model layer
     real(musica_dk), allocatable :: burden_dens_(:) ! overhead column burden
+    logical                      :: enable_diagnostics ! determins if diagnostic output is written or not
   contains
     ! returns the number of bytes needed to pack the profile onto a buffer
     procedure :: pack_size

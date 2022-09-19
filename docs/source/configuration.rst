@@ -480,7 +480,12 @@ keys                       Required/Optional
 ``file path``              required
 ``interpolator``           required
 ``name``                   optional
+``diagnostic_output``      optional
 =========================  ==============
+
+The regressoin tests compare the new version of TUV-x to the old version. One
+way is by directly comparing output. The `diagnostic_output` allows for this
+ouptut to be disabled.
 
 O2 Keys
 """""""

@@ -23,14 +23,11 @@ module tuvx_photolysis_rates
 
   !> Photolysis rate constant calculator
   type :: photolysis_rates_t
-    !> Absorption cross-sections
-    type(cross_section_ptr), allocatable :: cross_sections_(:)
-    !> Quantum yields
-    type(quantum_yield_ptr), allocatable :: quantum_yields_(:)
-    !> Scaling factor for final rate constant
-    real(dk),                    allocatable :: scaling_factors_(:)
-    !> User-provided label for the photolysis rate constant
-    type(string_t), allocatable              :: handles_(:)
+    type(cross_section_ptr), allocatable :: cross_sections_(:) ! Absorption cross-sections
+    type(quantum_yield_ptr), allocatable :: quantum_yields_(:) ! Quantum yields
+    real(dk),                    allocatable :: scaling_factors_(:) ! Scaling factor for final rate constant
+    type(string_t), allocatable              :: handles_(:) ! User-provided label for the photolysis rate constant
+    logical :: enable_diagnostics ! Enable writing diagnostic output, defaults to false
   contains
     !> Returns the photolysis rate constants for a given set of conditions
     procedure :: get
@@ -59,6 +56,7 @@ contains
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
     use tuvx_cross_section_factory,    only : cross_section_builder
+    use tuvx_diagnostic_util,          only : prepare_diagnostic_output
     use tuvx_quantum_yield_factory,    only : quantum_yield_builder
 
     !> photorates rates
@@ -97,8 +95,16 @@ contains
 
     ! iterate over photo reactions
     iter => reaction_set%get_iterator( )
+
+    call reaction_set%get( "enable diagnostics",                              &
+      photolysis_rates%enable_diagnostics, Iam, default = .false. )
+    call prepare_diagnostic_output( photolysis_rates%enable_diagnostics )
+
     do while( iter%next( ) )
       keychar = reaction_set%key( iter )
+      if (keychar .eq. 'enable diagnostics') then
+        cycle
+      endif
       reaction_key = keychar
       rates%handles_ = [ rates%handles_, reaction_key ]
       call reaction_set%get( iter, reaction_config, Iam )
@@ -230,13 +236,15 @@ rate_loop:                                                                    &
       xsqyWrk = [ xsqyWrk, reshape( cross_section * quantum_yield,            &
                                     (/ size( cross_section ) /) ) ]
 
+      associate( enable => this%enable_diagnostics )
       annotatedRate = this%handles_( rateNdx )//'.xsect.new'
-      call diagout( trim( annotatedRate%to_char( ) ), cross_section )
+      call diagout( trim( annotatedRate%to_char( ) ), cross_section, enable )
       annotatedRate = this%handles_( rateNdx )//'.qyld.new'
-      call diagout( trim( annotatedRate%to_char( ) ), quantum_yield )
+      call diagout( trim( annotatedRate%to_char( ) ), quantum_yield, enable )
       annotatedRate = this%handles_( rateNdx )//'.xsqy.new'
       call diagout( trim( annotatedRate%to_char( ) ),                         &
-                    cross_section * quantum_yield )
+                    cross_section * quantum_yield, enable )
+      end associate
 
       xsqy = transpose( cross_section * quantum_yield )
       do vertNdx = 1, zGrid%ncells_ + 1
@@ -247,8 +255,9 @@ rate_loop:                                                                    &
       if( allocated( quantum_yield ) ) deallocate( quantum_yield )
     end do rate_loop
 
-    call diagout( 'annotatedjlabels.new', this%handles_ )
-    call diagout( 'xsqy.'//file_tag//'.new', xsqyWrk)
+    call diagout( 'annotatedjlabels.new', this%handles_,                      &
+      this%enable_diagnostics )
+    call diagout( 'xsqy.'//file_tag//'.new', xsqyWrk, this%enable_diagnostics )
 
     deallocate( zGrid )
     deallocate( lambdaGrid )

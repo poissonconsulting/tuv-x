@@ -480,11 +480,11 @@ keys                       Required/Optional
 ``file path``              required
 ``interpolator``           required
 ``name``                   optional
-``diagnostic_output``      optional
+``enable diagnostics``      optional
 =========================  ==============
 
 The regressoin tests compare the new version of TUV-x to the old version. One
-way is by directly comparing output. The `diagnostic_output` allows for this
+way is by directly comparing output. The `enable diagnostics` allows for this
 ouptut to be disabled.
 
 O2 Keys
@@ -594,6 +594,29 @@ Each reaction must also have a ``quantum yield``, whose
 configuration is described :ref:`here <configuration-quantum-yields>`.
 The ``scaling factor`` is a optional scaling factor that will be
 applied to the calculated rate constant.
+
+Additionally, diagnostic output can be enabled by adding an attribute to the
+json configuration like in the sample below. In this case, a folder named
+`output` will be created with some diagnostic output for the cross sections
+and quantum yields. This is only used for regression tests and will be removed
+in the future.
+
+.. code-block:: JSON
+   :force:
+
+   "photolysis reactions": {
+     "enable diagnostics" : true,
+     "my first reaction": {
+       "cross section": { ... },
+       "quantum yield": { ... },
+       "scaling factor": 1.3
+     },
+     "my second reaction": {
+       "cross section": { ... },
+       "quantum yield": { ... },
+     }
+   }
+
 
 The file ``data/photolysis_rate_constants.json`` contains
 configuration data for every photolysis rate constant that

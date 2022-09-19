@@ -1,5 +1,6 @@
    "__description": "This file contains configurations for each of the photolysis rate constants that can be calculated using data from this folder",
    "photolysis reactions": {
+      "enable diagnostics" : true,
       "O2+hv->O+O": {
          "cross section": {
             "netcdf files": ["data/cross_sections/O2_1.nc"],

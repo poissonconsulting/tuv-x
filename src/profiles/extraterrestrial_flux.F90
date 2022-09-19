@@ -73,7 +73,7 @@ contains
     required_keys(3) = "file path"
     required_keys(4) = "interpolator"
     optional_keys(1) = "name"
-    optional_keys(2) = "diagnostic_output"
+    optional_keys(2) = "enable diagnostics"
 
     call assert_msg( 389428513,                                               &
                      config%validate( required_keys, optional_keys ),         &
@@ -82,7 +82,7 @@ contains
 
     allocate( this )
 
-    call config%get( 'diagnostic_output', this%enable_diagnostics, Iam,       &
+    call config%get( 'enable diagnostics', this%enable_diagnostics, Iam,       &
       default=.false. )
 
     call prepare_diagnostic_output( this%enable_diagnostics )

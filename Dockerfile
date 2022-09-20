@@ -44,3 +44,5 @@ RUN mkdir /build \
       && cmake -D CMAKE_BUILD_TYPE=COVERAGE \
                /tuv-x \
       && make
+
+WORKDIR /build

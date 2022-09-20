@@ -57,3 +57,5 @@ RUN mkdir build \
                -D ENABLE_MPI:BOOL=TRUE \
                ../tuv-x \
       && make
+
+WORKDIR /home/test_user/build

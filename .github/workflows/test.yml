@@ -14,7 +14,7 @@ jobs:
     - name: build Docker image
       run: docker build -t tuv-x-test .
     - name: run tests in container
-      run: docker run --name test-container -t tuv-x-test bash -c 'cd build; make coverage'
+      run: docker run --name test-container -t tuv-x-test bash -c 'make coverage'
     - name: copy coverage from container
       run: docker cp test-container:build/coverage.info .
     - uses: codecov/codecov-action@v2
@@ -24,4 +24,4 @@ jobs:
     - name: build Docker image for MPI tests
       run: docker build -t tuv-x-mpi-test . -f Dockerfile.mpi
     - name: run MPI tests in container
-      run: docker run -t tuv-x-mpi-test bash -c 'cd build; make test'
+      run: docker run -t tuv-x-mpi-test bash -c 'make test'

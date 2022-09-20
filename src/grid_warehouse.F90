@@ -22,6 +22,12 @@ module tuvx_grid_warehouse
     !> checks if a grid is present in the warehouse
     procedure, private :: exists_char, exists_string
     generic :: exists => exists_char, exists_string
+    !> Adds a grid or set of grids to the warehouse
+    procedure, private :: add_grid
+    procedure, private :: add_grids
+    generic :: add => add_grid, add_grids
+    !> Returns a updater for a `grid_from_host_t` grid
+    procedure :: get_updater
     !> Returns the number of bytes required to pack the warehouse onto a buffer
     procedure :: pack_size
     !> Packs the warehouse onto a character buffer
@@ -34,10 +40,22 @@ module tuvx_grid_warehouse
 
   !> Grid warehouse_t constructor
   interface grid_warehouse_t
+    module procedure :: constructor_empty
     module procedure :: constructor
   end interface
 
 contains
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function constructor_empty( ) result( grid_warehouse )
+
+    class(grid_warehouse_t), pointer :: grid_warehouse ! Empty grid warehouse
+
+    allocate( grid_warehouse )
+    allocate( grid_warehouse%grids_(0) )
+
+  end function constructor_empty
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -136,6 +154,7 @@ contains
   logical function exists_char( this, name, units ) result( exists )
     ! checks if a grid exists in the warehouse
 
+    use musica_assert,                 only : assert_msg
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
 
@@ -148,6 +167,9 @@ contains
     exists = .false.
     do ndx = 1, size( this%grids_ )
       if( name .eq. this%grids_( ndx )%val_%handle_ ) then
+        call assert_msg( 287595102, this%grids_( ndx )%val_%units( ) == units,&
+                         "Units mismatch for grid '"//name//"': '"//units//   &
+                         "' != '"//this%grids_( ndx )%val_%units( ) )
         exists = .true.
         exit
       endif
@@ -170,6 +192,95 @@ contains
     exists = this%exists_char( name%to_char( ), units%to_char( ) )
 
   end function exists_string
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine add_grid( this, grid )
+    ! adds a grid to the warehouse
+
+    use musica_assert,                 only : assert
+    use tuvx_grid,                     only : grid_t
+
+    class(grid_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    class(grid_t),           intent(in)    :: grid ! Grid to add
+
+    type(grid_ptr) :: ptr
+
+    call assert( 900933280, allocated( this%grids_  ) )
+    allocate( ptr%val_, source = grid )
+    this%grids_ = [ this%grids_, ptr ]
+
+  end subroutine add_grid
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine add_grids( this, grids )
+    ! adds a set of grids to the warehouse
+
+    use musica_assert,                 only : assert
+
+    class(grid_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    class(grid_warehouse_t), intent(in)    :: grids ! Set of grids to add
+
+    integer :: i_grid
+
+    call assert( 169184651, allocated( this%grids_  ) )
+    call assert( 176354492, allocated( grids%grids_ ) )
+    do i_grid = 1, size( grids%grids_ )
+      call this%add_grid( grids%grids_( i_grid )%val_ )
+    end do
+
+  end subroutine add_grids
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  type(grid_updater_t) function get_updater( this, grid, found )              &
+      result( updater )
+    ! returns an updater for a `grid_from_host_t` grid
+    !
+    ! If the optional `found` flag is omitted, an error is returned if the
+    ! grid does not exist in the warehouse.
+
+    use musica_assert,                 only : assert, assert_msg, die_msg
+    use tuvx_grid_from_host,           only : grid_from_host_t, grid_updater_t
+
+    class(grid_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(grid_from_host_t),  intent(in)    :: grid ! The grid to find in the warehouse
+    logical, optional,       intent(out)   :: found ! Flag indicating whether the grid was found
+
+    integer :: i_grid
+    logical :: l_found
+
+    l_found = .false.
+    do i_grid = 1, size( this%grids_ )
+      if( grid%handle_ == this%grids_( i_grid )%val_%handle_ ) then
+        call assert_msg( 782725188,                                           &
+                         this%grids_( i_grid )%val_%units( ) == grid%units( ),&
+                         "Units mismatch for grid '"//grid%handle_//"': '"//  &
+                         grid%units( )//"' != '"//                            &
+                         this%grids_( i_grid )%val_%units( ) )
+        l_found = .true.
+        exit
+      end if
+    end do
+
+    if( present( found ) ) then
+      found = l_found
+      if( .not. found ) return
+    end if
+
+    call assert_msg( 311845931, found,                                        &
+                     "Cannot find grid '"//grid%handle_//"'" )
+
+    select type( w_grid => this%grids_( i_grid )%val_ )
+    class is( grid_from_host_t )
+      updater = grid_updater_t( w_grid )
+    class default
+      call die_msg( 953621510, "Cannot update grid '"//w_grid%handle_//       &
+                               "' from a host application" )
+    end select
+
+  end function get_updater
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

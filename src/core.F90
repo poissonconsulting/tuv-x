@@ -48,7 +48,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function constructor( config ) result( new_core )
+  function constructor( config, grids ) result( new_core )
     ! Constructor of TUV-x core objects
 
     use musica_assert,                 only : assert_msg
@@ -57,9 +57,9 @@ contains
     use tuvx_diagnostic_util,          only : diagout
     use tuvx_profile,                  only : profile_t
 
-    type(string_t), intent(in) :: config ! Full TUV-x configuration data
-
-    class(core_t), pointer :: new_core
+    type(string_t),                    intent(in) :: config ! Full TUV-x configuration data
+    class(grid_warehouse_t), optional, intent(in) :: grids ! Set of grids to include in the configuration
+    class(core_t),                     pointer    :: new_core
 
     ! Local variables
     character(len=*), parameter :: Iam = 'Photolysis core constructor: '
@@ -91,6 +91,7 @@ contains
     ! Instantiate and initialize grid warehouse
     call core_config%get( "grids", child_config, Iam )
     new_core%grid_warehouse_ => grid_warehouse_t( child_config )
+    if( present( grids ) ) call new_core%grid_warehouse_%add( grids )
 
     ! Instantiate and initialize profile warehouse
     call core_config%get( "profiles", child_config, Iam )

@@ -2,13 +2,14 @@
 ! SPDX-License-Identifier: Apache-2.0
 
 module tuvx_grid_factory
-! Provides a function which creates grids for the 
+! Provides a function which creates grids for the
 ! :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`.
 
   use tuvx_grid,                       only : grid_t
   use tuvx_grid_equal_delta,           only : equal_delta_t
   use tuvx_grid_from_csv_file,         only : from_csv_file_t
   use tuvx_grid_from_config,           only : from_config_t
+  use tuvx_grid_from_host,             only : grid_from_host_t
 
   implicit none
 
@@ -69,6 +70,8 @@ contains
         name = "from_csv_file_t"
       type is( from_config_t )
         name = "from_config_t"
+      type is( grid_from_host_t )
+        name = "grid_from_host_t"
       class default
         call die( 983843127 )
     end select
@@ -95,6 +98,8 @@ contains
         allocate( from_csv_file_t :: grid )
       case( 'from_config_t' )
         allocate( from_config_t :: grid )
+      case( 'grid_from_host_t' )
+        allocate( grid_from_host_t :: grid )
       case default
         call die_msg( 351430046, "Invalid grid type: '"//type_name//"'" )
     end select

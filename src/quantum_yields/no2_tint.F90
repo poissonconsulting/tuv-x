@@ -237,7 +237,7 @@ contains
     use musica_mpi,                    only : musica_mpi_pack_size
 
     class(quantum_yield_no2_tint_t), intent(in) :: this ! quantum yield to pack
-    integer, optional,               intent(in) :: comm ! MPI communicator
+    integer,                         intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: i_data
@@ -268,7 +268,7 @@ contains
     class(quantum_yield_no2_tint_t), intent(in)    :: this      ! quantum yield to pack
     character,                       intent(inout) :: buffer(:) ! memory buffer
     integer,                         intent(inout) :: position  ! current buffer position
-    integer, optional,               intent(in)    :: comm      ! MPI communicator
+    integer,                         intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos, i_data
@@ -299,7 +299,7 @@ contains
     class(quantum_yield_no2_tint_t), intent(out)   :: this      ! quantum yield to be unpacked
     character,                       intent(inout) :: buffer(:) ! memory buffer
     integer,                         intent(inout) :: position  ! current buffer position
-    integer, optional,               intent(in)    :: comm      ! MPI communicator
+    integer,                         intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos, i_data, n_data
@@ -328,12 +328,12 @@ contains
     use musica_mpi,                    only : musica_mpi_pack_size
 
     class(quantum_yield_data_t), intent(in) :: this ! data to be packed
-    integer, optional,           intent(in) :: comm ! MPI communicator
+    integer,                     intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
-    pack_size = musica_mpi_pack_size( this%temperature ) +                    &
-                musica_mpi_pack_size( this%deltaT      ) +                    &
-                musica_mpi_pack_size( this%array       )
+    pack_size = musica_mpi_pack_size( this%temperature, comm ) +              &
+                musica_mpi_pack_size( this%deltaT,      comm ) +              &
+                musica_mpi_pack_size( this%array,       comm )
 #else
     pack_size = 0
 #endif
@@ -351,7 +351,7 @@ contains
     class(quantum_yield_data_t), intent(in)    :: this      ! data to be packed
     character,                   intent(inout) :: buffer(:) ! memory buffer
     integer,                     intent(inout) :: position  ! current buffer position
-    integer, optional,           intent(in)    :: comm      ! MPI communicator
+    integer,                     intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos
@@ -376,7 +376,7 @@ contains
     class(quantum_yield_data_t), intent(out)   :: this      ! data to be unpacked
     character,                   intent(inout) :: buffer(:) ! memory buffer
     integer,                     intent(inout) :: position  ! current buffer position
-    integer, optional,           intent(in)    :: comm      ! MPI communicator
+    integer,                     intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos

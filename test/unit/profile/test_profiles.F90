@@ -50,6 +50,7 @@ contains
     type(string_t)                  :: Handle
     character, allocatable :: buffer(:)
     integer :: pos, pack_size
+    integer, parameter :: comm = MPI_COMM_WORLD
 
     call prepare_diagnostic_output( )
 
@@ -69,25 +70,25 @@ contains
     lambdaGrid => theGridWarehouse%get_grid( "wavelength", "nm" )
 
     !> Initialize profile warehouse
-    if( musica_mpi_rank( ) == 0 ) then
+    if( musica_mpi_rank( comm ) == 0 ) then
       call tst_config%get( "profiles", child_config, Iam )
       theProfileWarehouse =>                                                  &
           Profile_warehouse_t( child_config, theGridWareHouse )
-      pack_size = theProfileWarehouse%pack_size( )
+      pack_size = theProfileWarehouse%pack_size( comm )
       allocate( buffer( pack_size ) )
       pos = 0
-      call theProfileWarehouse%mpi_pack( buffer, pos )
+      call theProfileWarehouse%mpi_pack( buffer, pos , comm )
       call assert( 423920648, pos <= pack_size )
     end if
 
-    call musica_mpi_bcast( pack_size )
-    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
-    call musica_mpi_bcast( buffer )
+    call musica_mpi_bcast( pack_size , comm )
+    if( musica_mpi_rank( comm ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer , comm )
 
-    if( musica_mpi_rank( ) .ne. 0 ) then
+    if( musica_mpi_rank( comm ) .ne. 0 ) then
       pos = 0
       allocate( theProfileWarehouse )
-      call theProfileWarehouse%mpi_unpack( buffer, pos )
+      call theProfileWarehouse%mpi_unpack( buffer, pos , comm )
       call assert( 743629523, pos <= pack_size )
     end if
     deallocate( buffer )

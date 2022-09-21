@@ -17,6 +17,13 @@ module tuvx_spectral_weight_gaussian
     real(dk) :: centroid ! The gaussian centroid
   contains
     procedure :: calculate => run
+    ! Returns the number of bytes required to pack the spectral weight onto a
+    ! buffer
+    procedure :: pack_size
+    ! Packs the spectral weight onto a character buffer
+    procedure :: mpi_pack
+    ! Unpacks a spectral weight from a character buffer
+    procedure :: mpi_unpack
   end type spectral_weight_gaussian_t
 
   interface spectral_weight_gaussian_t
@@ -95,6 +102,74 @@ contains
     if( associated( lambdaGrid ) ) deallocate( lambdaGrid )
 
   end function run
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function pack_size( this, comm )
+    ! Returns the number of bytes required to pack the spectral weight onto a
+    ! buffer
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(spectral_weight_gaussian_t), intent(in) :: this ! spectral weight to be packed
+    integer,                           intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    pack_size = this%spectral_weight_t%pack_size( comm ) +                    &
+                musica_mpi_pack_size( this%centroid, comm )
+#else
+    pack_size = 0
+#endif
+
+  end function pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_pack( this, buffer, pos, comm )
+    ! Packs the spectral weight onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(spectral_weight_gaussian_t), intent(in)    :: this      ! spectral weight to be packed
+    character,                         intent(inout) :: buffer(:) ! memory buffer
+    integer,                           intent(inout) :: pos       ! current buffer position
+    integer,                           intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = pos
+    call this%spectral_weight_t%mpi_pack( buffer, pos, comm )
+    call musica_mpi_pack( buffer, pos, this%centroid, comm )
+    call assert( 803704767, pos - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_unpack( this, buffer, pos, comm )
+    ! Unpacks the spectral weight onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(spectral_weight_gaussian_t), intent(out)   :: this      ! spectral weight to be unpacked
+    character,                         intent(inout) :: buffer(:) ! memory buffer
+    integer,                           intent(inout) :: pos       ! current buffer position
+    integer,                           intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = pos
+    call this%spectral_weight_t%mpi_unpack( buffer, pos, comm )
+    call musica_mpi_unpack( buffer, pos, this%centroid, comm )
+    call assert( 284610975, pos - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

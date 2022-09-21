@@ -1,11 +1,8 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 !
-!> \file
-!> The tuvx_dose_rates module
-
-!> The dose_rates_t type and related functions
 module tuvx_dose_rates
+  ! The dose_rates_t type and related functions
 
   use musica_constants,                only : dk => musica_dk
   use musica_string,                   only : string_t
@@ -22,16 +19,23 @@ module tuvx_dose_rates
 
   !> Photolysis rate constant calculator
   type :: dose_rates_t
-    !> Spectral weights
+    ! Spectral weights
     type(spectral_weight_ptr), allocatable :: spectral_weights_(:)
-    !> Configuration label for the dose rate
+    ! Configuration label for the dose rate
     type(string_t), allocatable          :: handles_(:)
   contains
-    !> Returns the dose rates for a given set of conditions
+    ! Returns the dose rates for a given set of conditions
     procedure :: get
-    !> Returns the names of each dose rate
+    ! Returns the names of each dose rate
     procedure :: labels
-    !> Finalize the object
+    ! Returns the number of bytes required to pack the dose rates onto a
+    ! buffer
+    procedure :: pack_size
+    ! Packs the dose rates onto a character buffer
+    procedure :: mpi_pack
+    ! Unpacks dose rates from a character buffer
+    procedure :: mpi_unpack
+    ! Finalize the object
     final :: finalize
   end type dose_rates_t
 
@@ -44,9 +48,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Constructor of dose_rates_t objects
   function constructor( config, grid_warehouse, profile_warehouse )           &
       result( dose_rates )
+    ! Constructor of dose_rates_t objects
 
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
@@ -104,9 +108,9 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> calculate dose rate constants
   subroutine get( this, grid_warehouse, profile_warehouse, radiation_field,   &
       dose_rates, file_tag )
+    ! calculates dose rate constants
 
     use musica_assert,                 only : die_msg
     use tuvx_constants,                only : hc
@@ -192,8 +196,142 @@ rate_loop:                                                                    &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !> Finalize the dose rates object
+  integer function pack_size( this, comm )
+    ! Returns the number of bytes required to pack the dose rates onto a
+    ! buffer
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+    use tuvx_spectral_weight_factory,  only : spectral_weight_type_name
+
+    class(dose_rates_t), intent(in) :: this ! dose rates to be packed
+    integer,             intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: i_elem
+    type(string_t) :: type_name
+
+    pack_size = musica_mpi_pack_size( allocated( this%spectral_weights_ ),    &
+                                      comm )
+    if( allocated( this%spectral_weights_ ) ) then
+      pack_size = pack_size +                                                 &
+                  musica_mpi_pack_size( size( this%spectral_weights_ ), comm )
+      do i_elem = 1, size( this%spectral_weights_ )
+      associate( weight => this%spectral_weights_( i_elem )%val_ )
+        type_name = spectral_weight_type_name( weight )
+        pack_size = pack_size +                                               &
+                    type_name%pack_size( comm ) +                             &
+                    weight%pack_size( comm )
+      end associate
+      end do
+    end if
+    pack_size = pack_size +                                                   &
+                musica_mpi_pack_size( allocated( this%handles_ ), comm )
+    if( allocated( this%handles_ ) ) then
+      pack_size = pack_size +                                                 &
+                  musica_mpi_pack_size( size( this%handles_  ), comm )
+      do i_elem = 1, size( this%handles_ )
+        pack_size = pack_size + this%handles_( i_elem )%pack_size( comm )
+      end do
+    end if
+#else
+    pack_size = 0
+#endif
+
+  end function pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_pack( this, buffer, position, comm )
+    ! Packs the dose rates onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+    use tuvx_spectral_weight_factory,  only : spectral_weight_type_name
+
+    class(dose_rates_t), intent(in)    :: this      ! dose rates to be packed
+    character,           intent(inout) :: buffer(:) ! memory buffer
+    integer,             intent(inout) :: position  ! current buffer position
+    integer,             intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos, i_elem
+    type(string_t) :: type_name
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position,                                   &
+                          allocated( this%spectral_weights_ ), comm )
+    if( allocated( this%spectral_weights_ ) ) then
+      call musica_mpi_pack( buffer, position, size( this%spectral_weights_ ), &
+                            comm )
+      do i_elem = 1, size( this%spectral_weights_ )
+      associate( weight => this%spectral_weights_( i_elem )%val_ )
+        type_name = spectral_weight_type_name( weight )
+        call type_name%mpi_pack( buffer, position, comm )
+        call weight%mpi_pack(    buffer, position, comm )
+      end associate
+      end do
+    end if
+    call musica_mpi_pack( buffer, position, allocated( this%handles_ ), comm )
+    if( allocated( this%handles_ ) ) then
+      call musica_mpi_pack( buffer, position, size( this%handles_ ), comm )
+      do i_elem = 1, size( this%handles_ )
+        call this%handles_( i_elem )%mpi_pack( buffer, position, comm )
+      end do
+    end if
+    call assert( 258716172, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_unpack( this, buffer, position, comm )
+    ! Unpacks the dose rates onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+    use tuvx_spectral_weight_factory,  only : spectral_weight_allocate
+
+    class(dose_rates_t), intent(out)   :: this      ! dose rates to be unpacked
+    character,           intent(inout) :: buffer(:) ! memory buffer
+    integer,             intent(inout) :: position  ! current buffer position
+    integer,             intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos, i_elem, n_elems
+    logical :: alloced
+    type(string_t) :: type_name
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( alloced ) then
+      call musica_mpi_unpack( buffer, position, n_elems, comm )
+      allocate( this%spectral_weights_( n_elems ) )
+      do i_elem = 1, n_elems
+      associate( weight => this%spectral_weights_( i_elem )%val_ )
+        call type_name%mpi_unpack( buffer, position, comm )
+        weight => spectral_weight_allocate( type_name )
+        call weight%mpi_unpack( buffer, position, comm )
+      end associate
+      end do
+    end if
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( alloced ) then
+      call musica_mpi_unpack( buffer, position, n_elems, comm )
+      allocate( this%handles_( n_elems ) )
+      do i_elem = 1, n_elems
+        call this%handles_( i_elem )%mpi_unpack( buffer, position, comm )
+      end do
+    end if
+    call assert( 143039054, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_unpack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   subroutine finalize( this )
+    ! Finalize the dose rates object
 
     !> Dose rate object
     type(dose_rates_t), intent(inout) :: this

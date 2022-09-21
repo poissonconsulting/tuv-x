@@ -114,6 +114,7 @@ contains
     character, allocatable :: buffer(:)
     integer :: pos, pack_size
     logical :: found
+    integer, parameter :: comm = MPI_COMM_WORLD
 
     write(*,*) Iam // 'entering'
 
@@ -165,32 +166,32 @@ contains
     call assert( 412238775, all( aCrossSection(1,:) == aCrossSection(zGrid%ncells_,:) ) )
 
     ! Get copy of the rayliegh radiator and test MPI functions
-    if( musica_mpi_rank( ) == 0 ) then
+    if( musica_mpi_rank( comm ) == 0 ) then
       Handle = 'air'
       RaylieghRadiator => this%theRadiatorWarehouse_%get_radiator( Handle )
       call RaylieghRadiator%update_state( this%theGridWareHouse_,             &
                                           this%theProfileWareHouse_,          &
                                           this%theradXferXsectWareHouse_ )
       radiators => this%theRadiatorWarehouse_
-      pack_size = RaylieghRadiator%pack_size( ) +                             &
-                  radiators%pack_size( )
+      pack_size = RaylieghRadiator%pack_size( comm ) +                             &
+                  radiators%pack_size( comm )
       allocate( buffer( pack_size ) )
       pos = 0
-      call RaylieghRadiator%mpi_pack( buffer, pos )
-      call radiators%mpi_pack( buffer, pos )
+      call RaylieghRadiator%mpi_pack( buffer, pos , comm )
+      call radiators%mpi_pack( buffer, pos , comm )
       call assert( 994121788, pos <= pack_size )
     end if
 
-    call musica_mpi_bcast( pack_size )
-    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
-    call musica_mpi_bcast( buffer )
+    call musica_mpi_bcast( pack_size , comm )
+    if( musica_mpi_rank( comm ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer , comm )
 
-    if( musica_mpi_rank( ) .ne. 0 ) then
+    if( musica_mpi_rank( comm ) .ne. 0 ) then
       pos = 0
       allocate( RaylieghRadiator )
       allocate( radiators        )
-      call RaylieghRadiator%mpi_unpack( buffer, pos )
-      call radiators%mpi_unpack( buffer, pos )
+      call RaylieghRadiator%mpi_unpack( buffer, pos , comm )
+      call radiators%mpi_unpack( buffer, pos , comm )
       call assert( 761314313, pos <= pack_size )
     end if
 

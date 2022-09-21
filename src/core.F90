@@ -37,6 +37,12 @@ module tuvx_core
     procedure :: run
     procedure :: output_photolysis_rate_constants
     procedure :: output_dose_rates
+    ! Returns the number of bytes required to pack the core onto a buffer
+    procedure :: pack_size
+    ! Packs the core onto a character buffer
+    procedure :: mpi_pack
+    ! Unpacks a core from a character buffer
+    procedure :: mpi_unpack
     final     :: finalize
   end type core_t
 
@@ -389,6 +395,200 @@ contains
     deallocate( vertical )
 
   end subroutine output_dose_rates
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function pack_size( this, comm )
+    ! Returns the number of bytes required to pack the core onto a buffer
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(core_t),     intent(in) :: this ! core to be packed
+    integer,           intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: i_elem
+
+    pack_size =                                                               &
+        musica_mpi_pack_size( associated( this%grid_warehouse_ ), comm )
+    if( associated( this%grid_warehouse_ ) ) then
+      pack_size = pack_size + this%grid_warehouse_%pack_size( comm )
+    end if
+    pack_size = pack_size +                                                   &
+        musica_mpi_pack_size( associated( this%profile_warehouse_ ), comm )
+    if( associated( this%profile_warehouse_ ) ) then
+      pack_size = pack_size + this%profile_warehouse_%pack_size( comm )
+    end if
+    pack_size = pack_size +                                                   &
+        musica_mpi_pack_size( associated( this%spherical_geometry_ ), comm )
+    if( associated( this%spherical_geometry_ ) ) then
+      pack_size = pack_size + this%spherical_geometry_%pack_size( comm )
+    end if
+    pack_size = pack_size +                                                   &
+        musica_mpi_pack_size( associated( this%la_sr_bands_ ), comm )
+    if( associated( this%la_sr_bands_ ) ) then
+      pack_size = pack_size + this%la_sr_bands_%pack_size( comm )
+    end if
+    pack_size = pack_size +                                                   &
+        musica_mpi_pack_size( allocated( this%diagnostics_ ), comm )
+    if( allocated( this%diagnostics_ ) ) then
+      pack_size = pack_size +                                                 &
+        musica_mpi_pack_size( size( this%diagnostics_ ), comm )
+      do i_elem = 1, size( this%diagnostics_ )
+        pack_size = pack_size + this%diagnostics_( i_elem )%pack_size( comm )
+      end do
+    end if
+    pack_size = pack_size +                                                   &
+        musica_mpi_pack_size( associated( this%radiative_transfer_ ), comm )
+    if( associated( this%radiative_transfer_ ) ) then
+      pack_size = pack_size + this%radiative_transfer_%pack_size( comm )
+    end if
+    pack_size = pack_size +                                                   &
+        musica_mpi_pack_size( associated( this%photolysis_rates_ ), comm )
+    if( associated( this%photolysis_rates_ ) ) then
+      pack_size = pack_size + this%photolysis_rates_%pack_size( comm )
+    end if
+    pack_size = pack_size +                                                   &
+      musica_mpi_pack_size( associated( this%dose_rates_ ), comm )
+    if( associated( this%dose_rates_ ) ) then
+      pack_size = pack_size + this%dose_rates_%pack_size( comm )
+    end if
+#else
+    pack_size = 0
+#endif
+
+  end function pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_pack( this, buffer, position, comm )
+    ! Packs the core onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(core_t),     intent(in)    :: this      ! core to be packed
+    character,         intent(inout) :: buffer(:) ! memory buffer
+    integer,           intent(inout) :: position  ! current buffer position
+    integer,           intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos, i_elem
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position,                                   &
+                          associated( this%grid_warehouse_ ), comm )
+    if( associated( this%grid_warehouse_ ) ) then
+      call this%grid_warehouse_%mpi_pack( buffer, position, comm )
+    end if
+    call musica_mpi_pack( buffer, position,                                   &
+                          associated( this%profile_warehouse_ ), comm )
+    if( associated( this%profile_warehouse_ ) ) then
+      call this%profile_warehouse_%mpi_pack( buffer, position, comm )
+    end if
+    call musica_mpi_pack( buffer, position,                                   &
+                          associated( this%spherical_geometry_ ), comm )
+    if( associated( this%spherical_geometry_ ) ) then
+      call this%spherical_geometry_%mpi_pack( buffer, position, comm )
+    end if
+    call musica_mpi_pack( buffer, position,                                   &
+                          associated( this%la_sr_bands_ ), comm )
+    if( associated( this%la_sr_bands_ ) ) then
+      call this%la_sr_bands_%mpi_pack( buffer, position, comm )
+    end if
+    call musica_mpi_pack( buffer, position,                                   &
+                          allocated( this%diagnostics_ ), comm )
+    if( allocated( this%diagnostics_ ) ) then
+      call musica_mpi_pack( buffer, position, size( this%diagnostics_ ), comm )
+      do i_elem = 1, size( this%diagnostics_ )
+        call this%diagnostics_( i_elem )%mpi_pack( buffer, position, comm )
+      end do
+    end if
+    call musica_mpi_pack( buffer, position,                                   &
+                          associated( this%radiative_transfer_ ), comm )
+    if( associated( this%radiative_transfer_ ) ) then
+      call this%radiative_transfer_%mpi_pack( buffer, position, comm )
+    end if
+    call musica_mpi_pack( buffer, position,                                   &
+                          associated( this%photolysis_rates_ ), comm )
+    if( associated( this%photolysis_rates_ ) ) then
+      call this%photolysis_rates_%mpi_pack( buffer, position, comm )
+    end if
+    call musica_mpi_pack( buffer, position,                                   &
+                          associated( this%dose_rates_ ), comm )
+    if( associated( this%dose_rates_ ) ) then
+      call this%dose_rates_%mpi_pack( buffer, position, comm )
+    end if
+    call assert( 332208077, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_unpack( this, buffer, position, comm )
+    ! Unpacks a core from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(core_t),     intent(out)   :: this      ! core to be unpacked
+    character,         intent(inout) :: buffer(:) ! memory buffer
+    integer,           intent(inout) :: position  ! current buffer position
+    integer,           intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos, i_elem, n_elems
+    logical :: alloced
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( alloced ) then
+      allocate( this%grid_warehouse_ )
+      call this%grid_warehouse_%mpi_unpack( buffer, position, comm )
+    end if
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( alloced ) then
+      allocate( this%profile_warehouse_ )
+      call this%profile_warehouse_%mpi_unpack( buffer, position, comm )
+    end if
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( alloced ) then
+      allocate( this%spherical_geometry_ )
+      call this%spherical_geometry_%mpi_unpack( buffer, position, comm )
+    end if
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( alloced ) then
+      allocate( this%la_sr_bands_ )
+      call this%la_sr_bands_%mpi_unpack( buffer, position, comm )
+    end if
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( alloced ) then
+      call musica_mpi_unpack( buffer, position, n_elems, comm )
+      allocate( this%diagnostics_( n_elems ) )
+      do i_elem = 1, n_elems
+        call this%diagnostics_( i_elem )%mpi_unpack( buffer, position, comm )
+      end do
+    end if
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( alloced ) then
+      allocate( this%radiative_transfer_ )
+      call this%radiative_transfer_%mpi_unpack( buffer, position, comm )
+    end if
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( alloced ) then
+      allocate( this%photolysis_rates_ )
+      call this%photolysis_rates_%mpi_unpack( buffer, position, comm )
+    end if
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( alloced ) then
+      allocate( this%dose_rates_ )
+      call this%dose_rates_%mpi_unpack( buffer, position, comm )
+    end if
+    call assert( 332208077, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

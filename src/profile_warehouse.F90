@@ -186,14 +186,14 @@ contains
     use tuvx_profile_factory,          only : profile_type_name
 
     class(profile_warehouse_t), intent(in) :: this ! warehouse to be packed
-    integer, optional,          intent(in) :: comm ! MPI communicator
+    integer,                    intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: i_profile
     type(string_t) :: type_name
 
     call assert( 821308000, allocated( this%profiles_ ) )
-    pack_size = musica_mpi_pack_size( size( this%profiles_ ) )
+    pack_size = musica_mpi_pack_size( size( this%profiles_ ), comm )
     do i_profile = 1, size( this%profiles_ )
     associate( profile => this%profiles_( i_profile )%val_ )
       type_name = profile_type_name( profile )
@@ -221,7 +221,7 @@ contains
     class(profile_warehouse_t), intent(in)    :: this      ! warehouse to be packed
     character,                  intent(inout) :: buffer(:) ! memory buffer
     integer,                    intent(inout) :: position  ! current buffer position
-    integer, optional,          intent(in)    :: comm      ! MPI communicator
+    integer,                    intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos, i_profile
@@ -255,7 +255,7 @@ contains
     class(profile_warehouse_t), intent(out)   :: this      ! warehouse to be unpacked
     character,                  intent(inout) :: buffer(:) ! memory buffer
     integer,                    intent(inout) :: position  ! current buffer position
-    integer, optional,          intent(in)    :: comm      ! MPI communicator
+    integer,                    intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos, i_profile, n_profiles

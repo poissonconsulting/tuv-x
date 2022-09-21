@@ -76,11 +76,12 @@ by moving one or more hard-coded parameters to the configuration data, this
 is preferable to adding a new subclass.
 
 If you determine that a new cross section subclass is needed, this can be
-done in four steps:
+done in five  steps:
 
 - :ref:`cs-create-subclass`
 - :ref:`cs-add-to-build-scripts`
 - :ref:`cs-add-to-factory`
+- :ref:`cs-mpi`
 - :ref:`cs-create-unit-test`
 
 .. _cs-create-subclass:
@@ -288,6 +289,15 @@ Now, when you add a cross section of type ``foo`` to the configuration data,
 an instance of your new subclass will be created.
 
 
+.. _cs-mpi:
+
+MPI functions
+^^^^^^^^^^^^^
+
+If your new class includes custom data members, you will have to add
+MPI functions. See :ref:`developer-mpi` for more details.
+
+
 .. _cs-create-unit-test:
 
 Create unit test
@@ -327,6 +337,7 @@ spectral weight algorithm can be introduced in four steps:
 - :ref:`dose-rate-create-subclass`
 - :ref:`dose-rate-add-to-build-scripts`
 - :ref:`dose-rate-add-to-factory`
+- :ref:`dose-rate-mpi`
 - :ref:`dose-rate-create-unit-test`
 
 
@@ -519,6 +530,15 @@ an instance of your new subclass will be created.
 
 
 
+.. _dose-rate-mpi:
+
+MPI functions
+^^^^^^^^^^^^^
+
+If your new class includes custom data members, you will have to add
+MPI functions. See :ref:`developer-mpi` for more details.
+
+
 .. _dose-rate-create-unit-test:
 
 Create unit test
@@ -589,6 +609,7 @@ done in four steps:
 - :ref:`qy-create-subclass`
 - :ref:`qy-add-to-build-scripts`
 - :ref:`qy-add-to-factory`
+- :ref:`qy-mpi`
 - :ref:`qy-create-unit-test`
 
 .. _qy-create-subclass:
@@ -773,6 +794,15 @@ Then, inside the ``quantum_yield_builder()`` function, add these lines to the
 Now, when you add a quantum yield of type ``foo`` to the configuration data,
 an instance of your new subclass will be created.
 
+.. _qy-mpi:
+
+MPI functions
+^^^^^^^^^^^^^
+
+If your new class includes custom data members, you will have to add
+MPI functions. See :ref:`developer-mpi` for more details.
+
+
 .. _qy-create-unit-test:
 
 Create unit test
@@ -813,6 +843,7 @@ in four steps:
 - :ref:`radiator-create-subclass`
 - :ref:`radiator-add-to-build-scripts`
 - :ref:`radiator-add-to-factory`
+- :ref:`radiator-mpi`
 - :ref:`radiator-create-unit-test`
 
 .. _radiator-create-subclass:
@@ -1013,6 +1044,15 @@ These two functions allow your type to be passed among MPI processes
 in an HPC environment.
 
 
+.. _radiator-mpi:
+
+MPI functions
+^^^^^^^^^^^^^
+
+If your new class includes custom data members, you will have to add
+MPI functions. See :ref:`developer-mpi` for more details.
+
+
 .. _radiator-create-unit-test:
 
 Create unit test
@@ -1025,10 +1065,158 @@ It will also serve as an example for how users can configure and use your new su
 See :ref:`developer-add-test` for more details.
 
 
+.. _developer-mpi:
+
+MPI Functions
+-------------
+
+If you are extending one of the classes described in this section, and your
+new class contains its own data members (beyond what are defined in the
+base class), you will have to include three MPI functions in your new
+module. These will allow instances of your class to be passed via MPI.
+
+**Note:** You do not need to add or modify code to call these functions.
+As they override base-class functions, the calling functions will
+use them without modification.
+
+First, the ``pack_size( )``, ``mpi_pack( )``, and ``mpi_unpack( )``
+functions must be included in your type definition:
+
+.. code-block:: fortran
+
+   type, extends(base_class_t) :: foo_t
+     integer :: foos_ ! a data member specific to your class
+   contains
+     ...
+     procedure :: pack_size
+     procedure :: mpi_pack
+     procedure :: mpi_unpack
+   end type foo_t
+
+
+The first of these functions returns the size of an MPI buffer that
+would be required to hold the data members of your type. Because you
+will be overriding the base class ``pack_size()`` function, you
+must include the size required to hold both your specific data
+members and the base class data members (whether you need them or
+not).
+
+This first function for the ``foo_t`` example is as follows:
+
+.. code-block:: fortran
+
+   integer function pack_size( this, comm )
+
+     use musica_mpi,                    only : musica_mpi_pack_size
+
+     class(foo_t), intent(in) :: this ! object to be packed
+     integer,      intent(in) :: comm ! MPI communicator
+
+   #ifdef MUSICA_USE_MPI
+     pack_size = this%base_class_t%pack_size( comm ) +                         &
+                 musica_mpi_pack_size( this%this%foos_, comm )
+   #else
+     pack_size = this%cross_section_t%pack_size( comm )
+   #endif
+
+   end function pack_size
+
+
+The C preprocessor
+flags (``#ifdef``, ``#else``, and ``#endif``) are used here to
+determine whether MPI support has been compiled in or not.
+The first argument in the assignment of
+``pack_size`` is the size required to pack the data members of
+the base class (this must always be included).
+The ``musica_mpi_pack_size()`` function can be used to get the
+pack size of many primitive Fortran data
+types and allocatable arrays (see the
+`musica core <https://ncar.github.io/musica-core/html/namespacemusica__mpi.html>`_
+library documentation for more details).
+
+The second MPI function that must be added packs an instance of your
+new class onto a character buffer so that it can be passed to
+other MPI processes:
+
+.. code-block:: fortran
+
+   subroutine mpi_pack( this, buffer, position, comm )
+
+     use musica_assert,                 only : assert
+     use musica_mpi,                    only : musica_mpi_pack
+
+     class(foo_t), intent(in)    :: this      ! object to be packed
+     character,    intent(inout) :: buffer(:) ! memory buffer
+     integer,      intent(inout) :: position  ! current buffer position
+     integer,      intent(in)    :: comm      ! MPI communicator
+
+   #ifdef MUSICA_USE_MPI
+     integer :: prev_pos
+
+     prev_pos = position
+     call this%base_class_t%mpi_pack( buffer, position, comm )
+     call musica_mpi_pack( buffer, position, this%foos_, comm )
+     call assert( 582324821, position - prev_pos <= this%pack_size( comm ) )
+   #endif
+
+   end subroutine mpi_pack
+
+The call to ``this%base_class_t%mpi_pack( )`` packs the data members
+of the base class onto the character buffer, and is required.
+Similar to the ``pack_size( )`` function, this subroutine makes use of
+the generic ``musica_mpi_pack( )`` function for packing primitive Fortran
+data types onto a character buffer (see the
+`musica core <https://ncar.github.io/musica-core/html/namespacemusica__mpi.html>`_
+library documentation for more details).
+The ``assert( )`` call helps with debugging MPI errors and ensures
+that the data you packed fits in the pack size from the ``pack_size( )``
+function.
+
+The final MPI function that must be added unpacks an instance of
+your new class from a character buffer:
+
+.. code-block:: fortran
+
+   subroutine mpi_unpack( this, buffer, position, comm )
+
+     use musica_assert,                 only : assert
+     use musica_mpi,                    only : musica_mpi_unpack
+
+     class(foo_t), intent(out)   :: this      ! object to be unpacked
+     character,    intent(inout) :: buffer(:) ! memory buffer
+     integer,      intent(inout) :: position  ! current buffer position
+     integer,      intent(in)    :: comm      ! MPI communicator
+
+   #ifdef MUSICA_USE_MPI
+     integer :: prev_pos
+
+     prev_pos = position
+     call this%base_class_t%mpi_unpack( buffer, position, comm )
+     call musica_mpi_unpack( buffer, position, this%foos_, comm )
+     call assert( 560718944, position - prev_pos <= this%pack_size( comm ) )
+   #endif
+
+   end subroutine mpi_unpack
+
+The call to ``this%base_class_t%mpi_unpack( )`` unpacks the data
+members of the base class from the character buffer, and is
+required.
+Similar to the ``pack_size( )`` function, this subroutine makes use of
+the generic ``musica_mpi_unpack( )`` function for unpacking primitive
+Fortran data types from a character buffer (see the
+`musica core <https://ncar.github.io/musica-core/html/namespacemusica__mpi.html>`_
+library documentation for more details).
+The ``assert( )`` call helps with debugging MPI errors and ensures
+that the data you packed fits in the pack size from the ``pack_size( )``
+function.
+
 .. _developer-add-test:
 
 Test Creation
 -------------
+
+Standard Test Program
+^^^^^^^^^^^^^^^^^^^^^
 
 Unit tests are required for all new code contributions.
 Source code for new unit tests should be added to the ``test/unit/`` folder
@@ -1073,7 +1261,109 @@ The `musica_assert <https://ncar.github.io/musica-core/html/namespacemusica__ass
 module contains a number of functions that can be useful in
 unit tests.
 
-You will need to modify the ``CMakeLists.txt`` file in the
+
+Test Program with MPI
+^^^^^^^^^^^^^^^^^^^^^
+
+If your new class requires the MPI functions ``pack_size( )``, ``mpi_pack( )``,
+and ``mpi_unpack( )``, these should be tested as well.
+The approach used in most TUV-x unit tests is to create the object to be
+tested on the primary process, pass it to all other MPI processes, and test
+the object on all MPI processes. An example for the fictitous ``grid_foo_t`` module
+follows.
+
+.. code-block:: fortran
+
+   program test_grid_foo
+
+     use musica_mpi,                      only : musica_mpi_init,                &
+                                                 musica_mpi_finalize
+     implicit none
+
+     call musica_mpi_init( )
+     call test_grid_foo_t( )
+     call musica_mpi_finalize( )
+
+   contains
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+     subroutine test_grid_foo_t( )
+       ! Test the grid_foo_t type that extends the grid_t type
+
+       use musica_assert,                 only : assert
+       use musica_mpi
+       use musica_string,                 only : string_t
+       use tuvx_grid_foo,                 only : grid_foo_t
+       use tuvx_grid_factory,             only : grid_type_name, grid_allocate
+
+       class(grid_t), pointer :: my_grid
+       character, allocatable :: buffer(:)
+       integer :: pos, pack_size
+       type(string_t) :: type_name
+       integer, parameter :: comm = MPI_COMM_WORLD
+
+       ! Create the grid on the primary process
+       if( musica_mpi_rank( comm ) == 0 ) then
+         my_grid => grid_foo_t( )
+         type_name = grid_type_name( my_grid )
+         pack_size = type_name%pack_size( comm ) + my_grid%pack_size( comm )
+         allocate( buffer( pack_size ) )
+         pos = 0
+         call type_name%mpi_pack( buffer, pos, comm )
+         call my_grid%mpi_pack(   buffer, pos, comm )
+         call assert( 582976374, pos <= pack_size )
+       end if
+
+       ! Broadcast the buffer to all other MPI processes
+       call musica_mpi_bcast( pack_size, comm )
+       if( musica_mpi_rank( comm ) .ne. 0 ) allocate( buffer( pack_size ) )
+       call musica_mpi_bcast( buffer, comm )
+
+       ! Unpack the buffer on all other MPI processes
+       if( musica_mpi_rank( comm ) .ne. 0 ) then
+         pos = 0
+         call type_name%unpack( buffer, pos, comm )
+         my_grid => grid_allocate( type_name )
+         call my_grid%mpi_unpack( buffer, pos, comm )
+         call assert( 127437743, pos <= pack_size )
+       end if
+       deallocate( buffer )
+
+       ! test the object on all processes
+       call assert( 501352581, my_grid%do_bar( ) .eq. 12.5 )
+       call assert( 503258115, my_grid%do_baz( ) .eq. "qux" )
+
+       deallocate( my_grid )
+
+     end subroutine test_grid_foo_t
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+   end program test_grid_foo
+
+
+Similar patters apply to profiles, cross sections, quantum yields, and
+radiators.
+Note that this test should pass whether MPI support is compiled in or not.
+When MPI support is not compiled in, the pack functions do nothing and all
+tests are performed on the primary (only) process.
+
+When MPI support for TUV-x is built in, as described in :ref:`install-mpi`,
+when the tests are run, they will be run with 2 or more MPI processes and
+your message passing functions will be tested when, from the build folder,
+you run:
+
+.. code-block:: bash
+
+   make test
+
+
+Update to Build Script
+^^^^^^^^^^^^^^^^^^^^^^
+
+For both the standard test program or the test program with MPI support,
+you will need to modify the ``CMakeLists.txt`` file in the
 folder where you saved your test source code (for this example we assume the above
 file is named ``test_foo.F90``) to include your new source in the build, and
 your test in the test suite.

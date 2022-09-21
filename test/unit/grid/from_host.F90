@@ -31,27 +31,28 @@ contains
     character, allocatable :: buffer(:)
     integer :: pos, pack_size
     type(string_t) :: type_name
+    integer, parameter :: comm = MPI_COMM_WORLD
 
-    if( musica_mpi_rank( ) == 0 ) then
+    if( musica_mpi_rank( comm ) == 0 ) then
       my_grid => grid_from_host_t( "foo", "bars", 3 )
       type_name = grid_type_name( my_grid )
-      pack_size = type_name%pack_size( ) + my_grid%pack_size( )
+      pack_size = type_name%pack_size( comm ) + my_grid%pack_size( comm )
       allocate( buffer( pack_size ) )
       pos = 0
-      call type_name%mpi_pack( buffer, pos )
-      call my_grid%mpi_pack(   buffer, pos )
+      call type_name%mpi_pack( buffer, pos, comm )
+      call my_grid%mpi_pack(   buffer, pos, comm )
       call assert( 581434754, pos <= pack_size )
     end if
 
-    call musica_mpi_bcast( pack_size )
-    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
-    call musica_mpi_bcast( buffer )
+    call musica_mpi_bcast( pack_size, comm )
+    if( musica_mpi_rank( comm ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer, comm )
 
-    if( musica_mpi_rank( ) .ne. 0 ) then
+    if( musica_mpi_rank( comm ) .ne. 0 ) then
       pos = 0
-      call type_name%mpi_unpack( buffer, pos )
+      call type_name%mpi_unpack( buffer, pos, comm )
       my_grid => grid_allocate( type_name )
-      call my_grid%mpi_unpack( buffer, pos )
+      call my_grid%mpi_unpack( buffer, pos, comm )
       call assert( 916936550, pos <= pack_size )
     end if
     deallocate( buffer )

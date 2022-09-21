@@ -88,7 +88,7 @@ contains
     use musica_mpi, only : musica_mpi_pack_size
 
     class(solver_t),   intent(in) :: this ! solver state to be packed
-    integer, optional, intent(in) :: comm ! MPI communicator
+    integer,           intent(in) :: comm ! MPI communicator
 
     solver_pack_size = 0
 
@@ -108,7 +108,7 @@ contains
     class(solver_t), intent(in)    :: this              ! solver state to be packed
     character,               intent(inout) :: buffer(:) ! memory buffer
     integer,                 intent(inout) :: position  ! current buffer position
-    integer, optional,       intent(in)    :: comm      ! MPI communicator
+    integer,                 intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     ! nothing to do for now
@@ -126,7 +126,7 @@ contains
     class(solver_t),         intent(out)   :: this      ! solver state to be packed
     character,               intent(inout) :: buffer(:) ! memory buffer
     integer,                 intent(inout) :: position  ! current buffer position
-    integer, optional,       intent(in)    :: comm      ! MPI communicator
+    integer,                 intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     ! nothing to do for now
@@ -164,7 +164,7 @@ contains
     use musica_mpi,                    only : musica_mpi_pack_size
 
     class(radiation_field_t), intent(in) :: this ! radiation field state to be packed
-    integer, optional,        intent(in) :: comm ! MPI communicator
+    integer,                  intent(in) :: comm ! MPI communicator
 
     pack_size = 0
 
@@ -190,7 +190,7 @@ contains
     class(radiation_field_t), intent(in)    :: this     ! radiation field state to be packed
     character,               intent(inout) :: buffer(:) ! memory buffer
     integer,                 intent(inout) :: position  ! current buffer position
-    integer, optional,       intent(in)    :: comm      ! MPI communicator
+    integer,                 intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos
@@ -219,7 +219,7 @@ contains
     class(radiation_field_t), intent(out)   :: this      ! radiation field state to be unpacked
     character,                intent(inout) :: buffer(:) ! memory buffer
     integer,                  intent(inout) :: position  ! current buffer position
-    integer, optional,        intent(in)    :: comm      ! MPI communicator
+    integer,                  intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos

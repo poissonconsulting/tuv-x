@@ -3,9 +3,10 @@
 Configuration
 =============
 
-The TUV-x configuration JSON file is used to set up TUV-x to calculate
-the set of photolysis rate constants and/or dose rates that you are
-interested in.
+The TUV-x configuration
+`JSON <https://www.json.org/json-en.html>`_
+file is used to set up TUV-x to calculate
+a set of user-selected photolysis rate constants and/or dose rates.
 It also allows you to specify details about how these
 are calculated (solver options, which absorbing species should be
 considered in determining the radiation field, etc.) and the
@@ -14,7 +15,7 @@ solar zenith angle, etc.).
 
 Configuration data for specific components of TUV-x may
 include paths to needed data files. These paths can be absolute
-or relative to the folder you run the ``tuvx`` executable in.
+or relative to the folder in which you run the ``tuvx`` executable.
 (There are no hard-coded paths to data files in the TUV-x source
 code; they are all specified in the JSON configuration file.)
 
@@ -54,7 +55,7 @@ The TUV-x configuration JSON file has six objects:
      "grids": { ... },
      "profiles": { ... },
      "radiative transfer": { ... },
-     "photolysis rate constants": { ... },
+     "photolysis reactions": { ... },
      "dose rates": { ... }
    }
 
@@ -72,8 +73,8 @@ are required for every TUV-x run.
 The last two objects
 (:ref:`photolysis rate constants <configuration-photolysis>` and
 :ref:`dose rates <configuration-dose-rates>`)
-are optional and allow the user to optionally
-calculate only photolysis rates, only dose rates, or both.
+are optional and allow the user to
+calculate photolysis rates or dose rates or both.
 
 The following sections describe each of these six JSON
 object.
@@ -125,9 +126,9 @@ The ``type`` is a string that describes how the grid data is specified,
 and must be one of ``equal interval``,
 ``from csv file``, and ``from config file``.
 These types are described below.
-The ``units`` are the units for the grid data and are used to ensure
-consistency throughout the configuration data and
-with expectations in the code.
+The ``units`` are the units for the grid values and are used to ensure
+consistency throughout configuration inputs and
+with TUV conventions.
 
 Equal Interval
 ^^^^^^^^^^^^^^
@@ -170,7 +171,7 @@ From Config File
 
 The values for each cell of this grid type are included directly in
 the configuration file.
-Values sholud be monotonic and increasing.
+Values should be monotonically increasing.
 
 
 .. code-block:: JSON
@@ -187,7 +188,7 @@ Values sholud be monotonic and increasing.
 Profiles
 --------
 
-Profiles define parameters along a :ref:`grid <configuration-grids>`.
+Profiles define parameters on a :ref:`grid <configuration-grids>`.
 Similar to grids, depending on your use case, certain profiles may
 or may not need to be included.
 At minimum, you will need to include the key-value pairs listed
@@ -204,7 +205,7 @@ profile                    grid
 ``air``                    ``height``
 =========================  ==============
 
-The air profile defines the number density of air
+The air profile defines the number density (molecules cm\ :sup:`-3`\ ) of air
 as a function of height.
 
 In addition to the required profiles, profiles of atmospheric
@@ -233,7 +234,7 @@ From CSV file
 ^^^^^^^^^^^^^
 
 This profile type loads profile data from a text file where the
-data is extected to be space-separated with the first column being
+data is expected to be space-separated with the first column being
 the grid-point value and the second column being the value of the
 profile at that grid-point.
 Any number of header lines can be included at the top of the file
@@ -519,7 +520,7 @@ keys                       Required/Optional
 Radiative Transfer
 ------------------
 
-Radiative transfer describes how the radiation field is calculated.
+Radiative transfer specifies how the radiation field is calculated.
 The general format for radiative transfer is:
 
 
@@ -545,7 +546,8 @@ The general format for radiative transfer is:
    }
 
 
-The ``cross sections`` and ``radiators`` are required arrays.
+The ``cross sections`` and ``radiators`` are required arrays
+(even if they are of zero length).
 The ``cross sections`` define the absorption cross sections
 for the radiators.
 Cross section configuration formats are described
@@ -692,8 +694,9 @@ bins the cross section values are provided on.
 
 The ``cross_section_parameters`` array should hold the value
 of the cross section at each wavelength.
-TUV-x will perform interpolation of the cross section
-data to the native wavelength grid.
+TUV-x will interpolate the cross section
+data onto the TUV-x wavelength grid, as specified by the
+"wavelength" grid..
 
 A number of custom cross section types have been developed
 when more complex algorithms are needed to calculate

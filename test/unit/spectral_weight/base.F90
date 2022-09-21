@@ -1,8 +1,8 @@
-
 ! Copyright (C) 2021 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
+!
+program test_spectral_weight_base
 
-program test_spectral_weight_mpi_pack
   use musica_constants,       only : dk => musica_dk
   use musica_config,          only : config_t
   use tuvx_grid_warehouse,    only : grid_warehouse_t
@@ -13,7 +13,7 @@ program test_spectral_weight_mpi_pack
 
   implicit none
 
-  character(len=*), parameter :: conf = 'test/data/spectral_weights.json'
+  character(len=*), parameter :: conf = 'test/data/spectral_weights/base.json'
   type(config_t)                  :: grid_config, config, profile_config
   type(config_t)                  :: weights_config
   class(grid_warehouse_t), pointer :: grid_warehouse => null()
@@ -33,7 +33,7 @@ program test_spectral_weight_mpi_pack
 
   call musica_mpi_init( )
 
-  call test_mpi_pack( spectral_weight )
+  call test_spectral_weight_t( spectral_weight )
 
   deallocate( spectral_weight )
   deallocate( profile_warehouse )
@@ -45,34 +45,44 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine test_mpi_pack( the_weight )
-    use tuvx_test_utils,  only : check_values
-    use musica_constants, only : dk => musica_dk
+  subroutine test_spectral_weight_t( the_weight )
+    ! Currently only tests MPI functions
+
+    use musica_string,                 only : string_t
+    use musica_constants,              only : dk => musica_dk
+    use tuvx_spectral_weight_factory,  only : spectral_weight_type_name,      &
+                                              spectral_weight_allocate
+    use tuvx_test_utils,               only : check_values
 
     class(spectral_weight_t), pointer :: the_weight
     class(spectral_weight_t), pointer :: unpacked
 
     character, allocatable :: buffer(:)
+    type(string_t) :: type_name
     integer :: pos, pack_size
+    integer, parameter :: comm = MPI_COMM_WORLD
 
     ! Get copy of the rayliegh radiator and test MPI functions
-    if( musica_mpi_rank( ) == 0 ) then
-      pack_size = the_weight%pack_size( )
+    if( musica_mpi_rank( comm ) == 0 ) then
+      type_name = spectral_weight_type_name( the_weight )
+      pack_size = type_name%pack_size( comm ) + the_weight%pack_size( comm )
 
       allocate( buffer( pack_size ) )
       pos = 0
-      call the_weight%mpi_pack( buffer, pos )
+      call type_name%mpi_pack(  buffer, pos , comm )
+      call the_weight%mpi_pack( buffer, pos , comm )
       call assert( 192131787, pos <= pack_size )
     end if
 
-    call musica_mpi_bcast( pack_size )
-    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
-    call musica_mpi_bcast( buffer )
+    call musica_mpi_bcast( pack_size , comm )
+    if( musica_mpi_rank( comm ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer , comm )
 
-    if( musica_mpi_rank( ) .ne. 0 ) then
+    if( musica_mpi_rank( comm ) .ne. 0 ) then
       pos = 0
-      allocate( unpacked )
-      call unpacked%mpi_unpack( buffer, pos )
+      call type_name%mpi_unpack( buffer, pos , comm )
+      unpacked => spectral_weight_allocate( type_name )
+      call unpacked%mpi_unpack( buffer, pos , comm )
       call assert( 862314213, pos > 0 )
       call check_values(                                                      &
         unpacked%spectral_weight_parms(1)%array,                              &
@@ -80,9 +90,8 @@ contains
         0.01_dk )
     end if
 
-
-  end subroutine test_mpi_pack
+  end subroutine test_spectral_weight_t
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-end program test_spectral_weight_mpi_pack
+end program test_spectral_weight_base

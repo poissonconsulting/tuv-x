@@ -4,7 +4,7 @@
 program test_radiative_transfer_mpi
 
   use musica_mpi,              only : musica_mpi_init,                        &
-                                      musica_mpi_finalize                     
+                                      musica_mpi_finalize, MPI_COMM_WORLD
   use musica_config,           only : config_t
   use tuvx_grid_warehouse,     only : grid_warehouse_t
   use tuvx_profile_warehouse,  only : profile_warehouse_t
@@ -49,27 +49,28 @@ contains
 
     character, allocatable :: buffer(:)
     integer :: pos, pack_size
+    integer, parameter :: comm = MPI_COMM_WORLD
 
     ! test MPI functions
-    if( musica_mpi_rank( ) == 0 ) then
-      pack_size = the_radiative_transfer%pack_size( )
+    if( musica_mpi_rank( comm ) == 0 ) then
+      pack_size = the_radiative_transfer%pack_size( comm )
 
       allocate( buffer( pack_size ) )
       pos = 0
 
-      call the_radiative_transfer%mpi_pack( buffer, pos )
+      call the_radiative_transfer%mpi_pack( buffer, pos , comm )
 
       call assert( 793189081, pos <= pack_size )
     end if
 
-    call musica_mpi_bcast( pack_size )
-    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
-    call musica_mpi_bcast( buffer )
+    call musica_mpi_bcast( pack_size , comm )
+    if( musica_mpi_rank( comm ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer , comm )
 
-    if( musica_mpi_rank( ) .ne. 0 ) then
+    if( musica_mpi_rank( comm ) .ne. 0 ) then
       pos = 0
       allocate( unpacked )
-      call unpacked%mpi_unpack( buffer, pos )
+      call unpacked%mpi_unpack( buffer, pos , comm )
 
       call assert( 871384211, pos > 0 )
       call assert( 132313383, pos <= pack_size )

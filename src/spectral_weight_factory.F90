@@ -27,7 +27,8 @@ module tuvx_spectral_weight_factory
   implicit none
 
   private
-  public :: spectral_weight_builder
+  public :: spectral_weight_builder, spectral_weight_type_name,               &
+            spectral_weight_allocate
 
 contains
 
@@ -115,6 +116,98 @@ contains
     end select
 
   end function spectral_weight_builder
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  type(string_t) function spectral_weight_type_name( spectral_weight )        &
+      result( name )
+    ! Returns the type of a spectral weight as a string
+
+    use musica_assert,                 only : die
+    use musica_string,                 only : string_t
+
+    class(spectral_weight_t), intent(in) :: spectral_weight ! spectral weight to return type for
+
+    select type( spectral_weight )
+      type is( spectral_weight_t )
+        name = "spectral_weight_t"
+      type is( spectral_weight_notch_filter_t )
+        name = "spectral_weight_notch_filter_t"
+      type is( spectral_weight_gaussian_t )
+        name = "spectral_weight_gaussian_t"
+      type is( spectral_weight_eppley_t )
+        name = "spectral_weight_eppley_t"
+      type is( spectral_weight_par_t )
+        name = "spectral_weight_par_t"
+      type is( spectral_weight_exp_decay_t )
+        name = "spectral_weight_exp_decay_t"
+      type is( spectral_weight_scup_mice_t )
+        name = "spectral_weight_scup_mice_t"
+      type is( spectral_weight_standard_human_erythema_t )
+        name = "spectral_weight_standard_human_erythema_t"
+      type is( spectral_weight_uv_index_t )
+        name = "spectral_weight_uv_index_t"
+      type is( spectral_weight_phytoplankton_boucher_t )
+        name = "spectral_weight_phytoplankton_boucher_t"
+      type is( spectral_weight_plant_damage_t )
+        name = "spectral_weight_plant_damage_t"
+      type is( spectral_weight_plant_damage_flint_caldwell_t )
+        name = "spectral_weight_plant_damage_flint_caldwell_t"
+      type is( spectral_weight_plant_damage_flint_caldwell_ext_t )
+        name = "spectral_weight_plant_damage_flint_caldwell_ext_t"
+      class default
+        call die( 312672872 )
+    end select
+
+  end function spectral_weight_type_name
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function spectral_weight_allocate( type_name ) result( spectral_weight )
+    ! Allocates a spectral weight as the base class or a subclass by type
+
+    use musica_assert,                 only : die_msg
+    use musica_string,                 only : string_t
+
+    type(string_t),           intent(in) :: type_name       ! Name of the type to allocate
+    class(spectral_weight_t), pointer    :: spectral_weight ! Allocated spectral weight
+
+    select case( type_name%to_char( ) )
+      case( 'spectral_weight_t' )
+        allocate( spectral_weight_t :: spectral_weight )
+      case( 'spectral_weight_notch_filter_t' )
+        allocate( spectral_weight_notch_filter_t :: spectral_weight )
+      case( 'spectral_weight_gaussian_t' )
+        allocate( spectral_weight_gaussian_t :: spectral_weight )
+      case( 'spectral_weight_eppley_t' )
+        allocate( spectral_weight_eppley_t :: spectral_weight )
+      case( 'spectral_weight_par_t' )
+        allocate( spectral_weight_par_t :: spectral_weight )
+      case( 'spectral_weight_exp_decay_t' )
+        allocate( spectral_weight_exp_decay_t :: spectral_weight )
+      case( 'spectral_weight_scup_mice_t' )
+        allocate( spectral_weight_scup_mice_t :: spectral_weight )
+      case( 'spectral_weight_standard_human_erythema_t' )
+        allocate( spectral_weight_standard_human_erythema_t ::                &
+                  spectral_weight )
+      case( 'spectral_weight_uv_index_t' )
+        allocate( spectral_weight_uv_index_t :: spectral_weight )
+      case( 'spectral_weight_phytoplankton_boucher_t' )
+        allocate( spectral_weight_phytoplankton_boucher_t :: spectral_weight )
+      case( 'spectral_weight_plant_damage_t' )
+        allocate( spectral_weight_plant_damage_t :: spectral_weight )
+      case( 'spectral_weight_plant_damage_flint_caldwell_t' )
+        allocate( spectral_weight_plant_damage_flint_caldwell_t ::            &
+                  spectral_weight )
+      case( 'spectral_weight_plant_damage_flint_caldwell_ext_t' )
+        allocate( spectral_weight_plant_damage_flint_caldwell_ext_t ::        &
+                  spectral_weight )
+      case default
+        call die_msg( 299237780, "Invalid spectral weight type: '"//          &
+                                 type_name//"'" )
+    end select
+
+  end function spectral_weight_allocate
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

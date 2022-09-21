@@ -293,7 +293,7 @@ contains
     use tuvx_grid_factory,             only : grid_type_name
 
     class(grid_warehouse_t), intent(in) :: this ! warehouse to be packed
-    integer, optional,       intent(in) :: comm ! MPI communicator
+    integer,                 intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: i_grid
@@ -328,7 +328,7 @@ contains
     class(grid_warehouse_t), intent(in)    :: this      ! warehouse to be packed
     character,               intent(inout) :: buffer(:) ! memory buffer
     integer,                 intent(inout) :: position  ! current buffer position
-    integer, optional,       intent(in)    :: comm      ! MPI communicator
+    integer,                 intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos, i_grid
@@ -362,7 +362,7 @@ contains
     class(grid_warehouse_t), intent(out)   :: this      ! warehouse to be unpacked
     character,               intent(inout) :: buffer(:) ! memory buffer
     integer,                 intent(inout) :: position  ! current buffer position
-    integer, optional,       intent(in)    :: comm      ! MPI communicator
+    integer,                 intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos, i_grid, n_grids

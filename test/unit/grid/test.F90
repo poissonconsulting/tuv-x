@@ -81,6 +81,7 @@ contains
     character, allocatable :: buffer(:)
     integer :: pos, pack_size
     type(string_t) :: type_name
+    integer, parameter :: comm = MPI_COMM_WORLD
 
     integer :: eq_area_grid_cells = 120
     real(dk) :: eq_area_edges(121), eq_area_midpoints(120), eq_area_deltas(120)
@@ -177,31 +178,31 @@ contains
     config_midpoints = [13.00000,15.00000,17.00000,19.00000]
     config_deltas = [2.0, 2.0, 2.0, 2.0]
 
-    if( musica_mpi_rank( ) == 0 ) then
+    if( musica_mpi_rank( comm ) == 0 ) then
       call grid_tst_config%from_file( config_flsp )
       thewarehouse => grid_warehouse_t( grid_tst_config )
       aGrid => thewarehouse%get_grid( "height", "km" )
       type_name = grid_type_name( aGrid )
-      pack_size = thewarehouse%pack_size( ) + type_name%pack_size( ) + aGrid%pack_size( )
+      pack_size = thewarehouse%pack_size( comm ) + type_name%pack_size( comm ) + aGrid%pack_size( comm )
       allocate( buffer( pack_size ) )
       pos = 0
-      call thewarehouse%mpi_pack( buffer, pos )
-      call type_name%mpi_pack(    buffer, pos )
-      call aGrid%mpi_pack(        buffer, pos )
+      call thewarehouse%mpi_pack( buffer, pos , comm )
+      call type_name%mpi_pack(    buffer, pos , comm )
+      call aGrid%mpi_pack(        buffer, pos , comm )
       call assert( 319321152, pos <= pack_size )
     end if
 
-    call musica_mpi_bcast( pack_size )
-    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
-    call musica_mpi_bcast( buffer )
+    call musica_mpi_bcast( pack_size , comm )
+    if( musica_mpi_rank( comm ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer , comm )
 
-    if( musica_mpi_rank( ) .ne. 0 ) then
+    if( musica_mpi_rank( comm ) .ne. 0 ) then
       pos = 0
       allocate( thewarehouse )
-      call thewarehouse%mpi_unpack( buffer, pos )
-      call type_name%mpi_unpack(    buffer, pos )
+      call thewarehouse%mpi_unpack( buffer, pos , comm )
+      call type_name%mpi_unpack(    buffer, pos , comm )
       aGrid => grid_allocate( type_name )
-      call aGrid%mpi_unpack(        buffer, pos )
+      call aGrid%mpi_unpack(        buffer, pos , comm )
     end if
 
     call test_grid_t(aGrid, eq_area_grid_cells, eq_area_edges, eq_area_midpoints, eq_area_deltas)

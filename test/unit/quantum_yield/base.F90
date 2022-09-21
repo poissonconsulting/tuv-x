@@ -36,6 +36,7 @@ contains
     character, allocatable :: buffer(:)
     type(string_t) :: type_name
     integer :: pos, pack_size
+    integer, parameter :: comm = MPI_COMM_WORLD
 
     real(dk) :: temperature1(3), temperature2(4)
     real(dk) :: array1(3,2), array2(2,1)
@@ -47,7 +48,7 @@ contains
     temperature2(:) = (/ -123.4_dk, 41.2_dk, 0.053_dk, 1.2e-7_dk /)
     array2(:,1)     = (/ 12.34_dk, -142.3_dk /)
 
-    if( musica_mpi_rank( ) == 0 ) then
+    if( musica_mpi_rank( comm ) == 0 ) then
       allocate( quantum_yield )
       allocate( quantum_yield%quantum_yield_parms(2) )
       quantum_yield%quantum_yield_parms(1)%temperature = temperature1
@@ -55,23 +56,23 @@ contains
       quantum_yield%quantum_yield_parms(2)%temperature = temperature2
       quantum_yield%quantum_yield_parms(2)%array = array2
       type_name = quantum_yield_type_name( quantum_yield )
-      pack_size = type_name%pack_size( ) + quantum_yield%pack_size( )
+      pack_size = type_name%pack_size( comm ) + quantum_yield%pack_size( comm )
       allocate( buffer( pack_size ) )
       pos = 0
-      call type_name%mpi_pack(     buffer, pos )
-      call quantum_yield%mpi_pack( buffer, pos )
+      call type_name%mpi_pack(     buffer, pos , comm )
+      call quantum_yield%mpi_pack( buffer, pos , comm )
       call assert( 209765802, pos <= pack_size )
     end if
 
-    call musica_mpi_bcast( pack_size )
-    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
-    call musica_mpi_bcast( buffer )
+    call musica_mpi_bcast( pack_size , comm )
+    if( musica_mpi_rank( comm ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer , comm )
 
-    if( musica_mpi_rank( ) .ne. 0 ) then
+    if( musica_mpi_rank( comm ) .ne. 0 ) then
       pos = 0
-      call type_name%mpi_unpack( buffer, pos )
+      call type_name%mpi_unpack( buffer, pos , comm )
       quantum_yield => quantum_yield_allocate( type_name )
-      call quantum_yield%mpi_unpack( buffer, pos )
+      call quantum_yield%mpi_unpack( buffer, pos , comm )
       call assert( 264697883, pos <= pack_size )
     end if
     deallocate( buffer )

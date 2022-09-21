@@ -21,6 +21,13 @@ module tuvx_spherical_geometry
       contains
         procedure :: set_parameters
         procedure :: airmas
+        ! Returns the number of bytes needed to pack the calculator onto a
+        ! buffer
+        procedure :: pack_size
+        ! Packs the calculator onto a character buffer
+        procedure :: mpi_pack
+        ! Unpacks a calculator from a character buffer
+        procedure :: mpi_unpack
         final     :: finalize
       end type spherical_geometry_t
 
@@ -203,6 +210,77 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  integer function pack_size( this, comm )
+    ! Returns the number of bytes required to pack the calculator onto a
+    ! buffer
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(spherical_geometry_t), intent(in) :: this ! Calculator to pack
+    integer,                     intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    pack_size = musica_mpi_pack_size( this%nid_,                comm ) +      &
+                musica_mpi_pack_size( this%solar_zenith_angle_, comm ) +      &
+                musica_mpi_pack_size( this%dsdh_,               comm )
+#else
+    pack_size = 0
+#endif
+
+  end function pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_pack( this, buffer, position, comm )
+    ! Packs the calculator onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(spherical_geometry_t), intent(in)    :: this      ! calculator to pack
+    character,                   intent(inout) :: buffer(:) ! memory buffer
+    integer,                     intent(inout) :: position  ! current buffer position
+    integer,                     intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position, this%nid_,                comm )
+    call musica_mpi_pack( buffer, position, this%solar_zenith_angle_, comm )
+    call musica_mpi_pack( buffer, position, this%dsdh_,               comm )
+    call assert( 326119554, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_unpack( this, buffer, position, comm )
+    ! Unpacks a calculator from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(spherical_geometry_t), intent(out)   :: this      ! calculator to be unpacked
+    character,                   intent(inout) :: buffer(:) ! memory buffer
+    integer,                     intent(inout) :: position  ! current buffer position
+    integer,                     intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, this%nid_,                comm )
+    call musica_mpi_unpack( buffer, position, this%solar_zenith_angle_, comm )
+    call musica_mpi_unpack( buffer, position, this%dsdh_,               comm )
+    call assert( 758599069, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_unpack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   subroutine finalize( this )
     ! Clean up memory
 
@@ -216,5 +294,7 @@ contains
     endif
 
   end subroutine finalize
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 end module tuvx_spherical_geometry

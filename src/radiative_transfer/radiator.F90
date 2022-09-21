@@ -207,7 +207,7 @@ contains
     use musica_mpi,                    only : musica_mpi_pack_size
 
     class(radiator_t), intent(in) :: this ! radiator to be packed
-    integer, optional, intent(in) :: comm ! MPI communicator
+    integer,           intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     pack_size = this%handle_%pack_size( comm ) +                              &
@@ -232,7 +232,7 @@ contains
     class(radiator_t), intent(in)    :: this      ! radiator to be packed
     character,         intent(inout) :: buffer(:) ! memory buffer
     integer,           intent(inout) :: position  ! current buffer position
-    integer, optional, intent(in)    :: comm      ! MPI communicator
+    integer,           intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos
@@ -259,7 +259,7 @@ contains
     class(radiator_t), intent(out)   :: this      ! radiator to be unpacked
     character,         intent(inout) :: buffer(:) ! memory buffer
     integer,           intent(inout) :: position  ! current buffer position
-    integer, optional, intent(in)    :: comm      ! MPI communicator
+    integer,           intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos
@@ -341,7 +341,7 @@ contains
     use musica_mpi,                    only : musica_mpi_pack_size
 
     class(radiator_state_t), intent(in) :: this ! radiator state to be packed
-    integer, optional,       intent(in) :: comm ! MPI communicator
+    integer,                 intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     pack_size = musica_mpi_pack_size( this%layer_OD_,  comm ) +               &
@@ -364,7 +364,7 @@ contains
     class(radiator_state_t), intent(in)    :: this      ! radiator state to be packed
     character,               intent(inout) :: buffer(:) ! memory buffer
     integer,                 intent(inout) :: position  ! current buffer position
-    integer, optional,       intent(in)    :: comm      ! MPI communicator
+    integer,                 intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos
@@ -389,7 +389,7 @@ contains
     class(radiator_state_t), intent(out)   :: this      ! radiator state to be unpacked
     character,               intent(inout) :: buffer(:) ! memory buffer
     integer,                 intent(inout) :: position  ! current buffer position
-    integer, optional,       intent(in)    :: comm      ! MPI communicator
+    integer,                 intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos

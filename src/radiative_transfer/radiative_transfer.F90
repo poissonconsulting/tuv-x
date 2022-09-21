@@ -218,7 +218,7 @@ contains
     use musica_mpi,                    only : musica_mpi_pack_size
 
     class(radiative_transfer_t), intent(inout) :: this ! radiative transfer state to be packed
-    integer, optional,       intent(in)     :: comm ! MPI communicator
+    integer,                 intent(in)     :: comm ! MPI communicator
 
     pack_size = 0
 
@@ -243,7 +243,7 @@ contains
     class(radiative_transfer_t), intent(inout)    :: this      ! radiator state to be packed
     character,                   intent(inout) :: buffer(:) ! memory buffer
     integer,                     intent(inout) :: position  ! current buffer position
-    integer, optional,           intent(in)    :: comm      ! MPI communicator
+    integer,                     intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos
@@ -273,7 +273,7 @@ contains
     class(radiative_transfer_t), intent(out)   :: this      ! radiator state to be packed
     character,                   intent(inout) :: buffer(:) ! memory buffer
     integer,                     intent(inout) :: position  ! current buffer position
-    integer, optional,           intent(in)    :: comm      ! MPI communicator
+    integer,                     intent(in)    :: comm      ! MPI communicator
     type(string_t)                             :: solver
 
 #ifdef MUSICA_USE_MPI

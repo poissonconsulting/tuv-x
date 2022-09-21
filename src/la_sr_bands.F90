@@ -42,6 +42,12 @@ module tuvx_la_sr_bands
   contains
     procedure :: optical_depth => la_srb_OD
     procedure :: cross_section => la_srb_xs
+    ! Returns the number of bytes required to pack the calculator onto a buffer
+    procedure :: pack_size
+    ! Pack the calculator onto a character buffer
+    procedure :: mpi_pack
+    ! Unpack a calculator from a character buffer
+    procedure :: mpi_unpack
     procedure, private :: lymana_OD
     procedure, private :: lymana_xs
     procedure, private :: schum_OD
@@ -351,6 +357,100 @@ contains
     endif has_la_srb
 
   end subroutine la_srb_xs
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function pack_size( this, comm )
+    ! Returns the number of bytes required to pack the calculator onto a
+    ! buffer
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(la_sr_bands_t), intent(in) :: this ! calculator to be packed
+    integer,              intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: i_data
+    real(dk), allocatable :: ac(:,:), bc(:,:)
+
+    ac = this%AC
+    bc = this%BC
+    pack_size = musica_mpi_pack_size( this%ila,        comm ) +               &
+                musica_mpi_pack_size( this%isrb,       comm ) +               &
+                musica_mpi_pack_size( this%has_la,     comm ) +               &
+                musica_mpi_pack_size( this%has_srb,    comm ) +               &
+                musica_mpi_pack_size( this%has_la_srb, comm ) +               &
+                musica_mpi_pack_size( ac,              comm ) +               &
+                musica_mpi_pack_size( bc,              comm )
+#else
+    pack_size = 0
+#endif
+
+  end function pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_pack( this, buffer, position, comm )
+    ! Packs the calculator onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(la_sr_bands_t), intent(in)    :: this      ! calculator to be packed
+    character,            intent(inout) :: buffer(:) ! memory buffer
+    integer,              intent(inout) :: position  ! current buffer position
+    integer,              intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+    real(dk), allocatable :: ac(:,:), bc(:,:)
+
+    prev_pos = position
+    ac = this%AC
+    bc = this%BC
+    call musica_mpi_pack( buffer, position, this%ila,        comm )
+    call musica_mpi_pack( buffer, position, this%isrb,       comm )
+    call musica_mpi_pack( buffer, position, this%has_la,     comm )
+    call musica_mpi_pack( buffer, position, this%has_srb,    comm )
+    call musica_mpi_pack( buffer, position, this%has_la_srb, comm )
+    call musica_mpi_pack( buffer, position, ac,              comm )
+    call musica_mpi_pack( buffer, position, bc,              comm )
+    call assert( 708555791, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_unpack( this, buffer, position, comm )
+    ! Unpacks the calculator onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(la_sr_bands_t), intent(out)   :: this      ! calculator to be unpacked
+    character,            intent(inout) :: buffer(:) ! memory buffer
+    integer,              intent(inout) :: position  ! current buffer position
+    integer,              intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+    real(dk), allocatable :: ac(:,:), bc(:,:)
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, this%ila,        comm )
+    call musica_mpi_unpack( buffer, position, this%isrb,       comm )
+    call musica_mpi_unpack( buffer, position, this%has_la,     comm )
+    call musica_mpi_unpack( buffer, position, this%has_srb,    comm )
+    call musica_mpi_unpack( buffer, position, this%has_la_srb, comm )
+    call musica_mpi_unpack( buffer, position, ac,              comm )
+    call musica_mpi_unpack( buffer, position, bc,              comm )
+    this%ac = ac
+    this%bc = bc
+    call assert( 683591141, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

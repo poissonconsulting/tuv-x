@@ -276,7 +276,7 @@ contains
     use tuvx_radiator_factory,         only : radiator_type_name
 
     class(radiator_warehouse_t), intent(in) :: this ! warehouse to be packed
-    integer, optional,           intent(in) :: comm ! MPI communicator
+    integer,                     intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: i_radiator
@@ -314,7 +314,7 @@ contains
     class(radiator_warehouse_t), intent(in)    :: this      ! warehouse to be packed
     character,                   intent(inout) :: buffer(:) ! memory buffer
     integer,                     intent(inout) :: position  ! currently buffer position
-    integer, optional,           intent(in)    :: comm      ! MPI communicator
+    integer,                     intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos, i_radiator
@@ -351,7 +351,7 @@ contains
     class(radiator_warehouse_t), intent(out)   :: this      ! warehouse to unpack
     character,                   intent(inout) :: buffer(:) ! memory buffer
     integer,                     intent(inout) :: position  ! current buffer position
-    integer, optional,           intent(in)    :: comm      ! MPI communicator
+    integer,                     intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos, i_radiator, n_radiators

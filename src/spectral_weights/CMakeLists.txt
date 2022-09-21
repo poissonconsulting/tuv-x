@@ -2,7 +2,7 @@
 # Spectral weight source
 
 set(SRC notch_filter.F90
-        gaussian_filter.F90
+        gaussian.F90
         eppley.F90
         par.F90
         exp_decay.F90

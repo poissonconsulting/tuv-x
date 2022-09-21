@@ -5,6 +5,7 @@ build/
 CMakeCache.txt
 CMakeFiles/
 docs/_build/
+docs/source/logo.png
 .vscode
 
 # Prerequisites

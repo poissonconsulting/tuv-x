@@ -56,7 +56,7 @@ contains
     use musica_mpi,                    only : musica_mpi_pack_size
 
     class(grid_t),     intent(in) :: this ! grid to pack
-    integer, optional, intent(in) :: comm ! MPI communicator
+    integer,           intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     pack_size = this%handle_%pack_size( comm ) +                              &
@@ -82,7 +82,7 @@ contains
     class(grid_t),     intent(in)    :: this      ! grid to pack
     character,         intent(inout) :: buffer(:) ! memory buffer
     integer,           intent(inout) :: position  ! current buffer
-    integer, optional, intent(in)    :: comm      ! MPI communicator
+    integer,           intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos
@@ -110,7 +110,7 @@ contains
     class(grid_t),     intent(out)   :: this      ! grid to be unpacked
     character,         intent(inout) :: buffer(:) ! memory buffer
     integer,           intent(inout) :: position  ! current buffer position
-    integer, optional, intent(in)    :: comm      ! MPI communicator
+    integer,           intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos

@@ -37,6 +37,7 @@ contains
     character, allocatable :: buffer(:)
     type(string_t) :: type_name
     integer :: pos, pack_size
+    integer, parameter :: comm = MPI_COMM_WORLD
 
     real(dk) :: temperature1(3), temperature2(4)
     real(dk) :: deltaT1(2), deltaT2(3)
@@ -51,7 +52,7 @@ contains
     deltaT2(:)      = (/ 132.45_dk,  13.4_dk, 1.324_dk /)
     array2(:,1)     = (/ 12.34_dk, -142.3_dk /)
 
-    if( musica_mpi_rank( ) == 0 ) then
+    if( musica_mpi_rank( comm ) == 0 ) then
       allocate( quantum_yield_tint_t :: quantum_yield )
       select type( quantum_yield )
       class is( quantum_yield_tint_t )
@@ -66,23 +67,23 @@ contains
         call die( 637746025 )
       end select
       type_name = quantum_yield_type_name( quantum_yield )
-      pack_size = type_name%pack_size( ) + quantum_yield%pack_size( )
+      pack_size = type_name%pack_size( comm ) + quantum_yield%pack_size( comm )
       allocate( buffer( pack_size ) )
       pos = 0
-      call type_name%mpi_pack(     buffer, pos )
-      call quantum_yield%mpi_pack( buffer, pos )
+      call type_name%mpi_pack(     buffer, pos , comm )
+      call quantum_yield%mpi_pack( buffer, pos , comm )
       call assert( 209765802, pos <= pack_size )
     end if
 
-    call musica_mpi_bcast( pack_size )
-    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
-    call musica_mpi_bcast( buffer )
+    call musica_mpi_bcast( pack_size , comm )
+    if( musica_mpi_rank( comm ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer , comm )
 
-    if( musica_mpi_rank( ) .ne. 0 ) then
+    if( musica_mpi_rank( comm ) .ne. 0 ) then
       pos = 0
-      call type_name%mpi_unpack( buffer, pos )
+      call type_name%mpi_unpack( buffer, pos , comm )
       quantum_yield => quantum_yield_allocate( type_name )
-      call quantum_yield%mpi_unpack( buffer, pos )
+      call quantum_yield%mpi_unpack( buffer, pos , comm )
       call assert( 264697883, pos <= pack_size )
     end if
     deallocate( buffer )

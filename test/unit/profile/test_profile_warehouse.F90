@@ -34,29 +34,30 @@ contains
     class(profile_t),           pointer :: profile_ptr => null()
     character, allocatable :: buffer(:)
     integer :: pos, pack_size
+    integer, parameter :: comm = MPI_COMM_WORLD
 
     call grid_tst_config%from_file( grid_config )
     grid_warehouse => grid_warehouse_t( grid_tst_config )
 
-    if( musica_mpi_rank( ) == 0 ) then
+    if( musica_mpi_rank( comm ) == 0 ) then
       call profile_tst_config%from_file( profile_config )
       profile_warehouse =>                                                    &
           profile_warehouse_t( profile_tst_config, grid_warehouse )
-      pack_size = profile_warehouse%pack_size( )
+      pack_size = profile_warehouse%pack_size( comm )
       allocate( buffer( pack_size ) )
       pos = 0
-      call profile_warehouse%mpi_pack( buffer, pos )
+      call profile_warehouse%mpi_pack( buffer, pos , comm )
       call assert( 893633789, pos <= pack_size )
     end if
 
-    call musica_mpi_bcast( pack_size )
-    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
-    call musica_mpi_bcast( buffer )
+    call musica_mpi_bcast( pack_size , comm )
+    if( musica_mpi_rank( comm ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer , comm )
 
-    if( musica_mpi_rank( ) .ne. 0 ) then
+    if( musica_mpi_rank( comm ) .ne. 0 ) then
       pos = 0
       allocate( profile_warehouse )
-      call profile_warehouse%mpi_unpack( buffer, pos )
+      call profile_warehouse%mpi_unpack( buffer, pos , comm )
       call assert( 436189624, pos <= pack_size )
     end if
     deallocate( buffer )

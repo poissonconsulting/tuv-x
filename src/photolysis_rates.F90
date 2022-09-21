@@ -1,11 +1,8 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
 ! SPDX-License-Identifier: Apache-2.0
 !
-!> \file
-!> The tuvx_photolysis_rates module
-
-!> The photolysis_rates_t type and related functions
 module tuvx_photolysis_rates
+  ! The photolysis_rates_t type and related functions
 
   use musica_constants,                only : dk => musica_dk
   use musica_string,                   only : string_t
@@ -21,21 +18,27 @@ module tuvx_photolysis_rates
   private
   public :: photolysis_rates_t
 
-  !> Photolysis rate constant calculator
   type :: photolysis_rates_t
+    ! Photolysis rate constant calculator
     type(cross_section_ptr), allocatable :: cross_sections_(:) ! Absorption cross-sections
     type(quantum_yield_ptr), allocatable :: quantum_yields_(:) ! Quantum yields
     real(dk),                    allocatable :: scaling_factors_(:) ! Scaling factor for final rate constant
     type(string_t), allocatable              :: handles_(:) ! User-provided label for the photolysis rate constant
     logical :: enable_diagnostics ! Enable writing diagnostic output, defaults to false
   contains
-    !> Returns the photolysis rate constants for a given set of conditions
+    ! Returns the photolysis rate constants for a given set of conditions
     procedure :: get
-    !> Returns the names of each photolysis reaction
+    ! Returns the names of each photolysis reaction
     procedure :: labels
-    !> Outputs photolysis rate constants to a NetCDF file
+    ! Outputs photolysis rate constants to a NetCDF file
     procedure :: output
-    !> Finalize the object
+    ! Returns the number of bytes required to pack the rates onto a buffer
+    procedure :: pack_size
+    ! Packs the rates onto a character buffer
+    procedure :: mpi_pack
+    ! Unpacks rates from a character buffer
+    procedure :: mpi_unpack
+    ! Finalize the object
     final :: finalize
   end type photolysis_rates_t
 
@@ -309,6 +312,183 @@ rate_loop:                                                                    &
     call output_file%close( )
 
   end subroutine output
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function pack_size( this, comm )
+    ! Returns the number of bytes required to pack the rates onto a buffer
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+    use tuvx_cross_section_factory,    only : cross_section_type_name
+    use tuvx_quantum_yield_factory,    only : quantum_yield_type_name
+
+    class(photolysis_rates_t), intent(in) :: this ! rates to be packed
+    integer,                   intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: i_elem
+    type(string_t) :: type_name
+
+    pack_size = musica_mpi_pack_size( allocated( this%cross_sections_ ), comm )
+    if( allocated( this%cross_sections_ ) ) then
+      pack_size = pack_size +                                                 &
+                  musica_mpi_pack_size( size( this%cross_sections_ ), comm )
+      do i_elem = 1, size( this%cross_sections_ )
+      associate( cross_section => this%cross_sections_( i_elem )%val_ )
+        type_name = cross_section_type_name( cross_section )
+        pack_size = pack_size +                                               &
+                    type_name%pack_size( comm ) +                             &
+                    cross_section%pack_size( comm )
+      end associate
+      end do
+    end if
+    pack_size = pack_size +                                                   &
+                musica_mpi_pack_size( allocated( this%quantum_yields_ ), comm )
+    if( allocated( this%quantum_yields_ ) ) then
+      pack_size = pack_size +                                                 &
+                  musica_mpi_pack_size( size( this%quantum_yields_ ), comm )
+      do i_elem = 1, size( this%quantum_yields_ )
+      associate( quantum_yield => this%quantum_yields_( i_elem )%val_ )
+        type_name = quantum_yield_type_name( quantum_yield )
+        pack_size = pack_size +                                               &
+                    type_name%pack_size( comm ) +                             &
+                    quantum_yield%pack_size( comm )
+      end associate
+      end do
+    end if
+    pack_size = pack_size +                                                   &
+                musica_mpi_pack_size( this%scaling_factors_, comm ) +         &
+                musica_mpi_pack_size( allocated( this%handles_ ), comm )
+    if( allocated( this%handles_ ) ) then
+      pack_size = pack_size +                                                 &
+                  musica_mpi_pack_size( size( this%handles_ ), comm )
+      do i_elem = 1, size( this%handles_ )
+        pack_size = pack_size + this%handles_( i_elem )%pack_size( comm )
+      end do
+    end if
+#else
+    pack_size = 0
+#endif
+
+  end function pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_pack( this, buffer, position, comm )
+    ! Packs the rates onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+    use tuvx_cross_section_factory,    only : cross_section_type_name
+    use tuvx_quantum_yield_factory,    only : quantum_yield_type_name
+
+    class(photolysis_rates_t), intent(in)    :: this      ! rates to be packed
+    character,                 intent(inout) :: buffer(:) ! memory buffer
+    integer,                   intent(inout) :: position  ! current buffer position
+    integer,                   intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos, i_elem
+    type(string_t) :: type_name
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position, allocated( this%cross_sections_ ),&
+                          comm )
+    if( allocated( this%cross_sections_ ) ) then
+      call musica_mpi_pack( buffer, position, size( this%cross_sections_ ),   &
+                            comm )
+      do i_elem = 1, size( this%cross_sections_ )
+      associate( cross_section => this%cross_sections_( i_elem )%val_ )
+        type_name = cross_section_type_name( cross_section )
+        call type_name%mpi_pack(     buffer, position, comm )
+        call cross_section%mpi_pack( buffer, position, comm )
+      end associate
+      end do
+    end if
+    call musica_mpi_pack( buffer, position, allocated( this%quantum_yields_ ),&
+                          comm )
+    if( allocated( this%quantum_yields_ ) ) then
+      call musica_mpi_pack( buffer, position, size( this%quantum_yields_ ),   &
+                            comm )
+      do i_elem = 1, size( this%quantum_yields_ )
+      associate( quantum_yield => this%quantum_yields_( i_elem )%val_ )
+        type_name = quantum_yield_type_name( quantum_yield )
+        call type_name%mpi_pack(     buffer, position, comm )
+        call quantum_yield%mpi_pack( buffer, position, comm )
+      end associate
+      end do
+    end if
+    call musica_mpi_pack( buffer, position, this%scaling_factors_, comm )
+    call musica_mpi_pack( buffer, position, allocated( this%handles_ ), comm )
+    if( allocated( this%handles_ ) ) then
+      call musica_mpi_pack( buffer, position, size( this%handles_ ), comm )
+      do i_elem = 1, size( this%handles_ )
+        call this%handles_( i_elem )%mpi_pack( buffer, position, comm )
+      end do
+    end if
+    call assert( 707537257, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_unpack( this, buffer, position, comm )
+    ! Packs the rates onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+    use tuvx_cross_section_factory,    only : cross_section_allocate
+    use tuvx_quantum_yield_factory,    only : quantum_yield_allocate
+
+    class(photolysis_rates_t), intent(out)   :: this      ! rates to be unpacked
+    character,                 intent(inout) :: buffer(:) ! memory buffer
+    integer,                   intent(inout) :: position  ! current buffer position
+    integer,                   intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos, i_elem, n_elems
+    logical :: alloced
+    type(string_t) :: type_name
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( alloced ) then
+      call musica_mpi_unpack( buffer, position, n_elems, comm )
+      allocate( this%cross_sections_( n_elems ) )
+      do i_elem = 1, n_elems
+      associate( cross_section => this%cross_sections_( i_elem )%val_ )
+        call type_name%mpi_unpack(     buffer, position, comm )
+        cross_section => cross_section_allocate( type_name )
+        call cross_section%mpi_unpack( buffer, position, comm )
+      end associate
+      end do
+    end if
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( alloced ) then
+      call musica_mpi_unpack( buffer, position, n_elems, comm )
+      allocate( this%quantum_yields_( n_elems ) )
+      do i_elem = 1, n_elems
+      associate( quantum_yield => this%quantum_yields_( i_elem )%val_ )
+        call type_name%mpi_unpack(     buffer, position, comm )
+        quantum_yield => quantum_yield_allocate( type_name )
+        call quantum_yield%mpi_unpack( buffer, position, comm )
+      end associate
+      end do
+    end if
+    call musica_mpi_unpack( buffer, position, this%scaling_factors_, comm )
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( alloced ) then
+      call musica_mpi_unpack( buffer, position, n_elems, comm )
+      allocate( this%handles_( n_elems ) )
+      do i_elem = 1, n_elems
+        call this%handles_( i_elem )%mpi_unpack( buffer, position, comm )
+      end do
+    end if
+    call assert( 534021580, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

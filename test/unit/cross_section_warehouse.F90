@@ -38,6 +38,7 @@ contains
     character, allocatable :: buffer(:)
     type(string_t) :: cs_name
     integer :: pos, pack_size
+    integer, parameter :: comm = MPI_COMM_WORLD
 
     ! load test grids
     call config%from_file( "test/data/grid.simple.config.json" )
@@ -48,25 +49,25 @@ contains
     profiles => profile_warehouse_t( config, grids )
 
     ! load test cross sections on the primary MPI task
-    if( musica_mpi_rank( ) == 0 ) then
+    if( musica_mpi_rank( comm ) == 0 ) then
       call config%from_file( "test/data/cross_section_warehouse.config.json" )
       call config%get( "cross sections", cs_config, my_name )
       cross_sections => cross_section_warehouse_t( cs_config, grids, profiles )
-      pack_size = cross_sections%pack_size( )
+      pack_size = cross_sections%pack_size( comm )
       allocate( buffer( pack_size ) )
       pos = 0
-      call cross_sections%mpi_pack( buffer, pos )
+      call cross_sections%mpi_pack( buffer, pos , comm )
       call assert( 996567639, pos <= pack_size )
     end if
 
-    call musica_mpi_bcast( pack_size )
-    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
-    call musica_mpi_bcast( buffer )
+    call musica_mpi_bcast( pack_size , comm )
+    if( musica_mpi_rank( comm ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer , comm )
 
-    if( musica_mpi_rank( ) .ne. 0 ) then
+    if( musica_mpi_rank( comm ) .ne. 0 ) then
       pos = 0
       allocate( cross_sections )
-      call cross_sections%mpi_unpack( buffer, pos )
+      call cross_sections%mpi_unpack( buffer, pos , comm )
       call assert( 416276515, pos <= pack_size )
     end if
 

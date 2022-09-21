@@ -136,7 +136,7 @@ contains
     use tuvx_cross_section_factory,    only : cross_section_type_name
 
     class(cross_section_warehouse_t), intent(in) :: this ! warehouse to be packed
-    integer, optional,                intent(in) :: comm ! MPI communicator
+    integer,                          intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: i_cross_section
@@ -174,7 +174,7 @@ contains
     class(cross_section_warehouse_t), intent(in) :: this ! warehouse to be packed
     character,                        intent(inout) :: buffer(:) ! memory buffer
     integer,                          intent(inout) :: position  ! current buffer position
-    integer, optional,                intent(in)    :: comm      ! MPI communicator
+    integer,                          intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos, i_cross_section
@@ -212,7 +212,7 @@ contains
     class(cross_section_warehouse_t), intent(out)   :: this      ! warehouse to be unpacked
     character,                        intent(inout) :: buffer(:) ! memory buffer
     integer,                          intent(inout) :: position  ! current buffer position
-    integer, optional,                intent(in)    :: comm      ! MPI communicator
+    integer,                          intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos, i_cross_section, n_cross_sections

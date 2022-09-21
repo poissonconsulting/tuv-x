@@ -280,7 +280,7 @@ contains
     use musica_mpi, only : musica_mpi_pack_size
 
     class(spectral_weight_t), intent(in) :: this ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
-    integer, optional, intent(in) :: comm        ! MPI communicator
+    integer,           intent(in) :: comm        ! MPI communicator
 
     integer :: ndx
     logical :: is_allocated
@@ -320,7 +320,7 @@ contains
     class(spectral_weight_t), intent(in) :: this ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
     character, intent(inout) :: buffer(:)        ! Memory buffer
     integer, intent(inout) :: pos                ! Current buffer position
-    integer, optional, intent(in) :: comm        ! MPI communicator
+    integer,           intent(in) :: comm        ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_position, ndx
@@ -360,7 +360,7 @@ contains
     class(spectral_weight_t), intent(out) :: this ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
     character,         intent(inout) :: buffer(:) ! memory buffer
     integer,           intent(inout) :: pos       ! current buffer position
-    integer, optional, intent(in)    :: comm      ! MPI communicator
+    integer,           intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_position, ndx, n_params

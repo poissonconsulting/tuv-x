@@ -48,6 +48,8 @@ contains
     character, allocatable :: buffer(:)
     type(string_t) :: type_name
     integer :: pos, pack_size
+    integer, parameter :: comm = MPI_COMM_WORLD
+
     allocate(no_extrap(10, 6))
     allocate(lower_extrap(10, 6))
     allocate(upper_extrap(10, 6))
@@ -113,26 +115,26 @@ contains
     ! load and test cross section w/o extrapolation
     call assert( 101264914, iter%next( ) )
     call cs_set%get( iter, cs_config, Iam )
-    if( musica_mpi_rank( ) == 0 ) then
+    if( musica_mpi_rank( comm ) == 0 ) then
       cross_section => cross_section_o3_tint_t( cs_config, grids, profiles )
       type_name = cross_section_type_name( cross_section )
-      pack_size = type_name%pack_size( ) + cross_section%pack_size( )
+      pack_size = type_name%pack_size( comm ) + cross_section%pack_size( comm )
       allocate( buffer( pack_size ) )
       pos = 0
-      call type_name%mpi_pack(     buffer, pos )
-      call cross_section%mpi_pack( buffer, pos )
+      call type_name%mpi_pack(     buffer, pos , comm )
+      call cross_section%mpi_pack( buffer, pos , comm )
       call assert( 535713507, pos <= pack_size )
     end if
 
-    call musica_mpi_bcast( pack_size )
-    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
-    call musica_mpi_bcast( buffer )
+    call musica_mpi_bcast( pack_size , comm )
+    if( musica_mpi_rank( comm ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer , comm )
 
-    if( musica_mpi_rank( ) .ne. 0 ) then
+    if( musica_mpi_rank( comm ) .ne. 0 ) then
       pos = 0
-      call type_name%mpi_unpack( buffer, pos )
+      call type_name%mpi_unpack( buffer, pos , comm )
       cross_section => cross_section_allocate( type_name )
-      call cross_section%mpi_unpack( buffer, pos )
+      call cross_section%mpi_unpack( buffer, pos , comm )
       call assert( 648031852, pos <= pack_size )
     end if
     deallocate( buffer )
@@ -144,26 +146,26 @@ contains
     ! load and test cross section with lower extrapolation
     call assert( 101264915, iter%next( ) )
     call cs_set%get( iter, cs_config, Iam )
-    if( musica_mpi_rank( ) == 0 ) then
+    if( musica_mpi_rank( comm ) == 0 ) then
       cross_section => cross_section_o3_tint_t( cs_config, grids, profiles )
       type_name = cross_section_type_name( cross_section )
-      pack_size = type_name%pack_size( ) + cross_section%pack_size( )
+      pack_size = type_name%pack_size( comm ) + cross_section%pack_size( comm )
       allocate( buffer( pack_size ) )
       pos = 0
-      call type_name%mpi_pack(     buffer, pos )
-      call cross_section%mpi_pack( buffer, pos )
+      call type_name%mpi_pack(     buffer, pos , comm )
+      call cross_section%mpi_pack( buffer, pos , comm )
       call assert( 872668542, pos <= pack_size )
     end if
 
-    call musica_mpi_bcast( pack_size )
-    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
-    call musica_mpi_bcast( buffer )
+    call musica_mpi_bcast( pack_size , comm )
+    if( musica_mpi_rank( comm ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer , comm )
 
-    if( musica_mpi_rank( ) .ne. 0 ) then
+    if( musica_mpi_rank( comm ) .ne. 0 ) then
       pos = 0
-      call type_name%mpi_unpack( buffer, pos )
+      call type_name%mpi_unpack( buffer, pos , comm )
       cross_section => cross_section_allocate( type_name )
-      call cross_section%mpi_unpack( buffer, pos )
+      call cross_section%mpi_unpack( buffer, pos , comm )
       call assert( 984986887, pos <= pack_size )
     end if
     deallocate( buffer )
@@ -175,26 +177,26 @@ contains
     ! load and test cross section with upper extrapolation
     call assert( 101264914, iter%next( ) )
     call cs_set%get( iter, cs_config, Iam )
-    if( musica_mpi_rank( ) == 0 ) then
+    if( musica_mpi_rank( comm ) == 0 ) then
       cross_section => cross_section_o3_tint_t( cs_config, grids, profiles )
       type_name = cross_section_type_name( cross_section )
-      pack_size = type_name%pack_size( ) + cross_section%pack_size( )
+      pack_size = type_name%pack_size( comm ) + cross_section%pack_size( comm )
       allocate( buffer( pack_size ) )
       pos = 0
-      call type_name%mpi_pack(     buffer, pos )
-      call cross_section%mpi_pack( buffer, pos )
+      call type_name%mpi_pack(     buffer, pos , comm )
+      call cross_section%mpi_pack( buffer, pos , comm )
       call assert( 704417172, pos <= pack_size )
     end if
 
-    call musica_mpi_bcast( pack_size )
-    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
-    call musica_mpi_bcast( buffer )
+    call musica_mpi_bcast( pack_size , comm )
+    if( musica_mpi_rank( comm ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer , comm )
 
-    if( musica_mpi_rank( ) .ne. 0 ) then
+    if( musica_mpi_rank( comm ) .ne. 0 ) then
       pos = 0
-      call type_name%mpi_unpack( buffer, pos )
+      call type_name%mpi_unpack( buffer, pos , comm )
       cross_section => cross_section_allocate( type_name )
-      call cross_section%mpi_unpack( buffer, pos )
+      call cross_section%mpi_unpack( buffer, pos , comm )
       call assert( 534260268, pos <= pack_size )
     end if
     deallocate( buffer )

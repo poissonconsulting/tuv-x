@@ -324,7 +324,7 @@ file_loop: &
     use musica_mpi,                    only : musica_mpi_pack_size
 
     class(cross_section_t), intent(in) :: this ! cross section to be packed
-    integer, optional,      intent(in) :: comm ! MPI communicator
+    integer,                intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: i_param
@@ -356,7 +356,7 @@ file_loop: &
     class(cross_section_t), intent(in)    :: this      ! cross section to be packed
     character,              intent(inout) :: buffer(:) ! memory buffer
     integer,                intent(inout) :: position  ! current buffer position
-    integer, optional,      intent(in)    :: comm      ! MPI communicator
+    integer,                intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos, i_param
@@ -388,7 +388,7 @@ file_loop: &
     class(cross_section_t), intent(out)   :: this      ! cross section to be unpacked
     character,              intent(inout) :: buffer(:) ! memory buffer
     integer,                intent(inout) :: position  ! current buffer position
-    integer, optional,      intent(in)    :: comm      ! MPI communicator
+    integer,                intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos, i_param, n_params
@@ -419,7 +419,7 @@ file_loop: &
     use musica_mpi,                    only : musica_mpi_pack_size
 
     class(cross_section_parms_t), intent(in) :: this ! parameters to be packed
-    integer, optional,            intent(in) :: comm ! MPI communicator
+    integer,                      intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     pack_size = musica_mpi_pack_size( this%temperature, comm ) +              &
@@ -442,7 +442,7 @@ file_loop: &
     class(cross_section_parms_t), intent(in)    :: this      ! parameters to be packed
     character,                    intent(inout) :: buffer(:) ! memory buffer
     integer,                      intent(inout) :: position  ! current buffer position
-    integer, optional,            intent(in)    :: comm      ! MPI communicator
+    integer,                      intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos
@@ -467,7 +467,7 @@ file_loop: &
     class(cross_section_parms_t), intent(out)   :: this      ! parameters to be unpacked
     character,                    intent(inout) :: buffer(:) ! memory buffer
     integer,                      intent(inout) :: position  ! current buffer position
-    integer, optional,            intent(in)    :: comm      ! MPI communicator
+    integer,                      intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos

@@ -6,7 +6,8 @@ include(test_util)
 ################################################################################
 # tests
 
-create_standard_test(NAME spectral_weight_mpi_pack SOURCES mpi_pack.F90 
-                                                           ../test_utils.F90)
+create_standard_test(NAME spectral_weight_base SOURCES base.F90 ../test_utils.F90)
+create_standard_test(NAME spectral_weight_gaussian SOURCES gaussian.F90 ../test_utils.F90)
+create_standard_test(NAME spectral_weight_notch_filter SOURCES notch_filter.F90 ../test_utils.F90)
 
 ################################################################################

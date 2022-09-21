@@ -50,7 +50,7 @@ contains
     use musica_mpi,                    only : musica_mpi_pack_size
 
     class(profile_t),  intent(in) :: this ! profile to be packed
-    integer, optional, intent(in) :: comm ! MPI communicator
+    integer,           intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: i_param
@@ -82,7 +82,7 @@ contains
     class(profile_t),  intent(in)    :: this      ! profile to be packed
     character,         intent(inout) :: buffer(:) ! memory buffer
     integer,           intent(inout) :: position  ! current buffer position
-    integer, optional, intent(in)    :: comm      ! MPI communicator
+    integer,           intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos
@@ -114,7 +114,7 @@ contains
     class(profile_t),  intent(out)   :: this      ! profile to be unpacked
     character,         intent(inout) :: buffer(:) ! memory buffer
     integer,           intent(inout) :: position  ! current buffer position
-    integer, optional, intent(in)    :: comm      ! MPI communicator
+    integer,           intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos

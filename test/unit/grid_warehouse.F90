@@ -41,11 +41,7 @@ contains
     character, allocatable :: buffer(:)
     type(string_t) :: grid_name, units
     integer :: pos, pack_size
-#ifdef MUSICA_USE_MPI
     integer, parameter :: comm = MPI_COMM_WORLD
-#else
-    integer, parameter :: comm = 0
-#endif
     real(dk) :: grid_mids(3), grid_edges(4)
     logical :: found
 
@@ -54,7 +50,7 @@ contains
     call host_grids%add( host_grid )
 
     ! load test grids
-    if( musica_mpi_rank( ) == 0 ) then
+    if( musica_mpi_rank( comm ) == 0 ) then
       call config%from_file( "test/data/grid.simple.config.json" )
       grids => grid_warehouse_t( config )
       call grids%add( host_grids )
@@ -66,11 +62,11 @@ contains
     end if
     deallocate( host_grids )
 
-    call musica_mpi_bcast( pack_size )
-    if( musica_mpi_rank( ) .ne. 0 ) allocate( buffer( pack_size ) )
-    call musica_mpi_bcast( buffer )
+    call musica_mpi_bcast( pack_size, comm )
+    if( musica_mpi_rank( comm ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer, comm )
 
-    if( musica_mpi_rank( ) .ne. 0 ) then
+    if( musica_mpi_rank( comm ) .ne. 0 ) then
       pos = 0
       allocate( grids )
       call grids%mpi_unpack( buffer, pos, comm )

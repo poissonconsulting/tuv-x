@@ -10,16 +10,16 @@ module tuvx_grid_equal_delta
 
   implicit none
 
-  public :: equal_delta_t
+  public :: grid_equal_delta_t
 
-  type, extends(grid_t) :: equal_delta_t
+  type, extends(grid_t) :: grid_equal_delta_t
   contains
-  end type equal_delta_t
+  end type grid_equal_delta_t
 
   !> Constructor
-  interface equal_delta_t
+  interface grid_equal_delta_t
     module procedure constructor
-  end interface equal_delta_t
+  end interface grid_equal_delta_t
 
 contains
 
@@ -39,7 +39,7 @@ contains
     logical  :: found
     real(dk) :: Lower_val, Upper_val, Delta_val
     character(len=*), parameter :: Iam = 'EqualDelta grid initialize: '
-    type(equal_delta_t), pointer  :: this
+    type(grid_equal_delta_t), pointer  :: this
     type(string_t) :: required_keys(5), optional_keys(1)
 
     required_keys(1) = "type"

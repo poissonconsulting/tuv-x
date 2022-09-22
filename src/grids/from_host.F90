@@ -109,30 +109,30 @@ contains
     real(kind=dk), optional, intent(in)    :: mid_points(:) ! new mid-point values
     real(kind=dk), optional, intent(in)    :: edges(:)      ! new edge values
 
-    integer :: size_grid, size_user
+    integer :: size_grid, size_host
 
     call assert_msg( 689055048, associated( this%grid_ ),                     &
                      "Cannot update an unspecified grid." )
     if( present( mid_points ) ) then
       size_grid = size( this%grid_%mid_ )
-      size_user = size( mid_points )
+      size_host = size( mid_points )
       call assert_msg( 742081595,                                             &
-                       size_grid == size_user,                                &
+                       size_grid == size_host,                                &
                        "Size mismatch for grid mid-points for grid '"//       &
                        this%grid_%handle_//"'. Expected "//                   &
                        trim( to_char( size_grid ) )//", got "//               &
-                       trim( to_char( size_user ) ) )
+                       trim( to_char( size_host ) ) )
       this%grid_%mid_(:) = mid_points(:)
     end if
     if( present( edges ) ) then
       size_grid = size( this%grid_%edge_ )
-      size_user = size( edges )
+      size_host = size( edges )
       call assert_msg( 625263958,                                             &
-                       size_grid == size_user,                                &
+                       size_grid == size_host,                                &
                        "Size mismatch for grid edges for grid'"//             &
                        this%grid_%handle_//"'. Expected "//                   &
                        trim( to_char( size_grid ) )//", got "//               &
-                       trim( to_char( size_user ) ) )
+                       trim( to_char( size_host ) ) )
       this%grid_%edge_(:) = edges(:)
       this%grid_%delta_(:) = this%grid_%edge_( 2 : this%grid_%ncells_ + 1 ) - &
                              this%grid_%edge_( 1 : this%grid_%ncells_ )

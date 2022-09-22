@@ -11,6 +11,7 @@ module tuvx_profile_factory
   use tuvx_profile_extraterrestrial_flux,                                     &
     only : profile_extraterrestrial_flux_t
   use tuvx_profile_from_csv_file,      only : profile_from_csv_file_t
+  use tuvx_profile_from_host,          only : profile_from_host_t
   use tuvx_profile_o2,                 only : profile_o2_t
   use tuvx_profile_o3,                 only : profile_o3_t
   use tuvx_profile_solar_zenith_angle, only : profile_solar_zenith_angle_t
@@ -85,6 +86,8 @@ contains
         name = "profile_extraterrestrial_flux_t"
       type is( profile_from_config_t )
         name = "profile_from_config_t"
+      type is( profile_from_host_t )
+        name = "profile_from_host_t"
       type is( profile_air_t )
         name = "profile_air_t"
       type is( profile_o2_t )
@@ -119,6 +122,8 @@ contains
         allocate( profile_extraterrestrial_flux_t :: profile )
       case( 'profile_from_config_t' )
         allocate( profile_from_config_t :: profile )
+      case( 'profile_from_host_t' )
+        allocate( profile_from_host_t :: profile )
       case( 'profile_air_t' )
         allocate( profile_air_t :: profile )
       case( 'profile_o2_t' )

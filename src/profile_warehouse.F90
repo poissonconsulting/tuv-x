@@ -21,6 +21,12 @@ module tuvx_profile_warehouse
     generic :: get_profile => get_profile_char, get_profile_string
     procedure :: exists_char, exists_string
     generic :: exists => exists_char, exists_string
+    ! adds a profile or set of profiles to the warehouse
+    procedure, private :: add_profile
+    procedure, private :: add_profiles
+    generic :: add => add_profile, add_profiles
+    ! returns an updater for a `profile_from_host_t` profile
+    procedure :: get_updater
     ! returns the number of bytes required to pack the warehouse onto a buffer
     procedure :: pack_size
     ! packs the warehouse onto a character buffer
@@ -31,7 +37,9 @@ module tuvx_profile_warehouse
   end type profile_warehouse_t
 
   interface profile_warehouse_t
-    ! profile warehouse_t constructor
+    ! empty constructor for profile_warehouse_t
+    module procedure :: constructor_empty
+    ! profile_warehouse_t constructor
     module procedure :: constructor
   end interface
 
@@ -39,9 +47,21 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  function constructor_empty( ) result( profile_warehouse )
+
+    class(profile_warehouse_t), pointer :: profile_warehouse ! Empty profile warehouse
+
+    allocate( profile_warehouse )
+    allocate( profile_warehouse%profiles_(0) )
+
+  end function constructor_empty
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   function constructor( config, grid_warehouse ) result( profile_warehouse )
     ! profile warehouse constructor
 
+    use musica_assert,        only : assert_msg
     use musica_config,        only : config_t
     use musica_iterator,      only : iterator_t
     use musica_string,        only : string_t
@@ -74,6 +94,12 @@ contains
 
       ! Build profile objects
       profile_obj%val_ => profile_builder( profile_config, grid_warehouse )
+      call assert_msg( 178168062,                                         &
+                      .not. profile_warehouse%exists(                     &
+                                             profile_obj%val_%handle_,    &
+                                             profile_obj%val_%units( ) ), &
+                      "Profile '"//profile_obj%val_%handle_//             &
+                      "' duplicated in profile warehouse." )
       profile_warehouse%profiles_ =                                       &
           [ profile_warehouse%profiles_, profile_obj ]
     end do
@@ -140,6 +166,7 @@ contains
   logical function exists_char( this, name, units ) result( exists )
     ! checks if a profile exists in the warehouse
 
+    use musica_assert,                 only : assert_msg
     use musica_string,                 only : string_t
     use tuvx_profile,                  only : profile_t
 
@@ -152,6 +179,10 @@ contains
     exists = .false.
     do ndx = 1, size( this%profiles_ )
       if( name .eq. this%profiles_( ndx )%val_%handle_ ) then
+        call assert_msg( 496262126,                                           &
+                         this%profiles_( ndx )%val_%units( ) == units,        &
+                         "Units mismatch for profile '"//name//"': '"//units//&
+                         "' != '"//this%profiles_( ndx )%val_%units( ) )
         exists  = .true.
         exit
       endif
@@ -174,6 +205,100 @@ contains
     exists = this%exists_char( name%to_char( ), units%to_char( ) )
 
   end function exists_string
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine add_profile( this, profile )
+    ! adds a profile to the warehouse
+
+    use musica_assert,                 only : assert, assert_msg
+    use tuvx_profile,                  only : profile_t
+
+    class(profile_warehouse_t), intent(inout) :: this
+    class(profile_t),           intent(in)    :: profile
+
+    type(profile_ptr) :: ptr
+
+    call assert( 809705750, allocated( this%profiles_ ) )
+    call assert_msg( 490846671,                                               &
+                     .not. this%exists( profile%handle_, profile%units( ) ),  &
+                     "Profile '"//profile%handle_//"' already exists." )
+    allocate( ptr%val_, source = profile )
+    this%profiles_ = [ this%profiles_, ptr ]
+
+  end subroutine add_profile
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine add_profiles( this, profiles )
+    ! adds a set of profiles to the warehouse
+
+    use musica_assert,                 only : assert
+
+    class(profile_warehouse_t), intent(inout) :: this
+    class(profile_warehouse_t), intent(in)    :: profiles
+
+    integer :: i_profile
+
+    call assert( 220530020, allocated( this%profiles_ ) )
+    call assert( 162691461, allocated( profiles%profiles_ ) )
+    do i_profile = 1, size( profiles%profiles_ )
+      call this%add_profile( profiles%profiles_( i_profile )%val_ )
+    end do
+
+  end subroutine add_profiles
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  type(profile_updater_t) function get_updater( this, profile, found )        &
+      result( updater )
+    ! returns an updater for a `profile_from_host_t` profile
+    !
+    ! If the optional `found` argument is omitted, an error is returned if the
+    ! profile does not exist in the warehouse.
+
+    use musica_assert,                 only : assert, assert_msg, die_msg
+    use tuvx_profile_from_host,        only : profile_from_host_t,            &
+                                              profile_updater_t
+
+    class(profile_warehouse_t), intent(inout) :: this    ! profile warehouse
+    type(profile_from_host_t),  intent(in)    :: profile ! the profile to find in the warehouse
+    logical, optional,          intent(out)   :: found   ! flag indicating whether the profile was found
+
+    integer :: i_profile
+    logical :: l_found
+
+    l_found = .false.
+    do i_profile = 1, size( this%profiles_ )
+      if( profile%handle_ == this%profiles_( i_profile )%val_%handle_ ) then
+        call assert_msg( 585094657,                                           &
+                         this%profiles_( i_profile )%val_%units( )            &
+                         == profile%units( ),                                 &
+                         "Units mismatch for profile '"//profile%handle_//    &
+                         "': '"//profile%units( )//"' != '"//                 &
+                         this%profiles_( i_profile )%val_%units( ) )
+        l_found = .true.
+        exit
+      end if
+    end do
+
+    if( present( found ) ) then
+      found = l_found
+      if( .not. found ) return
+    end if
+
+    call assert_msg( 348928409, found,                                        &
+                     "Cannot find profile '"//profile%handle_//"'" )
+
+    select type( w_profile => this%profiles_( i_profile )%val_ )
+    class is( profile_from_host_t )
+      updater = profile_updater_t( w_profile )
+    class default
+      call die_msg( 166789652, "Cannot update profile '"//w_profile%handle_// &
+                               "' from a host application." )
+    end select
+
+  end function get_updater
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

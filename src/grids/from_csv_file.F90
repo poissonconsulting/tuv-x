@@ -10,16 +10,16 @@ module tuvx_grid_from_csv_file
 
   implicit none
 
-  public :: from_csv_file_t
+  public :: grid_from_csv_file_t
 
-  type, extends(grid_t) :: from_csv_file_t
+  type, extends(grid_t) :: grid_from_csv_file_t
   contains
-  end type from_csv_file_t
+  end type grid_from_csv_file_t
 
   !> Constructor
-  interface from_csv_file_t
+  interface grid_from_csv_file_t
     module procedure constructor
-  end interface from_csv_file_t
+  end interface grid_from_csv_file_t
 
 contains
 
@@ -38,7 +38,7 @@ contains
     integer, parameter :: Ok = 0
     integer, parameter :: inUnit = 20
     character(len=*), parameter :: Iam = 'From_csv_file grid initialize: '
-    type(from_csv_file_t), pointer :: this
+    type(grid_from_csv_file_t), pointer :: this
 
     integer  :: istat
     real(dk) :: Value

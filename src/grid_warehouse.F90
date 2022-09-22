@@ -62,6 +62,7 @@ contains
   function constructor( config ) result( grid_warehouse )
     ! Grid warehouse constructor
 
+    use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
     use musica_string,                 only : string_t
@@ -92,6 +93,11 @@ contains
 
       ! Build grid objects
       grid_obj%val_ => grid_builder( grid_config )
+      call assert_msg( 101630104,                                             &
+                       .not. grid_warehouse%exists( grid_obj%val_%handle_,    &
+                                                    grid_obj%val_%units( ) ), &
+                       "Grid '"//grid_obj%val_%handle_//                      &
+                       "' duplicated in grid warehouse." )
       grid_warehouse%grids_ = [ grid_warehouse%grids_, grid_obj ]
     end do
     deallocate( iter )
@@ -198,7 +204,7 @@ contains
   subroutine add_grid( this, grid )
     ! adds a grid to the warehouse
 
-    use musica_assert,                 only : assert
+    use musica_assert,                 only : assert, assert_msg
     use tuvx_grid,                     only : grid_t
 
     class(grid_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
@@ -207,6 +213,9 @@ contains
     type(grid_ptr) :: ptr
 
     call assert( 900933280, allocated( this%grids_  ) )
+    call assert_msg( 244177406,                                               &
+                     .not. this%exists( grid%handle_, grid%units( ) ),        &
+                     "Grid '"//grid%handle_//"' already exists." )
     allocate( ptr%val_, source = grid )
     this%grids_ = [ this%grids_, ptr ]
 

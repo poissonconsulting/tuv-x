@@ -6,9 +6,9 @@ module tuvx_grid_factory
 ! :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`.
 
   use tuvx_grid,                       only : grid_t
-  use tuvx_grid_equal_delta,           only : equal_delta_t
-  use tuvx_grid_from_csv_file,         only : from_csv_file_t
-  use tuvx_grid_from_config,           only : from_config_t
+  use tuvx_grid_equal_delta,           only : grid_equal_delta_t
+  use tuvx_grid_from_csv_file,         only : grid_from_csv_file_t
+  use tuvx_grid_from_config,           only : grid_from_config_t
   use tuvx_grid_from_host,             only : grid_from_host_t
 
   implicit none
@@ -41,11 +41,11 @@ contains
 
     select case( grid_type%to_char() )
       case( 'equal interval' )
-        new_grid_t => equal_delta_t( config )
+        new_grid_t => grid_equal_delta_t( config )
       case( 'from csv file' )
-        new_grid_t => from_csv_file_t( config )
+        new_grid_t => grid_from_csv_file_t( config )
       case( 'from config file' )
-        new_grid_t => from_config_t( config )
+        new_grid_t => grid_from_config_t( config )
       case default
         call die_msg( 460768215, "Invalid grid type: '" &
           // grid_type%to_char()//"'" )
@@ -64,12 +64,12 @@ contains
     class(grid_t), intent(in) :: grid
 
     select type( grid )
-      type is( equal_delta_t )
-        name = "equal_delta_t"
-      type is( from_csv_file_t )
-        name = "from_csv_file_t"
-      type is( from_config_t )
-        name = "from_config_t"
+      type is( grid_equal_delta_t )
+        name = "grid_equal_delta_t"
+      type is( grid_from_csv_file_t )
+        name = "grid_from_csv_file_t"
+      type is( grid_from_config_t )
+        name = "grid_from_config_t"
       type is( grid_from_host_t )
         name = "grid_from_host_t"
       class default
@@ -92,12 +92,12 @@ contains
     grid => null( )
 
     select case( type_name%to_char( ) )
-      case( 'equal_delta_t' )
-        allocate( equal_delta_t :: grid )
-      case( 'from_csv_file_t' )
-        allocate( from_csv_file_t :: grid )
-      case( 'from_config_t' )
-        allocate( from_config_t :: grid )
+      case( 'grid_equal_delta_t' )
+        allocate( grid_equal_delta_t :: grid )
+      case( 'grid_from_csv_file_t' )
+        allocate( grid_from_csv_file_t :: grid )
+      case( 'grid_from_config_t' )
+        allocate( grid_from_config_t :: grid )
       case( 'grid_from_host_t' )
         allocate( grid_from_host_t :: grid )
       case default

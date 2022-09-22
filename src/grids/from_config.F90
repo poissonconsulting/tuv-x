@@ -10,16 +10,16 @@ module tuvx_grid_from_config
 
   implicit none
 
-  public :: from_config_t
+  public :: grid_from_config_t
 
-  type, extends(grid_t) :: from_config_t
+  type, extends(grid_t) :: grid_from_config_t
   contains
-  end type from_config_t
+  end type grid_from_config_t
 
   !> Constructor
-  interface from_config_t
+  interface grid_from_config_t
     module procedure constructor
-  end interface from_config_t
+  end interface grid_from_config_t
 
 contains
 
@@ -36,7 +36,7 @@ contains
 
     ! Local variables
     character(len=*), parameter :: Iam = 'From config grid initialize: '
-    type(from_config_t), pointer  :: this
+    type(grid_from_config_t), pointer  :: this
     type(string_t) :: required_keys(3), optional_keys(1)
 
     required_keys(1) = "type"

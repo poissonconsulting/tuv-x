@@ -6,6 +6,7 @@ TUV-x: A photolysis rate constant calculator.
 [![License](https://img.shields.io/github/license/NCAR/tuv-x.svg)](https://github.com/NCAR/tuv-x/blob/main/LICENSE)
 [![CI Status](https://github.com/NCAR/tuv-x/actions/workflows/test.yml/badge.svg)](https://github.com/NCAR/tuv-x/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/NCAR/tuv-x/branch/main/graph/badge.svg?token=H46AAEAQF9)](https://codecov.io/gh/NCAR/tuv-x)
+[![DOI](https://zenodo.org/badge/396946468.svg)](https://zenodo.org/badge/latestdoi/396946468)
 
 Copyright (C) 2020 National Center for Atmospheric Research
 

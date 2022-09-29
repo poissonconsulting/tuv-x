@@ -29,12 +29,8 @@ contains
       result( this )
     ! Constructor
 
-    use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
-    use musica_string,                 only : string_t
-    use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_netcdf,                   only : netcdf_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     class(quantum_yield_t), pointer :: this ! This :f:type:`~tuvx_quantum_yield/quantum_yield_t` calculator
@@ -56,10 +52,8 @@ contains
       result( quantum_yield )
 
     use musica_constants,              only : dk => musica_dk
-    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     class(quantum_yield_clo_cl_o3p_t), intent(in) :: this ! This :f:type:`~tuvx_quantum_yield_clo_cl_o3p/quantum_yield_clo_cl_o3p_t`

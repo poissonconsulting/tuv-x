@@ -10,6 +10,7 @@ module load ncarenv/1.3
 module load ncarcompilers/0.5.0
 module load cmake/3.22.0
 module load netcdf/4.8.1
+module load openmpi/4.1.1
 
 if [[ -z "${TUVX_HOME}" ]]; then
   echo "You must set the TUVX_HOME environment variable to the directory where TUV-x should be build."
@@ -57,11 +58,13 @@ git checkout release
 git submodule update
 mkdir -p build
 cd build
-cmake -D CMAKE_Fortran_COMPILER=gfortran \
+cmake -D CMAKE_Fortran_COMPILER=mpifort \
       -D CMAKE_BUILD_TYPE=release \
       -D NETCDF_INCLUDE_DIR=$NCAR_INC_NETCDF \
       -D NETCDF_C_LIB=$NCAR_LDFLAGS_NETCDF/libnetcdf.so \
       -D NETCDF_FORTRAN_LIB=$NCAR_LDFLAGS_NETCDF/libnetcdff.so \
+      -D ENABLE_MPI=ON \
+      -D ENABLE_MEMCHECK=OFF \
       -D ENABLE_COVERAGE=OFF \
       ..
 make

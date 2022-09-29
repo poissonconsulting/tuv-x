@@ -139,13 +139,10 @@ contains
       profile_warehouse, radiation_field )
     ! Calculate the radiation field
 
-    use musica_assert,                 only : die_msg
-    use musica_string,                 only : string_t, to_char
-    use tuvx_grid,                     only : grid_t
+    use musica_string,                 only : string_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_radiator_warehouse,       only : warehouse_iterator_t
     use tuvx_radiator,                 only : radiator_t
-    use tuvx_radiator,                 only : radiator_state_t
     use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_spherical_geometry,       only : spherical_geometry_t
@@ -274,16 +271,16 @@ contains
     character,                   intent(inout) :: buffer(:) ! memory buffer
     integer,                     intent(inout) :: position  ! current buffer position
     integer,                     intent(in)    :: comm      ! MPI communicator
-    type(string_t)                             :: solver
 
 #ifdef MUSICA_USE_MPI
-    integer :: prev_pos
+    type(string_t) :: solver
+    integer        :: prev_pos
 
     prev_pos = position
 
     allocate( this%cross_section_warehouse_ )
     allocate( this%radiator_warehouse_ )
-  
+
     call musica_mpi_unpack( buffer, position, this%n_streams_,  comm )
     call this%config_%mpi_unpack( buffer, position, comm )
 

@@ -24,7 +24,9 @@ contains
 
   function wavelength_grid_initialize(filespec) result(retcode)
 
-    use nc4fortran, only : netcdf_file 
+    use musica_io,                     only : io_t
+    use musica_io_netcdf,              only : io_netcdf_t
+    use musica_string,                 only : string_t
 
     integer(musica_ik)              :: retcode
     character(len=*), intent(in)    :: filespec
@@ -32,25 +34,22 @@ contains
     integer(musica_ik), parameter :: noErr = 0_musica_ik
     character(len=*), parameter   :: Iam = 'wavelength_grid_initialize: '
     integer(musica_ik), allocatable :: dims(:)
-    type(netcdf_file)  :: ncObj
+    class(io_t), pointer :: nc_file
+    type(string_t) :: file_path
 
-    call ncObj%initialize(filespec, ierr=retcode, status='old', action='r')
-    if( retcode /= noErr ) then
-      write(*,*) Iam,'retcode from initialize = ',retcode
-      stop 'FileOpenError'
-    endif
+    file_path = filespec
+    nc_file => io_netcdf_t( file_path )
 
-    call ncObj%shape( 'etf', dims )
-    wavelength_grid%nwave = dims(1)
-    associate( nwave => dims(1) )
-    allocate(wavelength_grid%etf(nwave),wavelength_grid%wcenter(nwave),wavelength_grid%wedge(nwave+1))
-    call ncObj%read( 'etf', wavelength_grid%etf )
-    call ncObj%read( 'wc', wavelength_grid%wcenter )
-    call ncObj%read( 'wl', wavelength_grid%wedge )
-    end associate
+    var_name = 'etf'
+    call nc_file%read( var_name, wavelength_grid%etf, Iam )
+    var_name = 'wc'
+    call nc_file%read( var_name, wavelength_grid%wcenter, Iam )
+    var_name = 'wl'
+    call nc_file%read( var_name, wavelength_grid%wedge, Iam )
+    wavelength_grid%nwave = size( wavelength_grid%etf, 1 )
 
-    call ncObj%finalize()
-    
+    deallocate( nc_file )
+
   end function wavelength_grid_initialize
 
 end module micm_photolysis_wavelength_grid

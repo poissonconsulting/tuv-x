@@ -2,9 +2,10 @@
 ! SPDX-License-Identifier: Apache-2.0
 
 module tuvx_cross_section_t_butyl_nitrate
-! Calculates the cross section for 
+! Calculates the cross section for tert-butyl nitrate
 
-  use tuvx_cross_section,              only : cross_section_t
+  use tuvx_cross_section,              only : cross_section_t,                &
+                                              base_constructor
 
   implicit none
 
@@ -15,7 +16,7 @@ module tuvx_cross_section_t_butyl_nitrate
   type, extends(cross_section_t) :: cross_section_t_butyl_nitrate_t
   contains
     !> Calculate the cross section
-    procedure :: calculate => run
+    procedure :: calculate
   end type cross_section_t_butyl_nitrate_t
 
   !> Constructor
@@ -34,7 +35,6 @@ contains
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
-    use tuvx_cross_section,            only : base_constructor
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
@@ -58,15 +58,14 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function run( this, grid_warehouse, profile_warehouse, at_mid_point )       &
+  function calculate( this, grid_warehouse, profile_warehouse, at_mid_point ) &
       result( cross_section )
     ! Calculate the cross section for a given set of environmental conditions
 
     use musica_constants,              only : dk => musica_dk, ik => musica_ik
-    use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_grid,                     only : grid_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
-    use musica_string,                 only : string_t
 
     real(kind=dk), allocatable                            :: cross_section(:,:) ! Calculated cross section
     class(cross_section_t_butyl_nitrate_t), intent(in)    :: this ! A :f:type:`~tuvx_cross_section_t_butyl_nitrate/cross_section_t_butyl_nitrate_t`
@@ -113,7 +112,7 @@ contains
     deallocate( zGrid )
     deallocate( lambdaGrid )
 
-  end function run
+  end function calculate
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

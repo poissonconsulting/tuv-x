@@ -48,6 +48,8 @@ mv $JSON_FORTRAN_HOME/lib/*.so* $JSON_FORTRAN_HOME/lib/shared
 # TUV-x
 TUVX_ROOT=$TUVX_HOME/tuv-x
 cd $TUVX_ROOT
+git checkout release
+git submodule update
 mkdir -p build
 cd build
 cmake3 -D CMAKE_Fortran_COMPILER=/opt/local/bin/gfortran \
@@ -55,8 +57,6 @@ cmake3 -D CMAKE_Fortran_COMPILER=/opt/local/bin/gfortran \
        -D NETCDF_INCLUDE_DIR=/opt/local/include \
        -D NETCDF_C_LIB=/opt/local/lib/libnetcdf.so \
        -D NETCDF_FORTRAN_LIB=/opt/local/lib/libnetcdff.so \
-       -D NC4F_INCLUDE_DIR=/opt/local/include \
-       -D NC4F_LIB=/opt/local/lib/libnc4fortran.a \
        -D ENABLE_COVERAGE=OFF \
        ..
 make

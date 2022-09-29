@@ -5,7 +5,7 @@ module tuvx_quantum_yield_no2_tint
   !> The no2 tint quantum yield type and related functions
 
   use musica_constants,                only : dk => musica_dk
-  use tuvx_quantum_yield,              only : quantum_yield_t, base_constructor
+  use tuvx_quantum_yield,              only : quantum_yield_t
 
   implicit none
 
@@ -70,15 +70,12 @@ contains
     real(dk), parameter    :: rZERO = 0.0_dk
     real(dk), parameter    :: rONE  = 1.0_dk
 
-    integer     :: nmdlLambda
     integer     :: nTemps, nParms
     integer     :: parmNdx, fileNdx, Ndxl, Ndxu
     real(dk)    :: tmp
-    real(dk)    :: quantum_yield_constant
     real(dk), allocatable :: data_lambda(:)
     real(dk), allocatable :: data_parameter(:)
     logical     :: found, monopos
-    character(len=:), allocatable :: msg
     type(netcdf_t),   allocatable :: netcdf_obj
     type(string_t),   allocatable :: netcdfFiles(:)
     class(grid_t),    pointer     :: lambdaGrid => null( )
@@ -172,7 +169,6 @@ contains
   function run( this, grid_warehouse, profile_warehouse )                     &
       result( quantum_yield )
 
-    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile,                  only : profile_t

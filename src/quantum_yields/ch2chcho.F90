@@ -28,12 +28,8 @@ contains
       result( this )
     ! Constructor
 
-    use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
-    use musica_string,                 only : string_t
-    use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_netcdf,                   only : netcdf_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     class(quantum_yield_t), pointer :: this ! This :f:type:`~tuvx_quantum_yield/quantum_yield_t` calculator
@@ -59,7 +55,6 @@ contains
     use tuvx_grid,                     only : grid_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_profile,                  only : profile_t
-    use musica_string,                 only : string_t
 
     !> Arguments
     class(quantum_yield_ch2chcho_t), intent(in) :: this ! This :f:type:`~tuvx_quantum_yield_ch2chcho/quantum_yield_ch2chcho_t`
@@ -76,7 +71,6 @@ contains
     real(dk), parameter ::    rONE  = 1.0_dk
 
     integer                       :: nzdim, vertNdx
-    real(dk)                      :: M
     real(dk),         allocatable :: phi0(:)
     real(dk),         allocatable :: modelDens(:)
     class(grid_t),    pointer     :: zGrid => null( )

@@ -4,7 +4,7 @@ module tuvx_quantum_yield_tint
   ! The temperature interpolation quantum yield type and related functions
 
   use musica_constants,                only : dk => musica_dk
-  use tuvx_quantum_yield,              only : quantum_yield_t, base_constructor
+  use tuvx_quantum_yield,              only : quantum_yield_t
 
   implicit none
 
@@ -73,7 +73,6 @@ contains
     integer     :: nTemps
     integer     :: fileNdx, Ndxl, Ndxu
     real(dk)    :: tmp
-    real(dk)    :: quantum_yield_constant
     real(dk), allocatable :: data_lambda(:)
     real(dk), allocatable :: data_parameter(:)
     logical     :: found, monopos
@@ -189,7 +188,6 @@ file_loop: &
       result( quantum_yield )
     ! Calculate the quantum yield for the environmental conditions
 
-    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t

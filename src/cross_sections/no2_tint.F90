@@ -16,7 +16,7 @@ module tuvx_cross_section_no2_tint
   type, extends(cross_section_t) :: cross_section_no2_tint_t
   contains
     !> Calculate the cross section
-    procedure :: calculate => run
+    procedure :: calculate
     !> clean up
     final     :: finalize
   end type cross_section_no2_tint_t
@@ -38,7 +38,6 @@ contains
     use musica_constants,              only : dk => musica_dk
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
-    use tuvx_cross_section,            only : cross_section_parms_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_interpolate,              only : interpolator_conserving_t
@@ -184,12 +183,11 @@ file_loop: &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function run( this, grid_warehouse, profile_warehouse, at_mid_point )       &
+  function calculate( this, grid_warehouse, profile_warehouse, at_mid_point ) &
       result( cross_section )
     ! Calculate the cross section for a given set of environmental conditions
 
     use musica_constants,              only : dk => musica_dk
-    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile,                  only : profile_t
@@ -263,7 +261,7 @@ file_loop: &
     deallocate( lambdaGrid )
     deallocate( mdlTemperature )
 
-  end function run
+  end function calculate
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

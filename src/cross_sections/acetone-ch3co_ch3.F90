@@ -4,7 +4,8 @@
 module tuvx_cross_section_ch3coch3_ch3co_ch3
   ! Computes the cross section for acetone
 
-  use tuvx_cross_section,              only : cross_section_t
+  use tuvx_cross_section,              only : cross_section_t,                &
+                                              base_constructor
 
   implicit none
 
@@ -15,7 +16,7 @@ module tuvx_cross_section_ch3coch3_ch3co_ch3
   type, extends(cross_section_t) :: cross_section_ch3coch3_ch3co_ch3_t
   contains
     !> Initialize the cross section
-    procedure :: calculate => run
+    procedure :: calculate
   end type cross_section_ch3coch3_ch3co_ch3_t
 
   !> Constructor
@@ -34,7 +35,6 @@ contains
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
-    use tuvx_cross_section,            only : base_constructor
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
@@ -61,7 +61,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function run( this, grid_warehouse, profile_warehouse, at_mid_point )       &
+  function calculate( this, grid_warehouse, profile_warehouse, at_mid_point ) &
       result( cross_section )
     ! Calculate the cross section for a given set of environmental conditions
     ! qyacet - q.y. for acetone, based on Blitz et al. (2004)
@@ -73,9 +73,8 @@ contains
     ! 31, L06111, 
     ! `doi:10.1029/2003GL018793 <https://doi.org/10.1029/2003GL018793>`_.
 
-    use musica_assert,                 only : die_msg, assert_msg
+    use musica_assert,                 only : assert_msg
     use musica_constants,              only : dk => musica_dk
-    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile,                  only : profile_t
@@ -138,7 +137,7 @@ contains
     deallocate( lambdaGrid )
     deallocate( mdlTemperature )
 
-  end function run
+  end function calculate
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

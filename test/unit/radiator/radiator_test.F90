@@ -14,7 +14,7 @@ program radiator_test
 
   implicit none
 
-  class(radiator_core_t), pointer :: radiator_core
+  class(radiator_core_t), pointer :: core
 
   ! Command-line options
   character(len=256) :: argument
@@ -28,12 +28,12 @@ program radiator_test
   configFileSpec = argument
 
   ! instatiate and initialize radiator core object
-  radiator_core => radiator_core_t( configFileSpec )
+  core => radiator_core_t( configFileSpec )
 
   ! set radiator cross sections
-  call radiator_core%test()
+  call core%test()
 
-  deallocate( radiator_core )
+  deallocate( core )
 
   ! test radiator_state_t functions
   call test_state( )

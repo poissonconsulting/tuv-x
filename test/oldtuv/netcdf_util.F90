@@ -1,107 +1,113 @@
-   module netcdf_util
+! Copyright (C) 2020 National Center for Atmospheric Research
+! SPDX-License-Identifier: Apache-2.0
+!
+module netcdf_util
+  ! NetCDF I/O class
 
-   use nc4fortran, only : netcdf_file
-   use musica_constants, only : musica_ik, musica_dk
+  use musica_constants,                only : musica_dk
 
-   implicit none
+  implicit none
 
-   private
-   public :: netcdf_t
+  private
+  public :: netcdf_t, clean_string
 
-!> type definition
-   type netcdf_t
-     real(musica_dk), allocatable :: wavelength(:)
-     real(musica_dk), allocatable :: temperature(:)
-     real(musica_dk), allocatable :: parameters(:,:)
-   contains
-     procedure :: read_netcdf_file => run
-     final     :: finalize
-   end type netcdf_t
+  type netcdf_t
+    ! NetCDF I/O
+    real(musica_dk), allocatable :: wavelength(:)
+    real(musica_dk), allocatable :: temperature(:)
+    real(musica_dk), allocatable :: parameters(:,:)
+  contains
+    procedure :: read_netcdf_file => run
+    final     :: finalize
+  end type netcdf_t
 
-   contains
+contains
 
-   subroutine run( this, filespec, Hdr )
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   class(netcdf_t), intent(inout) :: this
-   character(len=*), intent(in)   :: filespec
-   character(len=*), intent(in)   :: Hdr
+  subroutine run( this, filespec, Hdr )
+    ! Reads data from a NetCDF file
 
-   integer(musica_ik), parameter :: noErr = 0
-   character(len=*), parameter :: Iam = "read_netcdf_file: "
+    use musica_assert,                    only : assert_msg
+    use musica_io,                        only : io_t
+    use musica_io_netcdf,                 only : io_netcdf_t
+    use musica_string,                    only : string_t
 
-   integer(musica_ik) :: stat, nLambda
-   integer(musica_ik), allocatable :: dims(:)
-   character(:), allocatable :: varName
-   type(netcdf_file) :: ncObj
+    class(netcdf_t), intent(inout) :: this
+    character(len=*), intent(in)   :: filespec
+    character(len=*), intent(in)   :: Hdr
 
-!-----------------------------------------------------
-!  open the netcdf file
-!-----------------------------------------------------
-   call ncObj%initialize(filespec, ierr=stat, status='old', action='r')
-   if( stat /= noErr ) then
-     write(*,*) Iam,'retcode from initialize = ',stat
-     stop 'FileOpenError'
-   endif
+    integer, parameter :: noErr = 0
+    character(len=*), parameter :: Iam = "read_netcdf_file: "
 
-!-----------------------------------------------------
-!  parameter array must be in netcdf file, read it
-!-----------------------------------------------------
-   varName = trim(Hdr) // 'parameters'
-   if( ncObj%exist(varName) ) then
-     call ncObj%shape( varName, dims )
-     nLambda = dims(1)
-!> read input parameters array
-     allocate(this%parameters(dims(1),dims(2)))
-     call ncObj%read( varName, this%parameters )
-   else
-     write(*,*) Iam,' variable ',trim(varName),' not in netcdf file'
-     stop 'FileVarError'
-   endif
+    class(io_t), pointer :: nc_file
+    integer :: stat, nLambda
+    integer, allocatable :: dims(:)
+    type(string_t) :: var_name
+    type(string_t) :: filespec_str
 
-!-----------------------------------------------------
-!  if it exists, read wavelength array
-!-----------------------------------------------------
-   if( ncObj%exist('wavelength') ) then
-     call ncObj%shape( 'wavelength', dims )
-     if( dims(1) /= nLambda ) then
-       write(*,*) Iam,' wavelength, parameters array size mismatch'
-       stop 'DataError'
-     endif
-     allocate(this%wavelength(dims(1)))
-     call ncObj%read( 'wavelength', this%wavelength )
-   endif
+    !  open the netcdf file
+    filespec_str = filespec
+    nc_file => io_netcdf_t( filespec_str )
 
-!-----------------------------------------------------
-!  if it exists, read temperature array
-!-----------------------------------------------------
-   if( ncObj%exist('temperature') ) then
-     call ncObj%shape( 'temperature', dims )
-     allocate(this%temperature(dims(1)))
-     call ncObj%read( 'temperature', this%temperature )
-   endif
+    !  parameter array must be in netcdf file, read it
+    var_name = trim( Hdr ) // 'parameters'
+    call assert_msg( 118377216, nc_file%exists( var_name, Iam ),              &
+                     "File '"//filespec//"' must have 'parameters' field." )
+    call nc_file%read( var_name, this%parameters, Iam )
+    nLambda = size( this%parameters, 1 )
 
-!-----------------------------------------------------
-!  close the netcdf file
-!-----------------------------------------------------
-   call ncObj%finalize()
+    ! if it exists, read wavelength array
+    var_name = 'wavelength'
+    if( nc_file%exists( var_name, Iam ) ) then
+      call nc_file%read( var_name, this%wavelength, Iam )
+      call assert_msg( 944197086, size( this%wavelength, 1 ) == nLambda,      &
+                       "Wavelength and parameters array size mismatch in '"// &
+                       filespec//"'" )
+    endif
 
-   end subroutine run
+    ! if it exists, read temperature array
+    var_name = 'temperature'
+    if( nc_file%exists( var_name, Iam ) ) then
+      call nc_file%read( var_name, this%temperature, Iam )
+    endif
 
-!> finalize the cross section type
-   subroutine finalize( this )
+    !  close the netcdf file
+    deallocate( nc_file )
 
-   type(netcdf_t), intent(inout) :: this
+  end subroutine run
 
-   if( allocated(this%wavelength ) ) then
-       deallocate(this%wavelength )
-   endif
-   if( allocated(this%temperature ) ) then
-       deallocate(this%temperature )
-   endif
-   if( allocated(this%parameters ) ) then
-       deallocate(this%parameters )
-   endif
-   
-   end subroutine finalize
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   end module netcdf_util
+  subroutine finalize( this )
+    ! Cleans up memory of the NetCDF class
+
+    type(netcdf_t), intent(inout) :: this
+
+    if( allocated( this%wavelength ) ) then
+      deallocate( this%wavelength )
+    endif
+    if( allocated( this%temperature ) ) then
+      deallocate( this%temperature )
+    endif
+    if( allocated( this%parameters ) ) then
+      deallocate( this%parameters )
+    endif
+
+  end subroutine finalize
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  type(string_t) function clean_string( from )
+
+    use musica_string,                 only : string_t
+
+    type(string_t), intent(in) :: from
+
+    clean_string = from%replace( "/", "_" )
+
+  end function clean_string
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+end module netcdf_util

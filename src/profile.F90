@@ -53,8 +53,6 @@ contains
     integer,           intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
-    integer :: i_param
-
     pack_size = this%handle_%pack_size( comm )                                &
                 + this%units_%pack_size( comm )                               &
                 + musica_mpi_pack_size( this%ncells_,         comm )          &

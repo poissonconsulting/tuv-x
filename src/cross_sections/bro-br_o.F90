@@ -53,7 +53,6 @@ contains
     real(dk), allocatable :: data_parameter(:)
     real(dk), allocatable :: regridded_data(:)
     logical :: found
-    character(len=:), allocatable :: msg
     type(netcdf_t),   allocatable :: netcdf_obj
     type(string_t),   allocatable :: netcdfFiles(:)
     class(grid_t),    pointer     :: lambdaGrid => null( )

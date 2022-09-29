@@ -61,7 +61,6 @@ contains
   function run( this, grid_warehouse, profile_warehouse ) result( spectral_weight )
     ! Calculate the standard human erythema pectral weight
 
-    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t

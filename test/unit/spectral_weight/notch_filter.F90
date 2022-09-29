@@ -43,6 +43,8 @@ program test_spectral_weight_notch_filter
   end select
 
   deallocate( spectral_weight )
+  deallocate( profile_warehouse )
+  deallocate( grid_warehouse )
   call musica_mpi_finalize( )
 
 contains

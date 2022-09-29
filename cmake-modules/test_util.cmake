@@ -1,7 +1,9 @@
 ################################################################################
 # Utility functions for creating tests
 
-find_program(MEMORYCHECK_COMMAND "valgrind")
+if(ENABLE_MEMCHECK)
+  find_program(MEMORYCHECK_COMMAND "valgrind")
+endif()
 
 ################################################################################
 # build and add a standard test (one linked to the tuvx library)
@@ -33,14 +35,14 @@ function(add_tuvx_test test_name test_binary test_args working_dir)
              COMMAND ${test_binary} ${test_args}
              WORKING_DIRECTORY ${working_dir})
   endif()
-  if(ENABLE_MPI AND MEMORYCHECK_COMMAND)
+  if(ENABLE_MPI AND MEMORYCHECK_COMMAND AND ENABLE_MEMCHECK)
     set(MEMORYCHECK_COMMAND_OPTIONS "--error-exitcode=1 --trace-children=yes --leak-check=full")
     set(memcheck "${MEMORYCHECK_COMMAND} ${MEMORYCHECK_COMMAND_OPTIONS}")
     separate_arguments(memcheck)
     add_test(NAME memcheck_${test_name}
       COMMAND mpirun -v -np 2 ${memcheck} ${CMAKE_BINARY_DIR}/${test_binary} ${test_args}
              WORKING_DIRECTORY ${working_dir})
-  elseif(MEMORYCHECK_COMMAND)
+  elseif(MEMORYCHECK_COMMAND AND ENABLE_MEMCHECK)
     set(MEMORYCHECK_COMMAND_OPTIONS "--error-exitcode=1 --trace-children=yes --leak-check=full")
     set(memcheck "${MEMORYCHECK_COMMAND} ${MEMORYCHECK_COMMAND_OPTIONS}")
     separate_arguments(memcheck)

@@ -60,7 +60,6 @@ contains
     real(dk), allocatable         :: input_zgrid(:)
     real(dk), allocatable         :: winput_SSA(:), winput_G(:)
     type(string_t)                :: required_keys(5), optional_keys(2)
-    type(config_t)                :: Aerosol_config
     class(grid_t),             pointer :: zGrid, lambdaGrid
     class(interpolator_t), pointer :: theInterpolator
 
@@ -184,14 +183,12 @@ contains
 
     use musica_assert,                 only : assert_msg
     use tuvx_cross_section_warehouse,  only : cross_section_warehouse_t
-    use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_profile,                  only : profile_t
-    use tuvx_profile_warehouse,        only : Profile_warehouse_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     class(radiator_aerosol_t),       intent(inout) :: this ! This :f:type:`~tuvx_radiator_aerosol/radiator_aerosol_t`
     type(grid_warehouse_t),          intent(inout) :: grid_warehouse ! :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
-    type(Profile_warehouse_t),       intent(inout) :: profile_warehouse ! :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    type(profile_warehouse_t),       intent(inout) :: profile_warehouse ! :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
     type(cross_section_warehouse_t), intent(inout) :: cross_section_warehouse ! A :f:type:`~tuvx_cross_section_warehouse/cross_section_warehouse_t`
 
     ! check that radiator state is allocated

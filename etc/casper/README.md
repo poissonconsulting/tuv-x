@@ -2,7 +2,8 @@
 
 ## Get the source code
 
-- Copy the build script (`build_tuvx_casper_gnu.sh`) to GLADE.
+- Copy the build script you wish to use from this folder to GLADE.
+  There are scripts for GNU and Intel compilers, with and without MPI support.
 
 - Log in to CASPER and start an interactive session (BASH shell)
 
@@ -20,24 +21,16 @@ export TUVX_HOME=/path/to/my-tuvx-build
 
 ## Build TUV-x
 
-Replace `/path/to/` with the path to the directory you copied the build script to, in the following:
+Replace `/path/to/build_tuvx_casper_X.sh` with the path to the build script you copied to GLADE, in the following:
 
 ```
 cd $TUVX_HOME
-. /path/to/build_tuvx_casper_gnu.sh
+. /path/to/build_tuvx_casper_X.sh
 ```
 
 ## Run TUV-x
-- Whenever you go to run TUV-x after it has been built, make sure you have the correct environment modules loaded:
-
-```
-module purge
-module load gnu/11.2.0
-module load ncarenv/1.3
-module load ncarcompilers/0.5.0
-module load cmake/3.22.0
-module load netcdf/4.8.1
-```
+- Whenever you go to run TUV-x after it has been built, make sure you have the correct environment modules loaded.
+  Look at the top of the build script you used to find the modules required.
 
 - Run a test. The tests use the python numpy package, and we access this through the conda environment module on CASPER:
 

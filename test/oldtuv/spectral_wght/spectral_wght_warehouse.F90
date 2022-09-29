@@ -9,8 +9,14 @@
 module micm_spectral_wght_warehouse
 
   use micm_abs_spectral_wght_type,     only : abs_spectral_wght_ptr
+    use micm_environment, only : environment_t
+  use micm_spectral_wght_factory,      only : spectral_wght_builder
   use musica_constants,                only : musica_dk, musica_ik
   use musica_string,                   only : string_t
+    use musica_config,                 only : config_t
+    use musica_iterator,               only : iterator_t
+    use musica_constants,              only : musica_rk
+    use musica_assert,                 only : die_msg
 
   implicit none
 
@@ -43,11 +49,6 @@ contains
   !> Constructor of spectral_wght_t objects
   function constructor( config,mdlLambdaEdge ) result( spectral_wght_warehouse_obj )
 
-    use musica_config,                 only : config_t
-    use musica_iterator,               only : iterator_t
-    use musica_constants,              only : musica_rk
-    use musica_assert,                 only : die_msg
-    use micm_spectral_wght_factory,    only : spectral_wght_builder
 
     real(musica_dk), intent(in)      :: mdlLambdaEdge(:)
     !> spectral wght configuration data
@@ -116,7 +117,6 @@ contains
   !> Update the object for new environmental conditions
   subroutine update_for_new_environmental_state( this, environment, nwave )
 
-    use micm_environment, only : environment_t
     use musica_assert,    only : die_msg
 
     !> Kinetics

@@ -53,7 +53,6 @@ contains
 
     use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
-    use musica_constants,              only : musica_dk
     use musica_string,                 only : string_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t

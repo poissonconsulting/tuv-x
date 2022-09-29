@@ -36,7 +36,6 @@ contains
 
     ! local variables
     integer  :: n
-    logical  :: found
     real(dk) :: Lower_val, Upper_val, Delta_val
     character(len=*), parameter :: Iam = 'EqualDelta grid initialize: '
     type(grid_equal_delta_t), pointer  :: this

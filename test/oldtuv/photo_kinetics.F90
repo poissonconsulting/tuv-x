@@ -13,6 +13,12 @@ module micm_photo_kinetics
   use micm_abs_quantum_yield_type,     only : abs_quantum_yield_ptr
   use musica_constants,                only : musica_dk, musica_ik
   use musica_string,                   only : string_t
+    use musica_config,                 only : config_t
+    use musica_iterator,               only : iterator_t
+    use musica_constants,              only : musica_rk
+    use musica_assert,                 only : die_msg
+    use micm_cross_section_factory,    only : cross_section_builder
+    use micm_quantum_yield_factory,    only : quantum_yield_builder
 
   implicit none
 
@@ -48,12 +54,6 @@ contains
   !> Constructor of photo_kinetics_t objects
   function constructor( config,mdlLambdaEdge ) result( new_photo_kinetics_obj )
 
-    use musica_config,                 only : config_t
-    use musica_iterator,               only : iterator_t
-    use musica_constants,              only : musica_rk
-    use musica_assert,                 only : die_msg
-    use micm_cross_section_factory,    only : cross_section_builder
-    use micm_quantum_yield_factory,    only : quantum_yield_builder
 
     real(musica_dk), intent(in)      :: mdlLambdaEdge(:)
     !> Kinetics configuration data
@@ -183,11 +183,11 @@ contains
 
     allocate(quantum_yield_tray(0))
     do ndx = 1, size(this%quantum_yield_objs_)
-      associate( calc_ftn => this%quantum_yield_objs_(ndx)%val_ )
-        if( .not. associated(calc_ftn) ) then
+      associate( calc_ftn => this%quantum_yield_objs_(ndx) )
+        if( .not. associated(calc_ftn%val_) ) then
           call die_msg( 200000009,Iam//'quantum yield is NOT associated!!!' )
         endif
-        a_quantum_yield = calc_ftn%calculate( environment )
+        a_quantum_yield = calc_ftn%val_%calculate( environment )
       end associate
       quantum_yield_tray = [quantum_yield_tray,a_quantum_yield]
     end do

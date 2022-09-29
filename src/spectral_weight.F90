@@ -5,7 +5,6 @@ module tuvx_spectral_weight
   ! The spectral_weight type and related functions
 
   use musica_constants,       only : dk => musica_dk
-  use musica_constants,       only : ik => musica_ik
   use musica_config,          only : config_t
   use tuvx_grid_warehouse,    only : grid_warehouse_t
   use tuvx_profile_warehouse, only : profile_warehouse_t
@@ -90,7 +89,6 @@ contains
     use tuvx_interpolate,              only : interpolator_conserving_t
     use tuvx_grid,                     only : grid_t
     use tuvx_netcdf,                   only : netcdf_t
-    use tuvx_profile,                  only : profile_t
 
     class(spectral_weight_t),  pointer       :: this   ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
     type(config_t),            intent(inout) :: config ! Spectral weight configuration data
@@ -169,9 +167,6 @@ contains
       result( spectral_weight )
     ! Calculate the spectral wght for a given set of environmental conditions
 
-    use musica_string,                   only : string_t
-    use tuvx_grid,                       only : grid_t
-
     class(spectral_weight_t),  intent(in)     :: this ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
@@ -210,7 +205,6 @@ contains
     type(string_t)  :: addpnt_type
     type(config_t)  :: extrap_config
     logical         :: found
-    character(len=:), allocatable :: number
     type(string_t) :: required_keys(1), optional_keys(1)
 
     required_keys(1) = "type"

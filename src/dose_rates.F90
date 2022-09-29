@@ -68,14 +68,11 @@ contains
     ! Local variables
     character(len=*), parameter :: Iam = "dose_rates_t constructor"
 
-    integer        :: nRates
     type(config_t) :: wght_config, spectral_weight_config
     class(iterator_t), pointer  :: iter
-    type(spectral_weight_ptr)   :: spectral_weight_ptr
+    type(spectral_weight_ptr)   :: spectral_weight
     character(len=64)           :: keychar
-    type(string_t)              :: netcdfFile, Object
     type(string_t)              :: wght_key
-    type(string_t), allocatable :: netcdfFiles(:)
 
     allocate( dose_rates )
 
@@ -94,11 +91,11 @@ contains
 
       ! get spectral wght
       call wght_config%get( "weights", spectral_weight_config, Iam )
-      spectral_weight_ptr%val_ => &
+      spectral_weight%val_ => &
          spectral_weight_builder( spectral_weight_config, grid_warehouse,     &
                                   profile_warehouse )
       rates%spectral_weights_ = [ rates%spectral_weights_,                    &
-                                  spectral_weight_ptr ]
+                                  spectral_weight ]
     end do
     deallocate( iter )
 
@@ -112,8 +109,6 @@ contains
       dose_rates, file_tag )
     ! calculates dose rate constants
 
-    use musica_assert,                 only : die_msg
-    use tuvx_constants,                only : hc
     use tuvx_diagnostic_util,          only : diagout
     use tuvx_solver,                   only : radiation_field_t
 
@@ -308,10 +303,10 @@ rate_loop:                                                                    &
       call musica_mpi_unpack( buffer, position, n_elems, comm )
       allocate( this%spectral_weights_( n_elems ) )
       do i_elem = 1, n_elems
-      associate( weight => this%spectral_weights_( i_elem )%val_ )
+      associate( weight => this%spectral_weights_( i_elem ) )
         call type_name%mpi_unpack( buffer, position, comm )
-        weight => spectral_weight_allocate( type_name )
-        call weight%mpi_unpack( buffer, position, comm )
+        weight%val_ => spectral_weight_allocate( type_name )
+        call weight%val_%mpi_unpack( buffer, position, comm )
       end associate
       end do
     end if

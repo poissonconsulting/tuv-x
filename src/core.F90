@@ -6,10 +6,8 @@ module tuvx_core
 
   use musica_config,                   only : config_t
   use musica_string,                   only : string_t
-  use musica_assert,                   only : assert
   use musica_constants,                only : dk => musica_dk
   use tuvx_grid_warehouse,             only : grid_warehouse_t
-  use tuvx_grid,                       only : grid_t
   use tuvx_profile_warehouse,          only : profile_warehouse_t
   use tuvx_spherical_geometry,         only : spherical_geometry_t
   use tuvx_la_sr_bands,                only : la_sr_bands_t
@@ -58,7 +56,6 @@ contains
     ! Constructor of TUV-x core objects
 
     use musica_assert,                 only : assert_msg
-    use musica_iterator,               only : iterator_t
     use musica_string,                 only : string_t
     use tuvx_diagnostic_util,          only : diagout
     use tuvx_diagnostic_util,          only : prepare_diagnostic_output
@@ -71,11 +68,8 @@ contains
 
     ! Local variables
     character(len=*), parameter :: Iam = 'Photolysis core constructor: '
-    character(len=32)           :: keyChar
     logical                     :: found
-    type(string_t)              :: keyString
     type(config_t)              :: core_config, child_config
-    class(iterator_t), pointer  :: iter
     class(profile_t),  pointer  :: aprofile
     type(string_t)              :: required_keys(4), optional_keys(3)
 
@@ -174,8 +168,8 @@ contains
     ! Performs calculations for specified photolysis and dose rates for a
     ! given set of conditions
 
+    use musica_string,                   only : string_t
     use tuvx_profile,                    only : profile_t
-    use tuvx_radiator_warehouse,         only : radiator_warehouse_t
     use tuvx_radiator,                   only : radiator_t
     use tuvx_solver,                     only : radiation_field_t
     use tuvx_diagnostic_util,            only : diagout
@@ -195,6 +189,7 @@ contains
     ! dose rates (vertical level, dose rate type)
     real(dk), allocatable             :: dose_rates(:,:)
     character(len=2)                  :: number
+    type(string_t)                    :: file_path
     class(profile_t),         pointer :: solar_zenith_angles => null( )
     class(radiator_t),        pointer :: radiator => null()
     class(radiation_field_t), pointer :: radiation_field => null( )
@@ -258,13 +253,14 @@ contains
 
     ! output photolysis rate constants
     if( associated( this%photolysis_rates_ ) ) then
-      call this%output_photolysis_rate_constants( all_photo_rates,            &
-                                              "photolysis_rate_constants.nc" )
+      file_path = "photolysis_rate_constants.nc"
+      call this%output_photolysis_rate_constants( all_photo_rates, file_path )
     end if
 
     ! output dose rates
     if( associated( this%dose_rates_ ) ) then
-      call this%output_dose_rates( all_dose_rates, "dose_rates.nc" )
+      file_path = "dose_rates.nc"
+      call this%output_dose_rates( all_dose_rates, file_path )
     end if
 
     ! diagnostic output
@@ -285,21 +281,25 @@ contains
     ! Outputs calculated photolysis rate constants
 
     use musica_assert,                 only : assert
-    use nc4fortran,                    only : netcdf_file
+    use musica_io,                     only : io_t
+    use musica_io_netcdf,              only : io_netcdf_t
+    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_netcdf,                   only : clean_string
     use tuvx_profile,                  only : profile_t
 
     class(core_t),    intent(in) :: this          ! TUV-x core
     real(dk),         intent(in) :: values(:,:,:) ! Photolysis rate constants (time, vertical level, reaction)
-    character(len=*), intent(in) :: file_path     ! File path to output to
+    type(string_t),   intent(in) :: file_path     ! File path to output to
 
-    type(netcdf_file)           :: output_file
+    character(len=*), parameter :: Iam = "photolysis output"
+    class(io_t),        pointer :: out_file
     integer                     :: i_rxn
-    type(string_t)              :: nc_name
+    type(string_t)              :: var_name, dim_names(2), units
     type(string_t), allocatable :: rxn_names(:)
     class(profile_t),   pointer :: sza
     class(grid_t),      pointer :: time, vertical
+    integer                     :: stat
 
     call assert( 337750978, associated( this%photolysis_rates_ ) )
     sza => this%profile_warehouse_%get_profile( "solar zenith angle",         &
@@ -315,24 +315,44 @@ contains
                  size( values, 2 ) .eq. size( vertical%edge_ ) )
     call assert( 266929622,                                                   &
                  size( values, 3 ) .eq. size( rxn_names ) )
-    call output_file%open( file_path, action='w' )
-    call output_file%write( "altitude", vertical%edge_,                       &
-                            (/ "vertical_level" /) )
-    call output_file%write_attribute( "altitude", "units", "km" )
-    call output_file%write( "time", time%edge_, (/ "time" /) )
-    call output_file%write_attribute( "time", "units", "hr" )
-    call output_file%write( "solar zenith angle", sza%edge_val_, (/ "time" /) )
-    call output_file%write_attribute( "solar zenith angle", "units",          &
-                                      "degrees" )
+
+    ! Remove any existing file with the same name
+    open( unit = 16, iostat = stat, file = file_path%to_char( ),              &
+          status = 'old' )
+    if( stat == 0 ) close( 16, status = 'delete' )
+
+    out_file => io_netcdf_t( file_path )
+
+    var_name = "altitude"
+    dim_names(1) = "vertical_level"
+    units = "km"
+    call out_file%write( var_name, dim_names(1), vertical%edge_, Iam )
+    call out_file%set_variable_units( var_name, units, Iam )
+
+    var_name = "time"
+    dim_names(1) = "time"
+    units = "hr"
+    call out_file%write( var_name, dim_names(1), time%edge_, Iam )
+    call out_file%set_variable_units( var_name, units, Iam )
+
+    var_name = "solar zenith angle"
+    dim_names(1) = "time"
+    units = "degrees"
+    call out_file%write( var_name, dim_names(1), sza%edge_val_, Iam )
+    call out_file%set_variable_units( var_name, units, Iam )
+
+    dim_names(1) = "time"
+    dim_names(2) = "vertical_level"
+    units = "s-1"
     do i_rxn = 1, size( rxn_names )
-      nc_name = clean_string( rxn_names( i_rxn ) )
-      call output_file%write( nc_name%to_char( ), values( :, :, i_rxn ),      &
-                              (/ "time          ", "vertical_level" /) )
+      var_name = clean_string( rxn_names( i_rxn ) )
+      call out_file%write( var_name, dim_names, values( :, :, i_rxn ), Iam )
+      call out_file%set_variable_units( var_name, units, Iam )
     end do
-    call output_file%close( )
     deallocate( sza )
     deallocate( time )
     deallocate( vertical )
+    deallocate( out_file )
 
   end subroutine output_photolysis_rate_constants
 
@@ -342,21 +362,24 @@ contains
     ! Outputs calculated dose rates
 
     use musica_assert,                 only : assert
-    use nc4fortran,                    only : netcdf_file
+    use musica_io,                     only : io_t
+    use musica_io_netcdf,              only : io_netcdf_t
     use tuvx_grid,                     only : grid_t
     use tuvx_netcdf,                   only : clean_string
     use tuvx_profile,                  only : profile_t
 
     class(core_t),    intent(in) :: this          ! TUV-x core
     real(dk),         intent(in) :: values(:,:,:) ! Dose rates (time, vertical level, dose rate type)
-    character(len=*), intent(in) :: file_path     ! File path to output to
+    type(string_t),   intent(in) :: file_path     ! File path to output to
 
-    type(netcdf_file)           :: output_file
+    character(len=*), parameter :: Iam = "photolysis output"
+    class(io_t),        pointer :: out_file
     integer                     :: i_rate
-    type(string_t)              :: nc_name
+    type(string_t)              :: var_name, dim_names(2), units
     type(string_t), allocatable :: rate_names(:)
     class(profile_t),   pointer :: sza
     class(grid_t),      pointer :: time, vertical
+    integer                     :: stat
 
     call assert( 337750978, associated( this%dose_rates_ ) )
     sza => this%profile_warehouse_%get_profile( "solar zenith angle",         &
@@ -372,24 +395,43 @@ contains
                  size( values, 2 ) .eq. size( vertical%edge_ ) )
     call assert( 266929622,                                                   &
                  size( values, 3 ) .eq. size( rate_names ) )
-    call output_file%open( file_path, action='w' )
-    call output_file%write( "altitude", vertical%edge_,                       &
-                            (/ "vertical_level" /) )
-    call output_file%write_attribute( "altitude", "units", "km" )
-    call output_file%write( "time", time%edge_, (/ "time" /) )
-    call output_file%write_attribute( "time", "units", "hr" )
-    call output_file%write( "solar zenith angle", sza%edge_val_, (/ "time" /) )
-    call output_file%write_attribute( "solar zenith angle", "units",          &
-                                      "degrees" )
+
+    ! Remove any existing file with the same name
+    open( unit = 16, iostat = stat, file = file_path%to_char( ),              &
+          status = 'old' )
+    if( stat == 0 ) close( 16, status = 'delete' )
+
+    out_file => io_netcdf_t( file_path )
+
+    var_name = "altitude"
+    dim_names(1) = "vertical_level"
+    units = "km"
+    call out_file%write( var_name, dim_names(1), vertical%edge_, Iam )
+    call out_file%set_variable_units( var_name, units, Iam )
+
+    var_name = "time"
+    dim_names(1) = "time"
+    units = "hr"
+    call out_file%write( var_name, dim_names(1), time%edge_, Iam )
+    call out_file%set_variable_units( var_name, units, Iam )
+
+    var_name = "solar zenith angle"
+    dim_names(1) = "time"
+    units = "degrees"
+    call out_file%write( var_name, dim_names(1), sza%edge_val_, Iam )
+    call out_file%set_variable_units( var_name, units, Iam )
+
+    dim_names(1) = "time"
+    dim_names(2) = "vertical_level"
     do i_rate = 1, size( rate_names )
-      nc_name = clean_string( rate_names( i_rate ) )
-      call output_file%write( nc_name%to_char( ), values( :, :, i_rate ),     &
-                              (/ "time          ", "vertical_level" /) )
+      var_name = clean_string( rate_names( i_rate ) )
+      call out_file%write( var_name, dim_names, values( :, :, i_rate ), Iam )
     end do
-    call output_file%close( )
+
     deallocate( sza )
     deallocate( time )
     deallocate( vertical )
+    deallocate( out_file )
 
   end subroutine output_dose_rates
 

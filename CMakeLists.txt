@@ -1,10 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
-
-################################################################################
-# set compiler flags for specific build types
-
-set(CMAKE_Fortran_FLAGS_DEBUG "-g -fcheck=bounds,do,pointer -ffpe-trap=zero,overflow,invalid" CACHE STRING "")
-set(CMAKE_Fortran_FLAGS_COVERAGE "-g -fprofile-arcs -ftest-coverage -fprofile-abs-path -fcheck=bounds,do,pointer -ffpe-trap=zero,overflow,invalid" CACHE STRING "")
+set(CMAKE_USER_MAKE_RULES_OVERRIDE "set_defaults.cmake")
 
 ################################################################################
 # project
@@ -19,6 +14,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake-modules)
 
 option(ENABLE_COVERAGE "Enable code coverage output" ON)
 option(ENABLE_MPI "Enable MPI parallel support" OFF)
+option(ENABLE_MEMCHECK "Enable memory checking in tests" ON)
 
 ################################################################################
 # MPI
@@ -84,23 +80,6 @@ find_library(NETCDF_FORTRAN_LIB netcdff
     /opt/local/lib)
 set(NETCDF_LIBS ${NETCDF_LIB} ${NETCDF_FORTRAN_LIB})
 include_directories(${NETCDF_INCLUDE_DIR})
-
-################################################################################
-# nc4fortran library
-
-find_path(NC4F_INCLUDE_DIR nc4fortran.mod
-  DOC "nc4fortran include directory (must contain nc4fortran.mod and related *.smod files)"
-  PATHS
-    /usr/lib/gfortran/modules
-    /usr/lib64/gfortran/modules
-    /usr/local/include
-    /opt/local/include)
-find_library(NC4F_LIB nc4fortran
-  DOC "nc4fortran library"
-  PATHS
-    /usr/local/lib
-    /opt/local/lib)
-include_directories(${NC4F_INCLUDE_DIR})
 
 ################################################################################
 # musica-core library

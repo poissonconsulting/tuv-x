@@ -12,7 +12,7 @@ program radXfer_test
 
   implicit none
 
-  class(radXfer_core_t), pointer :: radXfer_core
+  class(radXfer_core_t), pointer :: core
 
   !> Command-line options
   character(len=256) :: argument
@@ -24,12 +24,12 @@ program radXfer_test
   configFileSpec = argument
 
   !> instatiate and initialize radXfer core object
-  radXfer_core => radXfer_core_t( configFileSpec )
+  core => radXfer_core_t( configFileSpec )
 
   !> set radXfer cross sections
-  call radXfer_core%test()
+  call core%test()
 
-  deallocate( radXfer_core )
+  deallocate( core )
 
   contains
 

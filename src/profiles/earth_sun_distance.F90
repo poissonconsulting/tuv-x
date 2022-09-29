@@ -33,7 +33,7 @@ contains
   function constructor( config, grid_warehouse ) result ( this )
     ! Initialize distance between sun, earth in AU
 
-    use musica_assert,                 only : assert_msg, die_msg
+    use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
@@ -46,11 +46,10 @@ contains
 
     ! Local variables
     real(dk), parameter :: NINETY  = 90._dk
-    integer :: n, tNdx
+    integer :: tNdx
     integer :: Year, Month, Day
     integer :: Jday
     real(dk)    :: tmzone, ut, soldst
-    real(dk)    :: Lon, Lat
     character(len=*), parameter :: Iam = 'earth sun distance initialize: '
     class(grid_t), pointer :: timeGrid
     type(string_t) :: required_keys(5), optional_keys(2)

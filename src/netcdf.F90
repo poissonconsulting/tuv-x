@@ -4,7 +4,6 @@
 module tuvx_netcdf
   ! NetCDF I/O class
 
-  use nc4fortran,                      only : netcdf_file
   use musica_constants,                only : musica_dk
 
   implicit none
@@ -29,6 +28,11 @@ contains
   subroutine run( this, file_path, variable_name )
     ! Reads data from a NetCDF file
 
+    use musica_assert,                    only : assert_msg
+    use musica_io,                        only : io_t
+    use musica_io_netcdf,                 only : io_netcdf_t
+    use musica_string,                    only : string_t
+
     class(netcdf_t), intent(inout) :: this
     character(len=*), intent(in)   :: file_path
     character(len=*), intent(in)   :: variable_name
@@ -36,51 +40,40 @@ contains
     integer, parameter :: noErr = 0
     character(len=*), parameter :: Iam = "read_netcdf_file: "
 
-    integer :: stat, nLambda
-    integer, allocatable :: dims(:)
-    character(:), allocatable :: varName
-    type(netcdf_file) :: ncObj
+    class(io_t), pointer :: nc_file
+    integer :: nLambda
+    type(string_t) :: var_name
+    type(string_t) :: file_path_str
 
     !  open the netcdf file
-    call ncObj%initialize( file_path, ierr = stat, action = 'r' )
-    if( stat /= noErr ) then
-      write(*,*) Iam, 'retcode from initialize = ', stat
-      stop 3
-    endif
+    file_path_str = file_path
+    nc_file => io_netcdf_t( file_path_str, read_only = .true. )
 
     !  parameter array must be in netcdf file, read it
-    varName = trim( variable_name ) // 'parameters'
-    if( ncObj%exist( varName ) ) then
-      call ncObj%shape( varName, dims )
-      nLambda = dims(1)
-      ! read input parameters array
-      allocate( this%parameters( dims(1), dims(2) ) )
-      call ncObj%read( varName, this%parameters )
-    else
-      write(*,*) Iam, ' variable ', trim( varName ), ' not in netcdf file'
-      stop 3
+    var_name = trim( variable_name ) // 'parameters'
+    call assert_msg( 118377216, nc_file%exists( var_name, Iam ),              &
+                     "NetCDF file '"//file_path//"' must have a "//           &
+                     "'parameters' variable." )
+    call nc_file%read( var_name, this%parameters, Iam )
+    nLambda = size( this%parameters, 1 )
+
+    ! if it exists, read wavelength array
+    var_name = 'wavelength'
+    if( nc_file%exists( var_name, Iam ) ) then
+      call nc_file%read( var_name, this%wavelength, Iam )
+      call assert_msg( 944197086, size( this%wavelength, 1 ) == nLambda,      &
+                       "Wavelength and parameters array size mismatch in '"// &
+                       file_path//"'" )
     endif
 
-    !  if it exists, read wavelength array
-    if( ncObj%exist( 'wavelength' ) ) then
-      call ncObj%shape( 'wavelength', dims )
-      if( dims(1) /= nLambda ) then
-        write(*,*) Iam, ' wavelength, parameters array size mismatch'
-        stop 3
-      endif
-      allocate( this%wavelength( dims(1) ) )
-      call ncObj%read( 'wavelength', this%wavelength )
-    endif
-
-    !  if it exists, read temperature array
-    if( ncObj%exist( 'temperature' ) ) then
-      call ncObj%shape( 'temperature', dims )
-      allocate( this%temperature( dims(1) ) )
-      call ncObj%read( 'temperature', this%temperature )
+    ! if it exists, read temperature array
+    var_name = 'temperature'
+    if( nc_file%exists( var_name, Iam ) ) then
+      call nc_file%read( var_name, this%temperature, Iam )
     endif
 
     !  close the netcdf file
-    call ncObj%finalize( )
+    deallocate( nc_file )
 
   end subroutine run
 

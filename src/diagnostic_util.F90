@@ -45,7 +45,7 @@ contains
     logical, optional :: enable_output ! Enables diagnostic output
 
     if (output_enabled( enable_output )) then
-      call system( "mkdir -p output"  )
+      call execute_command_line( "mkdir -p output"  )
     endif
 
   end subroutine prepare_diagnostic_output

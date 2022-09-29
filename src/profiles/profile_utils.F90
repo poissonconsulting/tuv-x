@@ -19,7 +19,9 @@ module tuvx_profile_utils
   ! - p. A12: approximation to sunrise/set times
   ! - p. B61: solar elevation ("altitude") and azimuth
   ! - p. B62: refraction correction
-  ! - p. C24: mean longitude, mean anomaly, ecliptic longitude, obliquity of ecliptic, right ascension, declination, Earth-Sun distance, angular diameter of Sun
+  ! - p. C24: mean longitude, mean anomaly, ecliptic longitude,
+  !           obliquity of ecliptic, right ascension, declination,
+  !           Earth-Sun distance, angular diameter of Sun
   ! - p. L2:  Greenwich mean sidereal time (ignoring T^2, T^3 terms)
   ! 
   ! These two functions calculate the local solar azimuth and
@@ -62,7 +64,6 @@ contains
     integer(ik)              :: julianday ! The `Julian day <https://en.wikipedia.org/wiki/Julian_day>`_
 
     !> Local variables
-    integer(ik) :: m
     integer(ik) :: dayofyear
     integer(ik), allocatable :: daysinmonth(:)
 
@@ -297,9 +298,7 @@ contains
                             obliquity             ! the obliquity
 
     !> local variables
-    real(dk) :: dec, & ! declination (radians)
-                eclong, oblqec
-    !                    ** declination
+    real(dk) :: dec ! declination (radians)
     dec  = asin( sin( obliquity )*sin( ecliptic_longitude ) )
 
   end function calculate_declination
@@ -331,7 +330,6 @@ contains
     real(dk), intent(in)    ::  mean_anomaly, mean_long
 
     !> local variables
-    real(dk)            ::  solar_elevation
     real(dk), parameter :: three60 = 360._dk
     real(dk), parameter :: rzero   = 0._dk
     real(dk), parameter :: rtwo    = 2._dk

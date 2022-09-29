@@ -6,9 +6,6 @@ module tuvx_radiator_warehouse
 ! :f:type:`~tuvx_radiator/radiator_t`'s built by the
 ! :f:mod:`~tuvx_radiator_factory`.
 
-
-  use musica_constants,                only : musica_dk
-  use musica_iterator,                 only : iterator_t
   use musica_string,                   only : string_t
   use tuvx_radiator,                   only : radiator_ptr
 
@@ -74,7 +71,6 @@ contains
   function constructor( config, grid_warehouse ) result( radiator_warehouse )
     ! Constructs radiator_warehouse_t abjects
 
-    use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
     use musica_string,                 only : string_t
@@ -86,11 +82,12 @@ contains
     class(radiator_warehouse_t), pointer :: radiator_warehouse ! A :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
 
     ! local variables
-    character(len=*), parameter :: Iam = "Radiator warehouse constructor: "
-    integer                     :: ndx
-    type(config_t)              :: radiator_config
-    class(iterator_t), pointer  :: iter
-    type(radiator_ptr)          :: aRadiator
+    character(len=*), parameter     :: Iam = "Radiator warehouse constructor"
+    type(config_t)                  :: radiator_config
+    class(iterator_t), pointer      :: iter
+    type(radiator_ptr), allocatable :: temp_rads(:)
+    type(radiator_ptr)              :: aRadiator
+    type(string_t), allocatable     :: temp_names(:)
 
     allocate( radiator_warehouse )
     allocate( radiator_warehouse%radiators_(0) )
@@ -102,10 +99,22 @@ contains
 
       ! build and store the radiator
       aRadiator%val_ => radiator_builder( radiator_config, grid_warehouse )
-      radiator_warehouse%radiators_ =                                         &
-          [ radiator_warehouse%radiators_, aRadiator ]
-      radiator_warehouse%handle_ =                                            &
-          [ radiator_warehouse%handle_, aRadiator%val_%handle_ ]
+
+      temp_names = radiator_warehouse%handle_
+      deallocate( radiator_warehouse%handle_ )
+      allocate( radiator_warehouse%handle_( size( temp_names ) + 1 ) )
+      radiator_warehouse%handle_( 1 : size( temp_names ) ) = temp_names(:)
+      radiator_warehouse%handle_( size( temp_names ) + 1 ) =                  &
+          aRadiator%val_%handle_
+      deallocate( temp_names )
+
+      temp_rads = radiator_warehouse%radiators_
+      deallocate( radiator_warehouse%radiators_ )
+      allocate( radiator_warehouse%radiators_( size( temp_rads ) + 1 ) )
+      radiator_warehouse%radiators_( 1 : size( temp_rads ) ) = temp_rads(:)
+      radiator_warehouse%radiators_( size( temp_rads ) + 1 ) = aRadiator
+      deallocate( temp_rads )
+      nullify( aRadiator%val_ )
     end do
     deallocate( iter )
 
@@ -152,7 +161,6 @@ contains
     !
     ! If the radiator is not found, returns -1
 
-    use tuvx_radiator,                 only : radiator_t
     use musica_string,                 only : string_t
 
     class(radiator_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
@@ -200,7 +208,6 @@ contains
     ! Returns whether a radiator exists in the warehouse
 
     use musica_string,      only : string_t
-    use musica_assert,      only : die_msg
 
     class(radiator_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
     type(string_t),              intent(in)    :: radiator_handle ! Name associated with requested radiator
@@ -364,10 +371,10 @@ contains
     allocate( this%radiators_( n_radiators ) )
     allocate( this%handle_(   n_radiators ) )
     do i_radiator = 1, n_radiators
-    associate( radiator => this%radiators_( i_radiator )%val_ )
+    associate( radiator => this%radiators_( i_radiator ) )
       call type_name%mpi_unpack( buffer, position, comm )
-      radiator => radiator_allocate( type_name )
-      call radiator%mpi_unpack( buffer, position, comm )
+      radiator%val_ => radiator_allocate( type_name )
+      call radiator%val_%mpi_unpack( buffer, position, comm )
       call this%handle_( i_radiator )%mpi_unpack( buffer, position, comm )
     end associate
     end do

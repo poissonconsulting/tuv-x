@@ -30,8 +30,6 @@ module tuvx_photolysis_rates
     procedure :: get
     ! Returns the names of each photolysis reaction
     procedure :: labels
-    ! Outputs photolysis rate constants to a NetCDF file
-    procedure :: output
     ! Returns the number of bytes required to pack the rates onto a buffer
     procedure :: pack_size
     ! Packs the rates onto a character buffer
@@ -75,7 +73,6 @@ contains
     !> Local variables
     character(len=*), parameter :: Iam = "photolysis_rates_t constructor"
 
-    integer        :: nRates
     real(dk)       :: rate_aliasing_factor
     type(config_t) :: reaction_config
     type(config_t) :: cross_section_config, quantum_yield_config
@@ -83,9 +80,7 @@ contains
     type(cross_section_ptr) :: a_cross_section_ptr
     type(quantum_yield_ptr) :: a_quantum_yield_ptr
     character(len=64)           :: keychar
-    type(string_t)              :: netcdfFile, Object
     type(string_t)              :: reaction_key
-    type(string_t), allocatable :: netcdfFiles(:)
 
     allocate( photolysis_rates )
 
@@ -179,8 +174,7 @@ contains
     real(dk), allocatable :: quantum_yield(:,:)
     real(dk), allocatable :: xsqy(:,:)
     real(dk), allocatable :: actinicFlux(:,:)
-    type(string_t)        :: Handle, annotatedRate
-    character(len=64)     :: jlabel
+    type(string_t)        :: annotatedRate
     character(len=64), allocatable :: annotatedjlabel(:)
     class(grid_t),    pointer :: zGrid => null()
     class(grid_t),    pointer :: lambdaGrid => null()
@@ -281,37 +275,6 @@ rate_loop:                                                                    &
     labels = this%handles_
 
   end function labels
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  !> Outputs photolysis rate constants to a NetCDF file
-  subroutine output( this, rate_constants, file_path )
-
-    use musica_assert,                 only : assert_msg
-    use nc4fortran,                    only : netcdf_file
-
-    !> Photolysis rate calculator
-    class(photolysis_rates_t), intent(in) :: this
-    !> Photolysis rate constants to output (vertical level, photo reaction)
-    real(dk),                  intent(in) :: rate_constants(:,:)
-    !> File path to output to
-    character(len=*),          intent(in) :: file_path
-
-    type(netcdf_file) :: output_file
-    integer :: i_rxn
-
-    call assert_msg( 329279063,                                               &
-                     size( this%handles_ ) .eq. size( rate_constants, 2 ),    &
-                     "Size mismatch in outputting photolysis rate constants" )
-    call output_file%open( file_path, action='w' )
-    do i_rxn = 1, size( this%handles_ )
-      call output_file%write( this%handles_( i_rxn )%val_,                    &
-                              rate_constants( :, i_rxn ),                     &
-                              (/ "vertical_level" /) )
-    end do
-    call output_file%close( )
-
-  end subroutine output
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -457,10 +420,10 @@ rate_loop:                                                                    &
       call musica_mpi_unpack( buffer, position, n_elems, comm )
       allocate( this%cross_sections_( n_elems ) )
       do i_elem = 1, n_elems
-      associate( cross_section => this%cross_sections_( i_elem )%val_ )
+      associate( cross_section => this%cross_sections_( i_elem ) )
         call type_name%mpi_unpack(     buffer, position, comm )
-        cross_section => cross_section_allocate( type_name )
-        call cross_section%mpi_unpack( buffer, position, comm )
+        cross_section%val_ => cross_section_allocate( type_name )
+        call cross_section%val_%mpi_unpack( buffer, position, comm )
       end associate
       end do
     end if
@@ -469,10 +432,10 @@ rate_loop:                                                                    &
       call musica_mpi_unpack( buffer, position, n_elems, comm )
       allocate( this%quantum_yields_( n_elems ) )
       do i_elem = 1, n_elems
-      associate( quantum_yield => this%quantum_yields_( i_elem )%val_ )
+      associate( quantum_yield => this%quantum_yields_( i_elem ) )
         call type_name%mpi_unpack(     buffer, position, comm )
-        quantum_yield => quantum_yield_allocate( type_name )
-        call quantum_yield%mpi_unpack( buffer, position, comm )
+        quantum_yield%val_ => quantum_yield_allocate( type_name )
+        call quantum_yield%val_%mpi_unpack( buffer, position, comm )
       end associate
       end do
     end if

@@ -85,8 +85,6 @@ contains
     ! Returns the size of a character buffer required to pack the radiator
     ! state
 
-    use musica_mpi, only : musica_mpi_pack_size
-
     class(solver_t),   intent(in) :: this ! solver state to be packed
     integer,           intent(in) :: comm ! MPI communicator
 
@@ -102,9 +100,6 @@ contains
   subroutine solver_pack( this, buffer, position, comm )
     ! Packs the radiator state onto a character buffer
 
-    use musica_assert, only : assert
-    use musica_mpi,    only : musica_mpi_pack
-
     class(solver_t), intent(in)    :: this              ! solver state to be packed
     character,               intent(inout) :: buffer(:) ! memory buffer
     integer,                 intent(inout) :: position  ! current buffer position
@@ -119,9 +114,6 @@ contains
 
   subroutine solver_unpack( this, buffer, position, comm )
     ! Unpacks a radiator state from a character buffer
-
-    use musica_assert, only : assert
-    use musica_mpi,    only : musica_mpi_pack
 
     class(solver_t),         intent(out)   :: this      ! solver state to be packed
     character,               intent(inout) :: buffer(:) ! memory buffer

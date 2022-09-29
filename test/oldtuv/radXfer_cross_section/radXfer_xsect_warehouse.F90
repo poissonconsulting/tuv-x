@@ -9,6 +9,7 @@
 module micm_radXfer_xsect_warehouse
 
   use micm_radXfer_abs_cross_section_type,     only : abs_cross_section_ptr
+  use micm_radXfer_cross_section_factory, only : cross_section_builder
   use musica_constants,                only : musica_dk, musica_ik
   use musica_string,                   only : string_t
 
@@ -47,7 +48,6 @@ contains
     use musica_iterator,               only : iterator_t
     use musica_constants,              only : musica_rk, musica_lk
     use musica_assert,                 only : die_msg
-    use micm_radXfer_cross_section_factory, only : cross_section_builder
     use micm_grid_warehouse,           only : grid_warehouse_t
     use micm_Profile_warehouse,        only : Profile_warehouse_t
 

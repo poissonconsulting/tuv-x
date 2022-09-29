@@ -18,7 +18,7 @@ module tuvx_cross_section_o3_tint
     real(dk) :: v185(1), v195(1), v345(1)
   contains
     !> Calculate the cross section
-    procedure :: calculate => run
+    procedure :: calculate
     !> Returns the number of bytes required to pack the cross section onto
     !> a buffer
     procedure :: pack_size
@@ -68,7 +68,6 @@ contains
     character(len=*), parameter :: Iam = 'o3 tint cross section constructor'
     character(len=*), parameter :: Hdr = 'cross_section_'
 
-    integer :: nmdlLambda
     integer :: parmNdx, fileNdx, Ndxl, Ndxu
     integer :: nParms, nTemps
     real(dk)              :: tmp
@@ -107,6 +106,7 @@ contains
     call assert_msg( 430013090, size( netcdfFiles ) .ge. 2,                   &
                      Iam//' must have at least two netcdf input files' )
     allocate( this%cross_section_parms( size( netcdfFiles ) ) )
+    allocate( refracNdx(0) )
 file_loop: &
     do fileNdx = 1, size( this%cross_section_parms )
       allocate( netcdf_obj )
@@ -126,6 +126,10 @@ file_loop: &
                        '  array must have 4 or more parameters' )
 
       ! refraction index
+      call assert_msg( 218168625, allocated( netcdf_obj%wavelength ),         &
+                       "Missing wavelengths in O3 temperature integrated "//  &
+                       "cross section data file '"//                          &
+                       netcdfFiles( fileNdx )//"'" )
       refracNdx = this%refraction( netcdf_obj%wavelength, refracDensity )
       netcdf_obj%wavelength = refracNdx * netcdf_obj%wavelength
 
@@ -196,11 +200,10 @@ file_loop: &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function run( this, grid_warehouse, profile_warehouse, at_mid_point )       &
+  function calculate( this, grid_warehouse, profile_warehouse, at_mid_point ) &
       result( cross_section )
     ! Calculate the cross section for a given set of environmental conditions
 
-    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile,                  only : profile_t
@@ -287,7 +290,7 @@ lambda_loop:                                                                  &
     deallocate( lambdaGrid )
     deallocate( mdlTemperature )
 
-  end function run
+  end function calculate
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

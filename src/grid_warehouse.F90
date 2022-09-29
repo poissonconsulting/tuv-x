@@ -75,7 +75,7 @@ contains
     character(len=*), parameter :: Iam = "Grid warehouse constructor: "
     type(config_t)              :: grid_config
     class(iterator_t), pointer  :: iter
-    class(grid_warehouse_t), pointer :: grid_warehouse_ptr
+    type(grid_ptr), allocatable :: temp_grids(:)
     type(grid_ptr)              :: grid_obj
     character(len=32)           :: keychar
     type(string_t)              :: aswkey
@@ -98,7 +98,13 @@ contains
                                                     grid_obj%val_%units( ) ), &
                        "Grid '"//grid_obj%val_%handle_//                      &
                        "' duplicated in grid warehouse." )
-      grid_warehouse%grids_ = [ grid_warehouse%grids_, grid_obj ]
+      temp_grids = grid_warehouse%grids_
+      deallocate( grid_warehouse%grids_ )
+      allocate( grid_warehouse%grids_( size( temp_grids ) + 1 ) )
+      grid_warehouse%grids_( 1 : size( temp_grids ) ) = temp_grids(:)
+      grid_warehouse%grids_( size( temp_grids ) + 1 ) = grid_obj
+      deallocate( temp_grids )
+      nullify( grid_obj%val_ )
     end do
     deallocate( iter )
 
@@ -110,7 +116,6 @@ contains
     ! Get copy of a grid object
 
     use musica_assert,                 only : assert_msg
-    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
 
     class(grid_warehouse_t), intent(inout) :: this     ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
@@ -161,8 +166,6 @@ contains
     ! checks if a grid exists in the warehouse
 
     use musica_assert,                 only : assert_msg
-    use musica_string,                 only : string_t
-    use tuvx_grid,                     only : grid_t
 
     class(grid_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     character(len=*),        intent(in)    :: name ! The name of a grid, see :ref:`configuration-grids` for grid names
@@ -189,7 +192,6 @@ contains
     ! checks if a grid exists in the warehouse
 
     use musica_string,                 only : string_t
-    use tuvx_grid,                     only : grid_t
 
     class(grid_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     type(string_t),          intent(in)    :: name ! The name of a grid, see :ref:`configuration-grids` for grid names
@@ -250,7 +252,7 @@ contains
     ! If the optional `found` flag is omitted, an error is returned if the
     ! grid does not exist in the warehouse.
 
-    use musica_assert,                 only : assert, assert_msg, die_msg
+    use musica_assert,                 only : assert_msg, die_msg
     use tuvx_grid_from_host,           only : grid_from_host_t, grid_updater_t
 
     class(grid_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
@@ -382,10 +384,10 @@ contains
     if( allocated( this%grids_ ) ) deallocate( this%grids_ )
     allocate( this%grids_( n_grids ) )
     do i_grid = 1, n_grids
-    associate( grid => this%grids_( i_grid )%val_ )
+    associate( grid => this%grids_( i_grid ) )
       call type_name%mpi_unpack( buffer, position, comm )
-      grid => grid_allocate( type_name )
-      call grid%mpi_unpack( buffer, position, comm )
+      grid%val_ => grid_allocate( type_name )
+      call grid%val_%mpi_unpack( buffer, position, comm )
     end associate
     end do
     call assert( 459962920, position - prev_pos <= this%pack_size( comm ) )

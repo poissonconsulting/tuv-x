@@ -5,7 +5,6 @@ module tuvx_spherical_geometry
   ! Calculates paths in a spherical geometry
 
       use musica_constants,            only : dk => musica_dk
-      use musica_string,               only : string_t
       use tuvx_constants,              only : radius, pi
 
       implicit none
@@ -86,7 +85,7 @@ contains
     real(dk), allocatable :: ze(:)
 
     integer :: nz ! number of specified altitude levels in the working grid
-    integer :: i, j, k
+    integer :: i, j
     integer :: id
     integer :: nlayer
     real(dk)    :: sinrad, zenrad, rpsinz, rj, rjp1, dsj, dhj, ga, gb, sm

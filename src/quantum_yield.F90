@@ -167,7 +167,6 @@ file_loop: &
     ! Uses the interpolated first quantum yield parameter as the quantum
     ! yield.
 
-    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
@@ -227,7 +226,6 @@ file_loop: &
     type(string_t)  :: addpnt_type
     type(config_t)  :: extrap_config
     logical         :: found
-    character(len=:), allocatable :: number
     type(string_t) :: required_keys(1), optional_keys(1)
 
     required_keys(1) = "type"

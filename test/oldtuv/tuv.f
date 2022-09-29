@@ -54,7 +54,6 @@
       use SPHERICAL_GEOM, only : sphers, airmas
       use MO_SWCHEM, only : swchem
       use micm_photo_kinetics, only : photo_kinetics_t
-      use micm_radXfer_xsect_warehouse, only : radXfer_xsect_warehouse_t
       use micm_spectral_wght_warehouse, only : spectral_wght_warehouse_t
       use micm_environment, only : environment_t
       use musica_constants, only : musica_dk, musica_rk
@@ -275,8 +274,6 @@
 * radiative transfer cross section object, config, environment
       type(environment_t)            :: environment
       type(config_t)                 :: radXfer_config
-      type(radXfer_xsect_warehouse_t), pointer :: 
-     $       radXfer_xsect_warehouse
 * photo rate config
       type(config_t)                  :: photo_rate_config
       type(photo_kinetics_t), pointer :: photo_kinetics

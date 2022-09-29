@@ -56,8 +56,7 @@ contains
     class(grid_t), pointer :: lambdaGrid
 
     integer  :: istat
-    integer  :: fileNdx, nFiles, ndx, nBins, nLines, Line
-    real(dk) :: zd, Value
+    integer  :: fileNdx, nFiles, nBins, nLines, Line
     real(dk), allocatable :: inputGrid(:), inputData(:), tmpinputGrid(:)
     real(dk), allocatable :: interpolatedEtfl(:)
     logical :: found

@@ -34,7 +34,7 @@ module tuvx_cross_section
     type(cross_section_parms_t), allocatable :: cross_section_parms(:)
   contains
     !> Calculate the cross section
-    procedure :: calculate => run
+    procedure :: calculate
     !> Add points to the cross section grid based on configuration data
     procedure :: add_points
     ! Returns the number of bytes needed to pack the cross section onto a
@@ -109,7 +109,6 @@ contains
     use tuvx_interpolate,              only : interpolator_conserving_t
     use tuvx_netcdf,                   only : netcdf_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
-    use tuvx_profile,                  only : profile_t
 
     class(cross_section_t),    pointer       :: new_obj ! A :f:type:`~tuvx_cross_section/cross_section_t`
     type(config_t),            intent(inout) :: config ! Cross section configuration object
@@ -187,11 +186,10 @@ file_loop: &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function run( this, grid_warehouse, profile_warehouse, at_mid_point )       &
+  function calculate( this, grid_warehouse, profile_warehouse, at_mid_point ) &
       result( cross_section )
     ! Calculate the cross section for a given set of environmental conditions
 
-    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
@@ -231,7 +229,7 @@ file_loop: &
 
     deallocate( zGrid )
 
-  end function run
+  end function calculate
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -257,7 +255,6 @@ file_loop: &
     type(string_t)  :: addpnt_type
     type(config_t)  :: extrap_config
     logical         :: found
-    character(len=:), allocatable :: number
     type(string_t) :: required_keys(1), optional_keys(1)
 
     required_keys(1) = "type"

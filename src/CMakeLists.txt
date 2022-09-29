@@ -39,7 +39,7 @@ add_subdirectory(spectral_weights)
 add_library(tuvxlib ${TUVX_SRC} ${GRID_SRC} ${PROFILE_SRC}
                     ${CROSS_SECTION_SRC} ${QUANTUM_YIELD_SRC} ${SPECTRAL_WGHT_SRC}
                     ${RADIATIVE_TRANSFER_SRC} ${LINEAR_ALGEBRA_SRC})
-target_link_libraries(tuvxlib musicalib ${NETCDF_LIBS} ${NC4F_LIB})
+target_link_libraries(tuvxlib musicalib ${NETCDF_LIBS})
 set_target_properties(tuvxlib PROPERTIES OUTPUT_NAME tuvx)
 
 add_executable(tuv-x tuvx.F90)

@@ -42,6 +42,8 @@ program test_spectral_weight_gaussian
   end select
 
   deallocate( spectral_weight )
+  deallocate( profile_warehouse )
+  deallocate( grid_warehouse )
   call musica_mpi_finalize( )
 
 contains

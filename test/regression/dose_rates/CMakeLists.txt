@@ -8,7 +8,7 @@ include(test_util)
 
 add_test(NAME regression_dose_rates COMMAND test/regression/dose_rates/dose_rates.sh WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
-if(MEMORYCHECK_COMMAND)
+if(MEMORYCHECK_COMMAND AND ENABLE_MEMCHECK)
   add_test(NAME memcheck_regression_dose_rates COMMAND test/regression/dose_rates/dose_rates_memcheck.sh WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 endif()
 

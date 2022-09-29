@@ -39,15 +39,14 @@ contains
       n_layers, spherical_geometry, grid_warehouse, profile_warehouse,        &
       radiator_warehouse ) result( radiation_field )
 
-    use musica_string,                 only : string_t
+    use tuvx_diagnostic_util,          only : diagout
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_linear_algebra_linpack,   only : linear_algebra_linpack_t
     use tuvx_profile,                  only : profile_t
-    use tuvx_profile_warehouse,        only : Profile_warehouse_t
-    use tuvx_radiator,                 only : radiator_t, radiator_state_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
+    use tuvx_radiator,                 only : radiator_state_t
     use tuvx_radiator_warehouse,       only : radiator_warehouse_t
-    use tuvx_radiator_warehouse,       only : warehouse_iterator_t
     use tuvx_solver,                   only : slant_optical_depth
     use tuvx_spherical_geometry,       only : spherical_geometry_t
 
@@ -57,7 +56,7 @@ contains
     integer,                    intent(in)    :: n_layers  ! number of vertical layers
     real(dk),                   intent(in)    :: solar_zenith_angle ! solar zenith angle [degrees]
     type(grid_warehouse_t),     intent(inout) :: grid_warehouse
-    type(Profile_warehouse_t),  intent(inout) :: profile_warehouse
+    type(profile_warehouse_t),  intent(inout) :: profile_warehouse
     type(radiator_warehouse_t), intent(inout) :: radiator_warehouse
     type(spherical_geometry_t), intent(inout) :: spherical_geometry
 
@@ -65,7 +64,6 @@ contains
 
     ! Local variables
     character(len=*), parameter :: Iam = 'Update radiation field: '
-    real(dk) :: sum
     real(dk) :: mu
     real(dk) :: tausla( 0 : n_layers ), tauc( 0 : n_layers )
     real(dk) :: mu2( 0 : n_layers )

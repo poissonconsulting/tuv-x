@@ -4,7 +4,8 @@
 module tuvx_cross_section_chcl3
 ! Calculates the cross section for chloroform
 
-  use tuvx_cross_section,              only : cross_section_t
+  use tuvx_cross_section,              only : cross_section_t,                &
+                                              base_constructor
 
   implicit none
 
@@ -15,7 +16,7 @@ module tuvx_cross_section_chcl3
   type, extends(cross_section_t) :: cross_section_chcl3_t
   contains
     !> Calculate the cross section
-    procedure :: calculate => run
+    procedure :: calculate
   end type cross_section_chcl3_t
 
   !> Constructor
@@ -34,7 +35,6 @@ contains
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
-    use tuvx_cross_section,            only : base_constructor
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
@@ -61,19 +61,18 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function run( this, grid_warehouse, profile_warehouse, at_mid_point )       &
+  function calculate( this, grid_warehouse, profile_warehouse, at_mid_point ) &
       result( cross_section )
     ! Calculate the cross section for a given set of environmental conditions
 
     use musica_constants,              only : dk => musica_dk
-    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    real(kind=dk), allocatable                  :: cross_section(:,:) ! Calculated cross section
-    class(cross_section_chcl3_t), intent(in)    :: this ! A :f:type:`~tuvx_cross_section_chcl3/cross_section_chcl3_t`
+    real(kind=dk), allocatable               :: cross_section(:,:) ! Calculated cross section
+    class(cross_section_chcl3_t), intent(in) :: this ! A :f:type:`~tuvx_cross_section_chcl3/cross_section_chcl3_t`
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
     logical, optional,           intent(in)    :: at_mid_point ! Flag indicating whether cross-section data should be at mid-points on the wavelength grid.  If this is false or omitted, cross-section data are calculated at interfaces on the wavelength grid.
@@ -135,7 +134,7 @@ contains
     deallocate( lambdaGrid )
     deallocate( mdlTemperature )
 
-  end function run
+  end function calculate
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

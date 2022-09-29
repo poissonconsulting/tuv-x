@@ -5,7 +5,8 @@
 
 
 module purge
-module load gnu/11.2.0
+module load intel/2022.1
+module load openmpi/3.1.6
 module load ncarenv/1.3
 module load ncarcompilers/0.5.0
 module load cmake/3.22.0
@@ -37,12 +38,12 @@ mkdir -p $INSTALL_ROOT
 
 # json-fortran
 JSON_FORTRAN_ROOT=$TUVX_HOME/json-fortran-8.2.1
-export JSON_FORTRAN_HOME=$INSTALL_ROOT/jsonfortran-gnu-8.2.1
+export JSON_FORTRAN_HOME=$INSTALL_ROOT/jsonfortran-intel-8.2.1
 cd $JSON_FORTRAN_ROOT
 sed -i 's/\-C $<CONFIG>//' CMakeLists.txt
 mkdir -p build
 cd build
-cmake -D CMAKE_Fortran_COMPILER=gfortran \
+cmake -D CMAKE_Fortran_COMPILER=ifort \
       -D SKIP_DOC_GEN:BOOL=TRUE \
       -D CMAKE_INSTALL_PREFIX=$INSTALL_ROOT \
       ..
@@ -57,11 +58,12 @@ git checkout release
 git submodule update
 mkdir -p build
 cd build
-cmake -D CMAKE_Fortran_COMPILER=gfortran \
+cmake -D CMAKE_Fortran_COMPILER=ifort \
       -D CMAKE_BUILD_TYPE=release \
       -D NETCDF_INCLUDE_DIR=$NCAR_INC_NETCDF \
       -D NETCDF_C_LIB=$NCAR_LDFLAGS_NETCDF/libnetcdf.so \
       -D NETCDF_FORTRAN_LIB=$NCAR_LDFLAGS_NETCDF/libnetcdff.so \
+      -D ENABLE_MPI=OFF \
       -D ENABLE_COVERAGE=OFF \
       ..
 make

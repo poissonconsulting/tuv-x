@@ -73,13 +73,13 @@ contains
     class(profile_warehouse_t), pointer       :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     ! local variables
-    type(config_t)              :: profile_config
-    class(iterator_t), pointer  :: iter
-    type(profile_ptr)           :: profile_obj
-    character(len=32)           :: keychar
-    type(string_t)              :: aswkey
-    character(len=*), parameter :: Iam = "profile warehouse constructor: "
-    class(profile_warehouse_t), pointer :: profile_warehouse_ptr
+    type(config_t)                 :: profile_config
+    class(iterator_t), pointer     :: iter
+    type(profile_ptr), allocatable :: temp_profiles(:)
+    type(profile_ptr)              :: profile_obj
+    character(len=32)              :: keychar
+    type(string_t)                 :: aswkey
+    character(len=*), parameter    :: Iam = "profile warehouse constructor: "
 
     allocate( profile_warehouse )
     allocate( profile_warehouse%profiles_(0) )
@@ -100,8 +100,14 @@ contains
                                              profile_obj%val_%units( ) ), &
                       "Profile '"//profile_obj%val_%handle_//             &
                       "' duplicated in profile warehouse." )
-      profile_warehouse%profiles_ =                                       &
-          [ profile_warehouse%profiles_, profile_obj ]
+      temp_profiles = profile_warehouse%profiles_
+      deallocate( profile_warehouse%profiles_ )
+      allocate( profile_warehouse%profiles_( size( temp_profiles ) + 1 ) )
+      profile_warehouse%profiles_( 1 : size( temp_profiles ) ) =              &
+          temp_profiles(:)
+      profile_warehouse%profiles_( size( temp_profiles ) + 1 ) = profile_obj
+      deallocate( temp_profiles )
+      nullify( profile_obj%val_ )
     end do
 
     deallocate( iter )
@@ -167,8 +173,6 @@ contains
     ! checks if a profile exists in the warehouse
 
     use musica_assert,                 only : assert_msg
-    use musica_string,                 only : string_t
-    use tuvx_profile,                  only : profile_t
 
     class(profile_warehouse_t), intent(inout) :: this
     character(len=*),           intent(in)    :: name
@@ -196,7 +200,6 @@ contains
     ! checks if a profile exists in the warehouse
 
     use musica_string,                 only : string_t
-    use tuvx_profile,                  only : profile_t
 
     class(profile_warehouse_t), intent(inout) :: this
     type(string_t),             intent(in)    :: name
@@ -391,10 +394,10 @@ contains
     if( allocated( this%profiles_ ) ) deallocate( this%profiles_ )
     allocate( this%profiles_( n_profiles ) )
     do i_profile = 1, n_profiles
-    associate( profile => this%profiles_( i_profile )%val_ )
+    associate( profile => this%profiles_( i_profile ) )
       call type_name%mpi_unpack( buffer, position, comm )
-      profile => profile_allocate( type_name )
-      call profile%mpi_unpack( buffer, position, comm )
+      profile%val_ => profile_allocate( type_name )
+      call profile%val_%mpi_unpack( buffer, position, comm )
     end associate
     end do
     call assert( 294782841, position - prev_pos <= this%pack_size( comm ) )

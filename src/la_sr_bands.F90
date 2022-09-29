@@ -169,7 +169,6 @@ contains
     ! absorption cross sections, parameterized in the Lyman-alpha and SR bands
 
     use musica_assert,                 only : assert_msg
-    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile,                  only : profile_t
@@ -188,8 +187,7 @@ contains
 
     integer :: nz ! number of specified altitude levels in the working grid
     integer :: nzm1
-    integer :: nw ! number of specified intervals + 1 in the working grid
-    integer :: i, iz, iw
+    integer :: iw
     real(dk)    :: secchi(size(air_slant_column))
     real(dk)    :: o2scol(size(air_slant_column))
     class(grid_t),    pointer :: zGrid => null( ) ! specified altitude working grid [km]
@@ -212,7 +210,6 @@ contains
       lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
       temperature => profile_warehouse%get_profile( "temperature", "K" )
 
-      nw   = lambdaGrid%ncells_ + iONE
       nzm1 = zGrid%ncells_
       nz   = nzm1 +  iONE
 
@@ -271,7 +268,6 @@ contains
     ! Computes equivalent optical depths for O2 absorption, and O2 effective
     ! absorption cross sections, parameterized in the Lyman-alpha and SR bands
 
-    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile,                  only : profile_t
@@ -288,7 +284,7 @@ contains
     character(len=*), parameter :: Iam = 'la_srb xs: '
     real(dk), parameter :: o2Vmr = .2095_dk
 
-    integer :: nz, nzm1, i, iz, iw
+    integer :: nz, nzm1, iw
     real(dk)    :: secchi(size(air_slant_column))
     real(dk)    :: o2scol(size(air_slant_column))
     class(grid_t), pointer :: zGrid
@@ -370,7 +366,6 @@ contains
     integer,              intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
-    integer :: i_data
     real(dk), allocatable :: ac(:,:), bc(:,:)
 
     ac = this%AC
@@ -482,7 +477,7 @@ contains
         (/ 8.21666e-21_dk, 1.63296e-20_dk,  4.85121e-17_dk /)
 
     integer :: nz
-    integer :: iz, i
+    integer :: iz
     real(dk) :: coldens
     real(dk) :: sigma(3), tau(3)
     real(dk) :: rm( size( o2col ) )
@@ -548,7 +543,7 @@ contains
         (/ 8.21666e-21_dk, 1.63296e-20_dk,  4.85121e-17_dk /)
 
     integer :: nz
-    integer :: iz, i
+    integer :: iz
     real(dk) :: coldens
     real(dk) :: sigma(3), tau(3)
     real(dk) :: rm( size( o2col ) ), ro2( size( o2col ) )
@@ -725,9 +720,9 @@ contains
        7.4371992E-24_dk, 7.3642966E-24_dk /)
 
     integer :: nz
-    integer :: i, k, kp1, ktop, ktop1, kbot, lambdaNdx
+    integer :: k, ktop, ktop1, kbot, lambdaNdx
 
-    real(dk) :: X, NORM
+    real(dk) :: X
     real(dk) :: o2col1( size( o2col ) )
 
     ! Initialize cross sections to values at large optical depth
@@ -742,7 +737,6 @@ contains
     nz = size( o2col )
     ktop = nz
     kbot = 0
-    NORM = rONE / real( nz - iONE, dk )
     do k = iONE, nz
       o2col1( k ) = max( o2col( k ), colmin )
       x = log( o2col1( k ) )

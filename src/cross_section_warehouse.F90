@@ -5,7 +5,6 @@ module tuvx_cross_section_warehouse
 ! A type to store all cross sections needed for a particular run
 !
 
-  use musica_constants,                only : musica_dk
   use musica_string,                   only : string_t
   use tuvx_cross_section,              only : cross_section_ptr
 
@@ -45,7 +44,6 @@ contains
       result( new_obj )
     ! Constructor of cross_section_warehouse_t objects
 
-    use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
     use tuvx_cross_section_factory,    only : cross_section_builder
@@ -58,15 +56,13 @@ contains
     type(Profile_warehouse_t),  intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     ! local variables
-    integer :: ndx
     character(len=*), parameter :: Iam = "Cross section constructor"
     type(config_t) :: cross_section_config
     class(iterator_t), pointer :: iter
-    type(cross_section_ptr) :: cross_section_ptr
-    character(len=32)           :: keychar
+    type(cross_section_ptr), allocatable :: temp_cross_sections(:)
+    type(cross_section_ptr) :: cross_section
     type(string_t)              :: cross_section_name
-    type(string_t), allocatable :: netcdfFiles(:)
-    logical                     :: found
+    type(string_t), allocatable :: temp_names(:)
 
     allocate( new_obj )
     allocate( string_t :: new_obj%handles_(0) )
@@ -79,13 +75,25 @@ contains
 
       ! save the cross section name for lookups
       call cross_section_config%get( "name", cross_section_name, Iam )
-      new_obj%handles_ = [ new_obj%handles_, cross_section_name ]
+      temp_names = new_obj%handles_
+      deallocate( new_obj%handles_ )
+      allocate( new_obj%handles_( size( temp_names ) + 1 ) )
+      new_obj%handles_( 1 : size( temp_names ) ) = temp_names(:)
+      new_obj%handles_( size( temp_names ) + 1 ) = cross_section_name
+      deallocate( temp_names )
 
       ! build and store cross section object
-      cross_section_ptr%val_ => cross_section_builder( cross_section_config,  &
+      cross_section%val_ => cross_section_builder( cross_section_config,      &
                                            grid_warehouse, profile_warehouse )
-      new_obj%cross_sections_ =                                         &
-          [ new_obj%cross_sections_, cross_section_ptr ]
+      temp_cross_sections = new_obj%cross_sections_
+      deallocate( new_obj%cross_sections_ )
+      allocate( new_obj%cross_sections_( size( temp_cross_sections ) + 1 ) )
+      new_obj%cross_sections_( 1 : size( temp_cross_sections ) ) =            &
+          temp_cross_sections(:)
+      new_obj%cross_sections_( size( temp_cross_sections ) + 1 ) =            &
+          cross_section
+      deallocate( temp_cross_sections )
+      nullify( cross_section%val_ )
     end do
     deallocate( iter )
 
@@ -93,14 +101,14 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function get( this, cross_section_name ) result( cross_section_ptr )
+  function get( this, cross_section_name ) result( cross_section )
     ! Get a copy of a specific radiative transfer cross section object
 
     use musica_assert,                 only : die_msg
     use musica_string,                 only : string_t
     use tuvx_cross_section,            only : cross_section_t
 
-    class(cross_section_t),           pointer       :: cross_section_ptr ! Pointer to a copy of the requested :f:type:`~tuvx_cross_section/cross_section_t`
+    class(cross_section_t),           pointer       :: cross_section ! Pointer to a copy of the requested :f:type:`~tuvx_cross_section/cross_section_t`
     class(cross_section_warehouse_t), intent(inout) :: this ! A :f:type:`~tuvx_cross_section_warehouse/cross_section_warehouse_t`
     type(string_t),                   intent(in)    :: cross_section_name ! Name of the cross section to find
 
@@ -121,7 +129,7 @@ contains
       call die_msg( 980636382, "Invalid cross_section_name: '"//              &
                                cross_section_name%to_char()//"'" )
     endif
-    allocate( cross_section_ptr,                                              &
+    allocate( cross_section,                                                  &
               source = this%cross_sections_( ndx )%val_ )
 
   end function get
@@ -225,11 +233,12 @@ contains
     allocate( this%cross_sections_( n_cross_sections ) )
     allocate( this%handles_(        n_cross_sections ) )
     do i_cross_section = 1, n_cross_sections
-    associate( cross_section => this%cross_sections_( i_cross_section )%val_ )
+    associate( cross_section => this%cross_sections_( i_cross_section ) )
       call type_name%mpi_unpack( buffer, position, comm )
-      cross_section => cross_section_allocate( type_name )
-      call cross_section%mpi_unpack( buffer, position, comm )
-      call this%handles_( i_cross_section )%mpi_unpack( buffer, position, comm )
+      cross_section%val_ => cross_section_allocate( type_name )
+      call cross_section%val_%mpi_unpack( buffer, position, comm )
+      call this%handles_( i_cross_section )%mpi_unpack( buffer, position,     &
+                                                        comm )
     end associate
     end do
     call assert( 659576600, position - prev_pos <= this%pack_size( comm ) )

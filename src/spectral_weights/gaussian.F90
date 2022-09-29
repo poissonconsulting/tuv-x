@@ -41,7 +41,6 @@ contains
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
-    use tuvx_spectral_weight,          only : base_constructor
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
@@ -76,7 +75,6 @@ contains
       result( spectral_weight )
     ! Calculate the Gaussian spectral weight
 
-    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t

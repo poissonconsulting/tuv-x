@@ -44,7 +44,7 @@ contains
 
     ! Local variables
     real(dk), parameter :: NINETY  = 90._dk
-    integer(ik) :: n, tNdx
+    integer(ik) :: tNdx
     integer(ik) :: Year, Month, Day
     integer(ik) :: Jday
     real(dk)    :: tmzone, ut, solarElevation

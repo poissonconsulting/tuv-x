@@ -4,7 +4,8 @@
 module tuvx_cross_section_cfc11
 ! Calculates the cross section for CFC11
 
-  use tuvx_cross_section,              only : cross_section_t
+  use tuvx_cross_section,              only : cross_section_t,                &
+                                              base_constructor
 
   implicit none
 
@@ -15,7 +16,7 @@ module tuvx_cross_section_cfc11
   type, extends(cross_section_t) :: cross_section_cfc11_t
   contains
     !> Calculate the cross section
-    procedure :: calculate => run
+    procedure :: calculate
   end type cross_section_cfc11_t
 
   !> Constructor
@@ -36,7 +37,6 @@ contains
     use musica_string,                 only : string_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
-    use tuvx_cross_section,            only : base_constructor
 
     class(cross_section_t),    pointer       :: this ! This :f:type:`~tuvx_cross_section/cross_section_t`
     type(config_t),            intent(inout) :: config ! Cross section configuration data
@@ -61,12 +61,11 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function run( this, grid_warehouse, profile_warehouse, at_mid_point )       &
+  function calculate( this, grid_warehouse, profile_warehouse, at_mid_point ) &
       result( cross_section )
     ! Calculate the cross section for a given set of environmental conditions
 
     use musica_constants,              only : dk => musica_dk
-    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile,                  only : profile_t
@@ -121,7 +120,7 @@ contains
     deallocate( lambdaGrid )
     deallocate( mdlTemperature )
 
-  end function run
+  end function calculate
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

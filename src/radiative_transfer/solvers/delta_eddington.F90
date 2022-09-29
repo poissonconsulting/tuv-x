@@ -40,7 +40,6 @@ contains
       radiator_warehouse ) result( radiation_field )
 
     use musica_string,                 only : string_t
-    use tuvx_diagnostic_util,          only : diagout
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_linear_algebra_linpack,   only : linear_algebra_linpack_t
@@ -161,13 +160,6 @@ contains
         taun( i ) = ( rONE - omu( i ) * f ) * tauu( i )
       end do
 
-      if( lambdaNdx == 1 ) then
-        call diagout( 'tauu.new', tauu )
-        call diagout( 'gu.new', gu )
-        call diagout( 'omu.new', omu )
-        call diagout( 'taun.new', taun )
-      endif
-
       ! calculate slant optical depth at the top of the atmosphere when
       ! the solar zenith angle is > 90 degrees.
       if( mu < rZERO ) then
@@ -254,19 +246,6 @@ contains
 
       enddo layer_loop
 
-      if( lambdaNdx == 1 ) then
-        call diagout( 'e1.new',e1 )
-        call diagout( 'e2.new',e2 )
-        call diagout( 'e3.new',e3 )
-        call diagout( 'e4.new',e4 )
-        call diagout( 'cup.new',cup )
-        call diagout( 'cdn.new',cdn )
-        call diagout( 'cuptn.new',cuptn )
-        call diagout( 'cdntn.new',cdntn )
-        call diagout( 'lam.new',lam )
-        call diagout( 'mu2.new',mu2 )
-      endif
-
       !**************** set up matrix ******
       ! ssfc = pg 16,292 equation 37  where pi Fs is one (unity).
 
@@ -314,14 +293,6 @@ contains
       b( mrows ) = e2( n_layers ) - rsfc * e4( n_layers )
       d( mrows ) = rZERO
       e( mrows ) = ssfc - cuptn( n_layers ) + rsfc * cdntn( n_layers )
-
-      if( lambdaNdx == 1 ) then
-        call diagout( 'a.new', a )
-        call diagout( 'b.new', b )
-        call diagout( 'd.new', d )
-        call diagout( 'e.new', e )
-        call diagout( 'tausla.new', tausla )
-      endif
 
       ! solve tri-diagonal system:
 

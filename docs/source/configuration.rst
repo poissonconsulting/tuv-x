@@ -791,16 +791,16 @@ follows:
    }
   
 
-=========================  ==============
-keys                       Required/Optional
-=========================  ==============
-``name``                   optional
-``type``                   required
-``cross section``          required 
-``vertical profile``       required
-``vertical profile units`` required
-``enable diagnostics``     optional
-=========================  ==============
+===========================  ==============
+keys                         Required/Optional
+===========================  ==============
+``name``                     optional
+``type``                     required
+``cross section``            required 
+``vertical profile``         required
+``vertical profile units``   required
+``enable diagnostics``       optional
+===========================  ==============
 
 The regressoin tests compare the new version of TUV-x to the old version. One
 way is by directly comparing output. The `enable diagnostics` allows for this
@@ -843,17 +843,17 @@ below.
    }
 
 
-=========================    ==============
-keys                         Required/Optional
-=========================    ==============
-``name``                     optional
-``type``                     required
-``optical depths``           required 
-``single scattering albdeo`` required
-``asymmetry factor``         required
-``550 nm optical depth``     optional
-``enable diagnostics``       optional
-=========================    ==============
+============================    ==============
+keys                            Required/Optional
+============================    ==============
+``name``                        optional
+``type``                        required
+``optical depths``              required 
+``single scattering albdeo``    required
+``asymmetry factor``            required
+``550 nm optical depth``        optional
+``enable diagnostics``          optional
+============================    ==============
 
 The regressoin tests compare the new version of TUV-x to the old version. One
 way is by directly comparing output. The `enable diagnostics` allows for this

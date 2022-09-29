@@ -40,7 +40,7 @@ def gradient_image(ax, extent, direction=0.3, cmap_range=(0, 1), **kwargs):
                    vmin=0, vmax=1, **kwargs)
     return im
 
-def make_logo(tuvx_static_path = 'static_', 
+def make_logo(tuvx_static_path = '_static', 
               dpi = 192, 
               width = 1200, 
               height = 288, 
@@ -91,15 +91,15 @@ def make_logo(tuvx_static_path = 'static_',
 
   ax.tick_params(width=0, which='both')
 
-  temporary_logo = r'logo.png'
+  logo = r'logo.png'
 
-  fig.savefig(temporary_logo, format='png', transparent=True, dpi=dpi)
+  fig.savefig(logo, format='png', transparent=True, dpi=dpi)
   fig.savefig(f'{tuvx_static_path}/logo.svg', format='svg', transparent=True)
 
-  img = Image.open(temporary_logo)
+  img = Image.open(logo)
   img.save(f'{tuvx_static_path}/favicon.ico')
-  
-  # os.remove(temporary_logo)
 
+  os.remove(logo)
+  
 if __name__ == '__main__':
   make_logo()

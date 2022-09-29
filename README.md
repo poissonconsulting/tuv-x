@@ -1,5 +1,7 @@
-TUV-x
-===========
+<h1 align="center">
+<img src="docs/source/_static/logo.svg" width="300">
+</h1><br>
+
 
 TUV-x: A photolysis rate constant calculator.
 

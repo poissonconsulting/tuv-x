@@ -37,6 +37,7 @@ contains
     use musica_config,                 only : config_t
     use tuvx_constants,                only : nzero, pzero
     use tuvx_diagnostic_util,          only : diagout
+    use tuvx_diagnostic_util,          only : prepare_diagnostic_output
     use tuvx_interpolate,              only : interpolator_t,                 &
                                               interpolator_fractional_source_t
     use tuvx_grid,                     only : grid_t
@@ -58,7 +59,7 @@ contains
     real(dk)                      :: input_G
     real(dk), allocatable         :: input_zgrid(:)
     real(dk), allocatable         :: winput_SSA(:), winput_G(:)
-    type(string_t)                :: required_keys(5), optional_keys(1)
+    type(string_t)                :: required_keys(5), optional_keys(2)
     type(config_t)                :: Aerosol_config
     class(grid_t),             pointer :: zGrid, lambdaGrid
     class(interpolator_t), pointer :: theInterpolator
@@ -69,6 +70,7 @@ contains
     required_keys(4) = "asymmetry factor"
     required_keys(5) = "name"
     optional_keys(1) = "550 nm optical depth"
+    optional_keys(2) = "enable diagnostics"
     call assert_msg( 584205621,                                               &
                      config%validate( required_keys, optional_keys ),&
                      "Bad configuration data format for "//                   &
@@ -81,6 +83,12 @@ contains
 
     ! Get radiator "Handle"
     call config%get( 'name', this%handle_, Iam )
+    call config%get( 'type', this%type_, Iam )
+
+    call config%get( 'enable diagnostics', this%enable_diagnostics_, Iam,       &
+      default=.false. )
+
+    call prepare_diagnostic_output( this%enable_diagnostics_ )
 
     ! allocate radiator state variables
     allocate( this%state_%layer_OD_(  zGrid%ncells_, lambdaGrid%ncells_ ) )
@@ -95,19 +103,21 @@ contains
     nInputBins = size( input_OD )
     if( nInputBins > 1 ) then
 
+      associate( enable => this%enable_diagnostics_ )
       ! interpolate input OD to state variable
-      call diagout( 'rawOD.new',input_OD )
+      call diagout( 'rawOD.new',input_OD, enable )
       input_OD( : nInputBins - 1 ) =                                          &
           .5_dk * ( input_OD( : nInputBins - 1 ) + input_OD( 2 : ) )
-      call diagout( 'inpaerOD.new', input_OD( : nInputBins - 1 ) )
+      call diagout( 'inpaerOD.new', input_OD( : nInputBins - 1 ), enable )
 
       input_zgrid = (/ (real( k, dk ), k = 0, nInputBins - 1 ) /)
       rad_OD =                                                                &
           theInterpolator%interpolate( zGrid%edge_, input_zgrid, input_OD, 1 )
-      call diagout( 'cz.aer.new', rad_OD )
+      call diagout( 'cz.aer.new', rad_OD, enable )
       do binNdx = 1, lambdaGrid%ncells_
         this%state_%layer_OD_( :, binNdx ) = rad_OD
       enddo
+      end associate
     else
       this%state_%layer_OD_ = input_OD(1)
     endif
@@ -117,7 +127,8 @@ contains
     winput_SSA = input_OD( : nInputBins - 1 ) * input_SSA
     this%state_%layer_SSA_( :, 1 ) =                                          &
         theInterpolator%interpolate( zGrid%edge_, input_zgrid,winput_SSA, 1 )
-    call diagout( 'omz.aer.new', this%state_%layer_SSA_( :, 1 ) )
+    call diagout( 'omz.aer.new', this%state_%layer_SSA_( :, 1 ),              &
+      this%enable_diagnostics_ )
     do binNdx = 2, lambdaGrid%ncells_
       this%state_%layer_SSA_(:,binNdx) = this%state_%layer_SSA_(:,1)
     enddo

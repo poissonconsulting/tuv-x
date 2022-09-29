@@ -70,6 +70,7 @@
    "radiative transfer": {
       "radiators": [
          {
+            "enable diagnostics" : true,
             "name": "aerosols",
             "type": "aerosol",
             "optical depths": [2.40e-01, 1.06e-01, 4.56e-02, 1.91e-02, 1.01e-02, 7.63e-03,
@@ -86,6 +87,5 @@
             "550 nm optical depth": 0.235
          }
       ]
-   },
-   "diagnostics" : [ "aerosols" ]
+   }
 }

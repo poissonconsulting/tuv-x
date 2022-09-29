@@ -29,10 +29,10 @@ module tuvx_core
     type(profile_warehouse_t),   pointer :: profile_warehouse_ => null()
     type(spherical_geometry_t),  pointer :: spherical_geometry_ => null()
     type(la_sr_bands_t),         pointer :: la_sr_bands_ => null()
-    type(string_t),          allocatable :: diagnostics_(:)
     type(radiative_transfer_t),  pointer :: radiative_transfer_ => null()
     type(photolysis_rates_t),    pointer :: photolysis_rates_ => null()
     type(dose_rates_t),          pointer :: dose_rates_ => null()
+    logical                              :: enable_diagnostics_ ! determines if diagnostic output is written or not
   contains
     procedure :: run
     procedure :: output_photolysis_rate_constants
@@ -61,6 +61,7 @@ contains
     use musica_iterator,               only : iterator_t
     use musica_string,                 only : string_t
     use tuvx_diagnostic_util,          only : diagout
+    use tuvx_diagnostic_util,          only : prepare_diagnostic_output
     use tuvx_profile,                  only : profile_t
 
     type(string_t),                       intent(in) :: config   ! Full TUV-x configuration data
@@ -87,13 +88,18 @@ contains
     required_keys(4) = "O2 absorption"
     optional_keys(1) = "photolysis reactions"
     optional_keys(2) = "dose rates"
-    optional_keys(3) = "diagnostics"
+    optional_keys(3) = "enable diagnostics"
     call assert_msg( 255400232,                                               &
                      core_config%validate( required_keys, optional_keys ),    &
                      "Bad configuration data format for tuv-x core." )
 
     ! Instantiate photolysis core
     allocate( new_core )
+
+    call core_config%get( 'enable diagnostics', new_core%enable_diagnostics_,  &
+      Iam, default=.false. )
+    
+    call prepare_diagnostic_output( new_core%enable_diagnostics_ )
 
     ! Instantiate and initialize grid warehouse
     call core_config%get( "grids", child_config, Iam )
@@ -106,20 +112,22 @@ contains
        profile_warehouse_t( child_config, new_core%grid_warehouse_ )
      if( present( profiles ) ) call new_core%profile_warehouse_%add( profiles )
 
-    ! Diagnostics for testing
     aprofile => new_core%profile_warehouse_%get_profile( "temperature", "K" )
-    call diagout( 'vptmp.new', aprofile%edge_val_ )
+    call diagout( 'vptmp.new', aprofile%edge_val_,                            &
+      new_core%enable_diagnostics_ )
     deallocate( aprofile )
 
     aprofile => new_core%profile_warehouse_%get_profile( "air",               &
                                                          "molecule cm-3" )
-    call diagout( 'vpair.new', aprofile%edge_val_ )
+    call diagout( 'vpair.new', aprofile%edge_val_,                            &
+      new_core%enable_diagnostics_  )
     deallocate( aprofile )
 
     if( new_core%profile_warehouse_%exists( "O3", "molecule cm-3" ) ) then
       aprofile => new_core%profile_warehouse_%get_profile( "O3",              &
                                                            "molecule cm-3" )
-      call diagout( 'vpco3.new', aprofile%layer_dens_ )
+      call diagout( 'vpco3.new', aprofile%layer_dens_,                        &
+        new_core%enable_diagnostics_  )
       deallocate( aprofile )
     end if
 
@@ -129,11 +137,6 @@ contains
         radiative_transfer_t( child_config,                                   &
                                   new_core%grid_warehouse_,                   &
                                   new_core%profile_warehouse_ )
-
-    ! get optical depth diagnostics to output
-    call core_config%get( "diagnostics", new_core%diagnostics_, Iam,          &
-                          found = found )
-    if( .not. found ) allocate( new_core%diagnostics_( 0 ) )
 
     ! photolysis rate constants
     call core_config%get( "photolysis reactions", child_config, Iam,          &
@@ -162,6 +165,7 @@ contains
     new_core%la_sr_bands_ => la_sr_bands_t( child_config,                     &
                                             new_core%grid_warehouse_ )
 
+
   end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -175,6 +179,7 @@ contains
     use tuvx_radiator,                   only : radiator_t
     use tuvx_solver,                     only : radiation_field_t
     use tuvx_diagnostic_util,            only : diagout
+    use tuvx_radiator_warehouse,       only : warehouse_iterator_t
 
     class(core_t), intent(inout)  :: this ! TUV-x core
 
@@ -193,6 +198,7 @@ contains
     class(profile_t),         pointer :: solar_zenith_angles => null( )
     class(radiator_t),        pointer :: radiator => null()
     class(radiation_field_t), pointer :: radiation_field => null( )
+    type(warehouse_iterator_t), pointer  :: warehouse_iter => null( )
 
     ! get the solar zenith angles
     solar_zenith_angles =>                                                    &
@@ -212,7 +218,7 @@ contains
       write(number,'(i2.2)') i_ndx
       call diagout( 'radField.' // number // '.new',                          &
                     radiation_field%fdr_ + radiation_field%fup_ +             &
-                      radiation_field%fdn_ )
+                      radiation_field%fdn_, this%enable_diagnostics_  )
       if( associated( this%photolysis_rates_ ) ) then
         if( allocated( photo_rates ) ) then
           deallocate( photo_rates )
@@ -262,23 +268,12 @@ contains
     end if
 
     ! diagnostic output
-    do i_diag = 1, size( this%diagnostics_ )
-      associate( diagnostic => this%diagnostics_( i_diag ) )
-        radiator =>                                                           &
-            this%radiative_transfer_%radiator_warehouse_%get_radiator(        &
-                                                                  diagnostic )
-        ! Diagnostics for testing
-        if( diagnostic == 'air' ) then
-          call diagout( 'dtrl.new', radiator%state_%layer_OD_ )
-        elseif( diagnostic == 'Aerosols' ) then
-          call diagout( 'dtaer.new', radiator%state_%layer_OD_ )
-        elseif( diagnostic == 'O3' ) then
-          call diagout( 'dto3.new', radiator%state_%layer_OD_ )
-        elseif( diagnostic == 'O2' ) then
-          call diagout( 'dto2.new', radiator%state_%layer_OD_ )
-        endif
-      end associate
-    end do
+    warehouse_iter => this%radiative_transfer_%radiator_warehouse_%get_iterator( )
+    do while( warehouse_iter%next( ) )
+      radiator => this%radiative_transfer_%                                   &
+        radiator_warehouse_%get_radiator( warehouse_iter )
+      call radiator%output_diagnostics()
+    enddo
 
     deallocate( solar_zenith_angles )
 
@@ -432,14 +427,7 @@ contains
       pack_size = pack_size + this%la_sr_bands_%pack_size( comm )
     end if
     pack_size = pack_size +                                                   &
-        musica_mpi_pack_size( allocated( this%diagnostics_ ), comm )
-    if( allocated( this%diagnostics_ ) ) then
-      pack_size = pack_size +                                                 &
-        musica_mpi_pack_size( size( this%diagnostics_ ), comm )
-      do i_elem = 1, size( this%diagnostics_ )
-        pack_size = pack_size + this%diagnostics_( i_elem )%pack_size( comm )
-      end do
-    end if
+        musica_mpi_pack_size( this%enable_diagnostics_ , comm )
     pack_size = pack_size +                                                   &
         musica_mpi_pack_size( associated( this%radiative_transfer_ ), comm )
     if( associated( this%radiative_transfer_ ) ) then
@@ -498,14 +486,7 @@ contains
     if( associated( this%la_sr_bands_ ) ) then
       call this%la_sr_bands_%mpi_pack( buffer, position, comm )
     end if
-    call musica_mpi_pack( buffer, position,                                   &
-                          allocated( this%diagnostics_ ), comm )
-    if( allocated( this%diagnostics_ ) ) then
-      call musica_mpi_pack( buffer, position, size( this%diagnostics_ ), comm )
-      do i_elem = 1, size( this%diagnostics_ )
-        call this%diagnostics_( i_elem )%mpi_pack( buffer, position, comm )
-      end do
-    end if
+    call musica_mpi_pack( buffer, position, this%enable_diagnostics_ , comm )
     call musica_mpi_pack( buffer, position,                                   &
                           associated( this%radiative_transfer_ ), comm )
     if( associated( this%radiative_transfer_ ) ) then
@@ -564,14 +545,7 @@ contains
       allocate( this%la_sr_bands_ )
       call this%la_sr_bands_%mpi_unpack( buffer, position, comm )
     end if
-    call musica_mpi_unpack( buffer, position, alloced, comm )
-    if( alloced ) then
-      call musica_mpi_unpack( buffer, position, n_elems, comm )
-      allocate( this%diagnostics_( n_elems ) )
-      do i_elem = 1, n_elems
-        call this%diagnostics_( i_elem )%mpi_unpack( buffer, position, comm )
-      end do
-    end if
+    call musica_mpi_unpack( buffer, position, this%enable_diagnostics_, comm )
     call musica_mpi_unpack( buffer, position, alloced, comm )
     if( alloced ) then
       allocate( this%radiative_transfer_ )

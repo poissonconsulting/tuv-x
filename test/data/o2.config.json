@@ -78,6 +78,7 @@
       ],
       "radiators": [
          {
+            "enable diagnostics" : true,
             "name": "O2",
             "type": "base",
             "cross section": "O2",
@@ -85,6 +86,5 @@
             "vertical profile units": "molecule cm-3"
          }
       ]
-   },
-   "diagnostics" : [ "O2" ]
+   }
 }

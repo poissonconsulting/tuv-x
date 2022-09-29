@@ -1,4 +1,5 @@
 {
+   "enable diagnostics" : true,
    "grids": {
       "height": {
          "type": "Equal interval",
@@ -73,9 +74,10 @@
             "name": "air",
             "type": "air"
          }
-      },
+      ],
       "radiators": [
          {
+            "enable diagnostics" : true,
             "name": "air",
             "type": "base",
             "cross section": "air",
@@ -83,6 +85,5 @@
             "vertical profile units": "molecule cm-3"
          }
       ]
-   },
-   "diagnostics" : [ "air" ]
+   }
 }

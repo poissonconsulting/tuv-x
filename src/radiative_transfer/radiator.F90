@@ -34,13 +34,17 @@ module tuvx_radiator
     ! Optically active species
 
     type(string_t)         :: handle_
+    type(string_t)         :: type_
     type(string_t)         :: vertical_profile_name_ ! Name of the vertical profile to use
     type(string_t)         :: vertical_profile_units_ ! Units for the vertical profile
     type(string_t)         :: cross_section_name_ ! Name of the absorption cross-section to use
     type(radiator_state_t) :: state_ ! Optical properties, a :f:type:`~tuvx_radiator/radiator_state_t`
+    logical                :: enable_diagnostics_ ! determines if diagnostic output is written or not
   contains
     ! Update radiator for new environmental conditions
     procedure :: update_state
+    ! Outputs radiation diagnostics if enabled
+    procedure :: output_diagnostics
     ! Returns the number of bytes needed to pack the object onto a buffer
     procedure :: pack_size
     ! Packs the object onto a character buffer
@@ -87,6 +91,7 @@ contains
 
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
+    use tuvx_diagnostic_util,          only : prepare_diagnostic_output
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_grid,                     only : grid_t
 
@@ -97,13 +102,15 @@ contains
     ! local variables
     character(len=*), parameter   :: Iam = "Base radiator constructor"
     class(grid_t),    pointer     :: z_grid, lambda_grid
-    type(string_t)                :: required_keys(5), optional_keys(0)
+    type(string_t)                :: required_keys(5), optional_keys(1)
 
     required_keys(1) = "name"
     required_keys(2) = "type"
     required_keys(3) = "cross section"
     required_keys(4) = "vertical profile"
     required_keys(5) = "vertical profile units"
+    optional_keys(1) = "enable diagnostics"
+
     call assert_msg( 691711954,                                               &
                      config%validate( required_keys, optional_keys ),         &
                      "Bad configuration data format for "//                   &
@@ -113,10 +120,16 @@ contains
     lambda_grid => grid_warehouse%get_grid( "wavelength", "nm" )
 
     call config%get( 'name',             this%handle_,                Iam )
+    call config%get( 'type',             this%type_,                Iam )
     call config%get( 'vertical profile', this%vertical_profile_name_, Iam )
     call config%get( 'vertical profile units', this%vertical_profile_units_,  &
                      Iam )
     call config%get( 'cross section',    this%cross_section_name_,    Iam )
+
+    call config%get( 'enable diagnostics', this%enable_diagnostics_, Iam,       &
+      default=.false. )
+
+    call prepare_diagnostic_output( this%enable_diagnostics_ )
 
     ! allocate radiator state variables
     allocate( this%state_%layer_OD_(  z_grid%ncells_, lambda_grid%ncells_ ) )
@@ -177,7 +190,7 @@ contains
     cross_section = radiator_cross_section%calculate( grid_warehouse,         &
                                                       profile_warehouse,      &
                                                       at_mid_point = .true. )
-    call diagout( 'o2xs.new',cross_section )
+    call diagout( 'o2xs.new',cross_section, this%enable_diagnostics_ )
     do w_index = 1,lambda_grid%ncells_
       this%state_%layer_OD_(:,w_index) = radiator_profile%layer_dens_         &
                                          * cross_section(:,w_index)
@@ -201,6 +214,31 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  subroutine output_diagnostics( this )
+    use tuvx_diagnostic_util, only : diagout
+
+    class(radiator_t), intent(in) :: this ! A :f:type:`~tuvx_radiator/radiator_state_t`
+    type(string_t)                   :: filename
+
+    select case( this%handle_%to_char( ) )
+      case( 'air' )
+        filename = 'dtrl.new'
+      case( 'Aerosols' )
+        filename = 'dtaer.new'
+      case( 'O3' )
+        filename = 'dto3.new'
+      case( 'O2' )
+        filename = 'dto2.new'
+    case default
+        filename = this%type_
+    end select
+
+    call diagout( filename%val_, this%state_%layer_OD_,                       &
+      this%enable_diagnostics_ )
+
+  end subroutine output_diagnostics
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   integer function pack_size( this, comm )
     ! Returns the size of a character buffer required to pack the radiator
 
@@ -214,7 +252,8 @@ contains
                 this%vertical_profile_name_%pack_size( comm ) +               &
                 this%vertical_profile_units_%pack_size( comm ) +              &
                 this%cross_section_name_%pack_size( comm ) +                  &
-                this%state_%pack_size( comm )
+                this%state_%pack_size( comm ) +                               &
+                musica_mpi_pack_size(this%enable_diagnostics_, comm)
 #else
     pack_size = 0
 #endif
@@ -243,6 +282,7 @@ contains
     call this%vertical_profile_units_%mpi_pack( buffer, position, comm )
     call this%cross_section_name_%mpi_pack(     buffer, position, comm )
     call this%state_%mpi_pack(                  buffer, position, comm )
+    call musica_mpi_pack(buffer, position, this%enable_diagnostics_, comm)
     call assert( 449676235, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
@@ -254,7 +294,7 @@ contains
     ! Unpacks a radiator from a character buffer
 
     use musica_assert,                 only : assert
-    use musica_mpi,                    only : musica_mpi_pack
+    use musica_mpi,                    only : musica_mpi_unpack
 
     class(radiator_t), intent(out)   :: this      ! radiator to be unpacked
     character,         intent(inout) :: buffer(:) ! memory buffer
@@ -270,6 +310,7 @@ contains
     call this%vertical_profile_units_%mpi_unpack( buffer, position, comm )
     call this%cross_section_name_%mpi_unpack(     buffer, position, comm )
     call this%state_%mpi_unpack(                  buffer, position, comm )
+    call musica_mpi_unpack(buffer, position, this%enable_diagnostics_, comm)
     call assert( 216868760, position - prev_pos <= this%pack_size( comm ) )
 #endif
 

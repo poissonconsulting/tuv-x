@@ -57,6 +57,7 @@ The TUV-x configuration JSON file has six objects:
      "radiative transfer": { ... },
      "photolysis reactions": { ... },
      "dose rates": { ... }
+     "enable diagnostics" : false,
    }
 
 
@@ -75,6 +76,9 @@ The last two objects
 :ref:`dose rates <configuration-dose-rates>`)
 are optional and allow the user to
 calculate photolysis rates or dose rates or both.
+Finally, the ``enable diagnostics`` field is used to output diagnostics from
+the core of tuv-x. If set to true, a folder called output will be created. 
+This flag is optional and defaults to false.
 
 The following sections describe each of these six JSON
 object.
@@ -481,12 +485,13 @@ keys                       Required/Optional
 ``file path``              required
 ``interpolator``           required
 ``name``                   optional
-``enable diagnostics``      optional
+``enable diagnostics``     optional
 =========================  ==============
 
 The regressoin tests compare the new version of TUV-x to the old version. One
 way is by directly comparing output. The `enable diagnostics` allows for this
-ouptut to be disabled.
+ouptut to be disabled. If this is enabled, a folder named `output` will be 
+created in the same directory TUV-x is run from.
 
 O2 Keys
 """""""
@@ -771,7 +776,7 @@ Radiators
 Radiators represent atmospheric constituents that attenuate
 solar radiation and will be considered in calculations of the
 radiation field.
-The configuration data format for standard radiators is as
+The generic configuration data format for standard radiators is as
 follows:
 
 .. code-block:: JSON
@@ -781,9 +786,26 @@ follows:
      "name": "foo",
      "cross section": "foo",
      "vertical profile": "foo",
-     "vertical profile units": "molecule cm-3"
+     "vertical profile units": "molecule cm-3",
+     "enable diagnostics": false
    }
+  
 
+=========================  ==============
+keys                       Required/Optional
+=========================  ==============
+``name``                   optional
+``type``                   required
+``cross section``          required 
+``vertical profile``       required
+``vertical profile units`` required
+``enable diagnostics``     optional
+=========================  ==============
+
+The regressoin tests compare the new version of TUV-x to the old version. One
+way is by directly comparing output. The `enable diagnostics` allows for this
+ouptut to be disabled. If this is enabled, a folder named `output` will be 
+created in the same directory TUV-x is run from.
 
 The ``cross section`` must be the name of a cross
 section in the list of ``cross sections`` in the
@@ -816,9 +838,27 @@ below.
                         1.56e-06, 1.19e-06, 9.14e-07],
      "single scattering albedo": 0.99,
      "asymmetry factor": 0.61,
-     "550 nm optical depth": 0.235
+     "550 nm optical depth": 0.235,
+     "enable diagnostics": false
    }
 
+
+=========================    ==============
+keys                         Required/Optional
+=========================    ==============
+``name``                     optional
+``type``                     required
+``optical depths``           required 
+``single scattering albdeo`` required
+``asymmetry factor``         required
+``550 nm optical depth``     optional
+``enable diagnostics``       optional
+=========================    ==============
+
+The regressoin tests compare the new version of TUV-x to the old version. One
+way is by directly comparing output. The `enable diagnostics` allows for this
+ouptut to be disabled. If this is enabled, a folder named `output` will be 
+created in the same directory TUV-x is run from.
 
 The optical depths are expected to be on the ``wavelength``
 grid.

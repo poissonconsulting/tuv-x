@@ -56,18 +56,20 @@
    ],
    "radiators": [
       {
-        "name": "air",
-        "type": "base",
-        "cross section": "air",
-        "vertical profile": "air",
-        "vertical profile units": "molecule cm-3"
+         "enable diagnostics" : true,
+         "name": "air",
+         "type": "base",
+         "cross section": "air",
+         "vertical profile": "air",
+         "vertical profile units": "molecule cm-3"
       },
       {
-        "name": "CO2",
-        "type": "base",
-        "cross section": "CO2",
-        "vertical profile": "CO2",
-        "vertical profile units": "molecule cm-3"
+         "enable diagnostics" : true,
+         "name": "CO2",
+         "type": "base",
+         "cross section": "CO2",
+         "vertical profile": "CO2",
+         "vertical profile units": "molecule cm-3"
       }
-    ]
+   ]
 }

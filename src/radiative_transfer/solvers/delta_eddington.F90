@@ -39,7 +39,6 @@ contains
       n_layers, spherical_geometry, grid_warehouse, profile_warehouse,        &
       radiator_warehouse ) result( radiation_field )
 
-    use tuvx_diagnostic_util,          only : diagout
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_linear_algebra_linpack,   only : linear_algebra_linpack_t

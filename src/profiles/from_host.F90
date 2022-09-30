@@ -24,9 +24,11 @@ module tuvx_profile_from_host
   end interface profile_from_host_t
 
   type :: profile_updater_t
+#ifndef MUSICA_IS_NAG_COMPILER
     private
+#endif
     ! updater for `profile_from_host_t` profiles
-    type(profile_from_host_t), pointer :: profile_ => null( )
+    class(profile_from_host_t), pointer :: profile_ => null( )
   contains
     procedure :: update
   end type profile_updater_t
@@ -93,8 +95,8 @@ contains
   function updater_constructor( profile ) result( this )
     ! Constructs an updater for a `profile_from_host_t` profile
 
-    class(profile_from_host_t), target :: profile ! profile to be updated
-    type(profile_updater_t)            :: this    ! new updater
+    class(profile_from_host_t), target, intent(inout) :: profile ! profile to be updated
+    type(profile_updater_t)                           :: this    ! new updater
 
     this%profile_ => profile
 

@@ -24,8 +24,11 @@ module tuvx_grid_from_host
   end interface grid_from_host_t
 
   type :: grid_updater_t
+#ifndef MUSICA_IS_NAG_COMPILER
+    private
+#endif
     ! updater for `grid_from_host_t` grids
-    type(grid_from_host_t), pointer :: grid_ => null( )
+    class(grid_from_host_t), pointer :: grid_ => null( )
   contains
     procedure :: update
   end type grid_updater_t
@@ -90,8 +93,8 @@ contains
   function updater_constructor( grid ) result( this )
     ! Constructs an updater for a `grid_from_host_t` grid
 
-    class(grid_from_host_t), target :: grid ! grid to be updated by host
-    type(grid_updater_t)            :: this ! new updater
+    class(grid_from_host_t), target, intent(inout) :: grid ! grid to be updated by host
+    type(grid_updater_t)                           :: this ! new updater
 
     this%grid_ => grid
 

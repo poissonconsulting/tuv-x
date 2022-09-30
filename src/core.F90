@@ -179,7 +179,7 @@ contains
 
     ! Local variables
     character(len=*), parameter       :: Iam = 'Photolysis core run: '
-    integer                           :: i_ndx, i_diag
+    integer                           :: i_ndx
     ! photolysis rate constants (time, vertical level, reaction)
     real(dk), allocatable             :: all_photo_rates(:,:,:)
     ! photolysis rate constants (vertical level, reaction)
@@ -446,8 +446,6 @@ contains
     integer,           intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
-    integer :: i_elem
-
     pack_size =                                                               &
         musica_mpi_pack_size( associated( this%grid_warehouse_ ), comm )
     if( associated( this%grid_warehouse_ ) ) then
@@ -505,7 +503,7 @@ contains
     integer,           intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
-    integer :: prev_pos, i_elem
+    integer :: prev_pos
 
     prev_pos = position
     call musica_mpi_pack( buffer, position,                                   &
@@ -563,7 +561,7 @@ contains
     integer,           intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
-    integer :: prev_pos, i_elem, n_elems
+    integer :: prev_pos
     logical :: alloced
 
     prev_pos = position

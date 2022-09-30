@@ -15,6 +15,14 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake-modules)
 option(ENABLE_COVERAGE "Enable code coverage output" ON)
 option(ENABLE_MPI "Enable MPI parallel support" OFF)
 option(ENABLE_MEMCHECK "Enable memory checking in tests" ON)
+option(ENABLE_NC_CONFIG "Use nc-config to determine NetCDF libraries" OFF)
+
+################################################################################
+# Compiler specific flags
+
+if(${CMAKE_Fortran_COMPILER_ID} MATCHES "NAG")
+  add_definitions(-DMUSICA_IS_NAG_COMPILER)
+endif()
 
 ################################################################################
 # MPI
@@ -78,7 +86,12 @@ find_library(NETCDF_FORTRAN_LIB netcdff
     $ENV{NETCDF_HOME}/lib
     $ENV{NETCDF_HOME}/lib64
     /opt/local/lib)
-set(NETCDF_LIBS ${NETCDF_LIB} ${NETCDF_FORTRAN_LIB})
+if(ENABLE_NC_CONFIG)
+  execute_process(COMMAND nc-config --flibs OUTPUT_VARIABLE NC_CONFIG_FLIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(NETCDF_LIBS ${NC_CONFIG_FLIBS} )
+else()
+  set(NETCDF_LIBS ${NETCDF_LIB} ${NETCDF_FORTRAN_LIB})
+endif()
 include_directories(${NETCDF_INCLUDE_DIR})
 
 ################################################################################

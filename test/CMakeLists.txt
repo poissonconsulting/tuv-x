@@ -12,9 +12,12 @@ add_custom_target(copy_test_data ALL ${CMAKE_COMMAND} -E copy_directory
 ################################################################################
 # Add subdirectories
 
-add_subdirectory(oldtuv)
 add_subdirectory(unit)
-add_subdirectory(regression)
+if(NOT ${CMAKE_Fortran_COMPILER_ID} MATCHES "NAG")
+  # oldtuv doesn't build with NAG, so bypass the regression tests
+  add_subdirectory(oldtuv)
+  add_subdirectory(regression)
+endif()
 
 ################################################################################
 # Run examples as tests

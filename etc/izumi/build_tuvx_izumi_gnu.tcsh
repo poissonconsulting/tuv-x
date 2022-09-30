@@ -56,7 +56,7 @@ mv $JSON_FORTRAN_HOME/lib/*.so* $JSON_FORTRAN_HOME/lib/shared
 # TUV-x
 set TUVX_ROOT=$TUVX_HOME/tuv-x
 cd $TUVX_ROOT
-git checkout develop-158-compilers
+git checkout release
 git submodule update
 mkdir -p build
 cd build

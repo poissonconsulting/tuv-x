@@ -25,26 +25,11 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  logical function output_enabled( enable_output )
-    ! Returns true if the output policy enables diagnostic output
-
-    logical, optional :: enable_output ! Enables diagnostic output
-
-    if( .not. present( enable_output ) ) then
-      output_enabled = .true.
-      return
-    end if
-
-    output_enabled = enable_output
-  end function output_enabled
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
   subroutine prepare_diagnostic_output( enable_output )
     ! Creates the folder to hold diagnostic output if it doesn't exist
-    logical, optional :: enable_output ! Enables diagnostic output
+    logical :: enable_output ! Enables diagnostic output
 
-    if (output_enabled( enable_output )) then
+    if ( enable_output ) then
       call execute_command_line( "mkdir -p output"  )
     endif
 
@@ -57,11 +42,11 @@ contains
 
     character(len=*), intent(in) :: filename      ! File path to output to
     real, intent(in)             :: variable(:)   ! Diagnostics to output
-    logical, optional            :: enable_output ! Enables diagnostic output
+    logical                      :: enable_output ! Enables diagnostic output
 
     integer :: ios
 
-    if (.not. output_enabled( enable_output )) return
+    if (.not. enable_output ) return
 
     open( unit = 44, file = 'output/' // filename, form = 'unformatted',      &
       iostat = ios)
@@ -85,14 +70,14 @@ contains
 
     character(len=*), intent(in) :: filename    ! File path to output to
     real(dk), intent(in)         :: variable(:) ! Diagnostics to output
-    logical, optional            :: enable_output ! Enables diagnostic output
+    logical                      :: enable_output ! Enables diagnostic output
 
     character(len=*), parameter  :: Iam = 'diagnostic_1d_dk: '
 
     integer :: ios
     character(len=256) :: iomsg
 
-    if (.not. output_enabled( enable_output )) return
+    if (.not. enable_output ) return
 
     open( unit = 44, file = 'output/' // filename, form = 'unformatted',      &
       iostat = ios)
@@ -118,11 +103,11 @@ contains
 
     character(len=*), intent(in) :: filename      ! File path to output to
     real, intent(in)             :: variable(:,:) ! Diagnostics to output
-    logical, optional            :: enable_output ! Enables diagnostic output
+    logical                      :: enable_output ! Enables diagnostic output
 
     integer :: ios
 
-    if (.not. output_enabled( enable_output )) return
+    if (.not. enable_output ) return
 
     open( unit = 44, file = 'output/' // filename, form = 'unformatted',      &
       iostat = ios)
@@ -146,12 +131,12 @@ contains
 
     character(len=*), intent(in) :: filename      ! File path to output to
     real(dk), intent(in)         :: variable(:,:) ! Diagnostics to output
-    logical, optional            :: enable_output ! Enables diagnostic output
+    logical                      :: enable_output ! Enables diagnostic output
 
     integer :: ios
     character(len=512) :: iomsg
 
-    if (.not. output_enabled( enable_output )) return
+    if (.not. enable_output ) return
 
     open( unit = 44, file = 'output/' // filename, form = 'unformatted',      &
       iostat = ios)
@@ -179,12 +164,12 @@ contains
 
     character(len=*), intent(in)              :: filename      ! File path to output to
     type(string_t), allocatable, intent(in)   :: variable(:) ! Diagnostics to output
-    logical, optional                         :: enable_output ! Enables diagnostic output
+    logical                                   :: enable_output ! Enables diagnostic output
 
     integer :: ios, idx
     character(len=512) :: iomsg
 
-    if (.not. output_enabled( enable_output )) return
+    if (.not. enable_output ) return
 
     open( unit = 44, file = 'output/' // filename, iostat = ios)
     if( ios /= 0 ) then

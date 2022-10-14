@@ -137,7 +137,8 @@ contains
     winput_G = input_OD( : nInputBins - 1 ) * input_G
     this%state_%layer_G_( :, 1 ) =                                            &
         theInterpolator%interpolate( zGrid%edge_, input_zgrid, winput_G, 1 )
-    call diagout( 'gz.aer.new', this%state_%layer_G_( :, 1 ) )
+    call diagout( 'gz.aer.new', this%state_%layer_G_( :, 1 ),                 &
+      this%enable_diagnostics_ )
     do binNdx = 2, lambdaGrid%ncells_
       this%state_%layer_G_( :, binNdx ) = this%state_%layer_G_( :, 1 )
     enddo

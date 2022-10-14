@@ -23,6 +23,7 @@ module tuvx_dose_rates
     type(spectral_weight_ptr), allocatable :: spectral_weights_(:)
     ! Configuration label for the dose rate
     type(string_t), allocatable          :: handles_(:)
+    logical :: enable_diagnostics_ ! Enable writing diagnostic output, defaults to false
   contains
     ! Returns the dose rates for a given set of conditions
     procedure :: get
@@ -54,6 +55,7 @@ contains
 
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
+    use tuvx_diagnostic_util,          only : prepare_diagnostic_output
     use tuvx_spectral_weight_factory,  only : spectral_weight_builder
 
     !> Dose rate configuration
@@ -81,10 +83,18 @@ contains
     allocate( string_t :: rates%handles_(0) )
     allocate( rates%spectral_weights_(0) )
 
+    call config%get( "enable diagnostics", dose_rates%enable_diagnostics_,     &
+      Iam, default = .false. )
+    call prepare_diagnostic_output( dose_rates%enable_diagnostics_ )
+
     ! iterate over dose rates
     iter => config%get_iterator( )
     do while( iter%next( ) )
       keychar  = config%key( iter )
+      if (keychar .eq. 'enable diagnostics') then
+        cycle
+      endif
+
       wght_key = keychar
       rates%handles_ = [ rates%handles_, wght_key ]
       call config%get( iter, wght_config, Iam )
@@ -168,8 +178,10 @@ rate_loop:                                                                    &
       if( allocated( spectral_weight ) ) deallocate( spectral_weight )
     end do rate_loop
 
-    call diagout( 'annotatedslabels.new', this%handles_ )
-    call diagout( 'sw.'//file_tag//'.new', tmp_spectral_weight )
+    call diagout( 'annotatedslabels.new', this%handles_,                      &
+      this%enable_diagnostics_ )
+    call diagout( 'sw.'//file_tag//'.new', tmp_spectral_weight,               &
+      this%enable_diagnostics_ )
 
     if( associated( zGrid ) ) deallocate( zGrid )
     if( associated( lambdaGrid ) ) deallocate( lambdaGrid )

@@ -112,7 +112,7 @@
             "vertical profile units": "molecule cm-3"
          },
          {
-            "enable diagnostics" : true,
+            "enable diagnostics" : false,
             "name": "O2",
             "type": "base",
             "cross section": "O2",
@@ -120,7 +120,7 @@
             "vertical profile units": "molecule cm-3"
          },
          {
-            "enable diagnostics" : true,
+            "enable diagnostics" : false,
             "name": "O3",
             "type": "base",
             "cross section": "O3",

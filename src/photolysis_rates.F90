@@ -24,7 +24,7 @@ module tuvx_photolysis_rates
     type(quantum_yield_ptr), allocatable :: quantum_yields_(:) ! Quantum yields
     real(dk),                    allocatable :: scaling_factors_(:) ! Scaling factor for final rate constant
     type(string_t), allocatable              :: handles_(:) ! User-provided label for the photolysis rate constant
-    logical :: enable_diagnostics ! Enable writing diagnostic output, defaults to false
+    logical :: enable_diagnostics_ ! Enable writing diagnostic output, defaults to false
   contains
     ! Returns the photolysis rate constants for a given set of conditions
     procedure :: get
@@ -95,8 +95,8 @@ contains
     iter => reaction_set%get_iterator( )
 
     call reaction_set%get( "enable diagnostics",                              &
-      photolysis_rates%enable_diagnostics, Iam, default = .false. )
-    call prepare_diagnostic_output( photolysis_rates%enable_diagnostics )
+      photolysis_rates%enable_diagnostics_, Iam, default = .false. )
+    call prepare_diagnostic_output( photolysis_rates%enable_diagnostics_ )
 
     do while( iter%next( ) )
       keychar = reaction_set%key( iter )
@@ -233,7 +233,7 @@ rate_loop:                                                                    &
       xsqyWrk = [ xsqyWrk, reshape( cross_section * quantum_yield,            &
                                     (/ size( cross_section ) /) ) ]
 
-      associate( enable => this%enable_diagnostics )
+      associate( enable => this%enable_diagnostics_ )
       annotatedRate = this%handles_( rateNdx )//'.xsect.new'
       call diagout( trim( annotatedRate%to_char( ) ), cross_section, enable )
       annotatedRate = this%handles_( rateNdx )//'.qyld.new'
@@ -253,8 +253,8 @@ rate_loop:                                                                    &
     end do rate_loop
 
     call diagout( 'annotatedjlabels.new', this%handles_,                      &
-      this%enable_diagnostics )
-    call diagout( 'xsqy.'//file_tag//'.new', xsqyWrk, this%enable_diagnostics )
+      this%enable_diagnostics_ )
+    call diagout( 'xsqy.'//file_tag//'.new', xsqyWrk, this%enable_diagnostics_ )
 
     deallocate( zGrid )
     deallocate( lambdaGrid )

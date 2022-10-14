@@ -602,7 +602,7 @@ configuration is described :ref:`here <configuration-quantum-yields>`.
 The ``scaling factor`` is a optional scaling factor that will be
 applied to the calculated rate constant.
 
-Additionally, diagnostic output can be enabled by adding an attribute to the
+Additionally, diagnostic output can be enabled by adding ``enable diagnostics`` to the
 json configuration like in the sample below. In this case, a folder named
 `output` will be created with some diagnostic output for the cross sections
 and quantum yields. This is only used for regression tests and will be removed
@@ -659,6 +659,25 @@ Each dose rate must have a ``weights`` object that
 defines a spectral weight, whose configuration format
 is described :ref:`here <configuration-spectral-weights>`.
 
+Additionally, diagnostic output can be enabled by adding ``enable diagnostics`` to the
+json configuration like in the sample below. In this case, a folder named
+`output` will be created with some diagnostic output for the cross sections
+and quantum yields. This is only used for regression tests and will be removed
+in the future.
+
+
+.. code-block:: JSON
+   :force:
+
+   "dose rates": {
+     "enable diagnostics" : true,
+     "my first dose rate": {
+       "weights": { ... }
+     },
+     "my second dose rate": {
+       "weights": { ... }
+     }
+   }
 
 Additional Objects
 ------------------

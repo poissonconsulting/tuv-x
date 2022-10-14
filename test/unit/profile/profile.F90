@@ -32,7 +32,6 @@ contains
     use musica_assert,    only : assert, almost_equal
     use musica_mpi
     use musica_constants, only : ik => musica_ik, dk => musica_dk
-    use tuvx_diagnostic_util,          only : prepare_diagnostic_output
     use tuvx_grid_warehouse, only : grid_warehouse_t
     use tuvx_grid,    only : grid_t
     use tuvx_profile_warehouse, only : Profile_warehouse_t
@@ -51,8 +50,6 @@ contains
     character, allocatable :: buffer(:)
     integer :: pos, pack_size
     integer, parameter :: comm = MPI_COMM_WORLD
-
-    call prepare_diagnostic_output( )
 
     !> master configuration -> config type
     call tst_config%from_file( config_flsp%to_char() )

@@ -47,8 +47,8 @@ interface
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function update_radiation_field( this, solar_zenith_angle, n_streams,       &
-      n_layers, spherical_geometry, grid_warehouse, profile_warehouse,        &
+  function update_radiation_field( this, solar_zenith_angle, n_layers,        &
+      spherical_geometry, grid_warehouse, profile_warehouse,                  &
       radiator_warehouse ) result( radiation_field )
     ! Solves for the radiation field based on given conditions
 
@@ -61,7 +61,6 @@ interface
      import solver_t, radiation_field_t
 
      class(solver_t), intent(inout) :: this
-     integer, intent(in)                       :: n_streams          ! Number of streams
      integer, intent(in)                       :: n_layers           ! Number of vertical layers
      real(dk), intent(in)                      :: solar_zenith_angle ! Solar zenith angle [degrees]
      type(grid_warehouse_t), intent(inout)     :: grid_warehouse     ! Available grids
@@ -81,11 +80,10 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  integer function solver_pack_size( this, comm ) 
-    ! Returns the size of a character buffer required to pack the radiator
-    ! state
+  integer function solver_pack_size( this, comm )
+    ! Returns the size of a character buffer required to pack the solver
 
-    class(solver_t),   intent(in) :: this ! solver state to be packed
+    class(solver_t),   intent(in) :: this ! solver to be packed
     integer,           intent(in) :: comm ! MPI communicator
 
     solver_pack_size = 0
@@ -98,9 +96,9 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine solver_pack( this, buffer, position, comm )
-    ! Packs the radiator state onto a character buffer
+    ! Packs the solver onto a character buffer
 
-    class(solver_t), intent(in)    :: this              ! solver state to be packed
+    class(solver_t), intent(in)    :: this              ! solver to be packed
     character,               intent(inout) :: buffer(:) ! memory buffer
     integer,                 intent(inout) :: position  ! current buffer position
     integer,                 intent(in)    :: comm      ! MPI communicator
@@ -113,9 +111,9 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine solver_unpack( this, buffer, position, comm )
-    ! Unpacks a radiator state from a character buffer
+    ! Unpacks a solver from a character buffer
 
-    class(solver_t),         intent(out)   :: this      ! solver state to be packed
+    class(solver_t),         intent(out)   :: this      ! solver to be packed
     character,               intent(inout) :: buffer(:) ! memory buffer
     integer,                 intent(inout) :: position  ! current buffer position
     integer,                 intent(in)    :: comm      ! MPI communicator
@@ -150,8 +148,8 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   integer function field_pack_size( this, comm ) result( pack_size )
-    ! Returns the size of a character buffer required to pack the radiator
-    ! state
+    ! Returns the size of a character buffer required to pack the radiation
+    ! field
 
     use musica_mpi,                    only : musica_mpi_pack_size
 
@@ -166,7 +164,7 @@ contains
                 musica_mpi_pack_size( this%edn_, comm) +                      &
                 musica_mpi_pack_size( this%fdr_, comm) +                      &
                 musica_mpi_pack_size( this%fup_, comm) +                      &
-                musica_mpi_pack_size( this%fdn_, comm) 
+                musica_mpi_pack_size( this%fdn_, comm)
 #endif
 
   end function field_pack_size
@@ -174,7 +172,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine field_pack( this, buffer, position, comm )
-    ! Packs the radiator state onto a character buffer
+    ! Packs the radiation field onto a character buffer
 
     use musica_assert,                 only : assert
     use musica_mpi,                    only : musica_mpi_pack
@@ -203,7 +201,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine field_unpack( this, buffer, position, comm )
-    ! Unpacks a radiator state from a character buffer
+    ! Unpacks a radiation field from a character buffer
 
     use musica_assert,                 only : assert
     use musica_mpi,                    only : musica_mpi_unpack

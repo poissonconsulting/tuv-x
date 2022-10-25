@@ -92,7 +92,7 @@ contains
     ! allocate radiator state variables
     allocate( this%state_%layer_OD_(  zGrid%ncells_, lambdaGrid%ncells_ ) )
     allocate( this%state_%layer_SSA_( zGrid%ncells_, lambdaGrid%ncells_ ) )
-    allocate( this%state_%layer_G_(   zGrid%ncells_, lambdaGrid%ncells_ ) )
+    allocate( this%state_%layer_G_(   zGrid%ncells_, lambdaGrid%ncells_, 1 ) )
 
     ! set up the interpolator
     allocate( interpolator_fractional_source_t :: theInterpolator )
@@ -135,12 +135,12 @@ contains
     ! interpolate input G to state variable
     call config%get( "asymmetry factor", input_G, Iam )
     winput_G = input_OD( : nInputBins - 1 ) * input_G
-    this%state_%layer_G_( :, 1 ) =                                            &
+    this%state_%layer_G_( :, 1, 1 ) =                                            &
         theInterpolator%interpolate( zGrid%edge_, input_zgrid, winput_G, 1 )
-    call diagout( 'gz.aer.new', this%state_%layer_G_( :, 1 ),                 &
+    call diagout( 'gz.aer.new', this%state_%layer_G_( :, 1, 1 ),                 &
       this%enable_diagnostics_ )
     do binNdx = 2, lambdaGrid%ncells_
-      this%state_%layer_G_( :, binNdx ) = this%state_%layer_G_( :, 1 )
+      this%state_%layer_G_( :, binNdx, 1 ) = this%state_%layer_G_( :, 1, 1 )
     enddo
 
     call config%get( "550 nm optical depth", tau550, Iam, default = 0._dk )
@@ -162,11 +162,11 @@ contains
       where( rad_OD > 0._dk )
         this%state_%layer_SSA_( :, binNdx ) =                                 &
             this%state_%layer_SSA_( :, binNdx ) / rad_OD
-        this%state_%layer_G_( :, binNdx )   =                                 &
-            this%state_%layer_G_( :, binNdx ) / rad_OD
+        this%state_%layer_G_( :, binNdx, 1 )   =                                 &
+            this%state_%layer_G_( :, binNdx, 1 ) / rad_OD
       elsewhere
-        this%state_%layer_SSA_( :, binNdx ) = 1._dk
-        this%state_%layer_G_( :, binNdx )   = 0._dk
+        this%state_%layer_SSA_( :, binNdx )  = 1._dk
+        this%state_%layer_G_( :, binNdx, 1 ) = 0._dk
       endwhere
     enddo
 

@@ -26,6 +26,10 @@ module tuvx_solver_delta_eddington
     procedure :: update_radiation_field
   end type solver_delta_eddington_t
 
+  interface solver_delta_eddington_t
+    procedure :: constructor
+  end interface solver_delta_eddington_t
+
   real(dk), parameter :: rZERO = 0.0_dk
   real(dk), parameter :: rONE  = 1.0_dk
   real(dk), parameter :: rTWO  = 2.0_dk
@@ -35,8 +39,32 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function update_radiation_field( this, solar_zenith_angle, n_streams,       &
-      n_layers, spherical_geometry, grid_warehouse, profile_warehouse,        &
+  !> Constructs a delta Eddington solver
+  function constructor( config ) result( solver )
+
+    use musica_assert,                 only : assert_msg
+    use musica_config,                 only : config_t
+    use musica_string,                 only : string_t
+
+    type(config_t),                  intent(inout) :: config
+    class(solver_delta_eddington_t), pointer       :: solver
+
+    type(string_t) :: required_keys(1), optional_keys(0)
+
+    required_keys(1) = "type"
+
+    call assert_msg( 657111982,                                               &
+                     config%validate( required_keys, optional_keys ),         &
+                     "Bad configuration format for delta Eddington solver" )
+
+    allocate( solver )
+
+  end function constructor
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function update_radiation_field( this, solar_zenith_angle, n_layers,        &
+      spherical_geometry, grid_warehouse, profile_warehouse,                  &
       radiator_warehouse ) result( radiation_field )
 
     use tuvx_grid,                     only : grid_t
@@ -51,7 +79,6 @@ contains
 
     class(solver_delta_eddington_t), intent(inout) :: this ! Delta-Eddington solver
 
-    integer,                    intent(in)    :: n_streams ! not used in delta eddington
     integer,                    intent(in)    :: n_layers  ! number of vertical layers
     real(dk),                   intent(in)    :: solar_zenith_angle ! solar zenith angle [degrees]
     type(grid_warehouse_t),     intent(inout) :: grid_warehouse
@@ -110,6 +137,7 @@ contains
     nlambda = lambdaGrid%ncells_
     radiation_field => radiation_field_t( n_layers + 1, nlambda )
 
+    allocate( atmRadiatorState%layer_G_( n_layers, nlambda, 1 ) )
     ! Create cumulative state from all radiators
     call radiator_warehouse%accumulate_states( atmRadiatorState )
 
@@ -129,7 +157,7 @@ contains
       associate( rsfc => surfaceAlbedo%mid_val_( lambdaNdx ),                 &
              tauu => atmRadiatorState%layer_OD_( n_layers:1:-1, lambdaNdx ),  &
              omu  => atmRadiatorState%layer_SSA_( n_layers:1:-1, lambdaNdx ), &
-             gu   => atmRadiatorState%layer_G_( n_layers:1:-1, lambdaNdx ) )
+             gu   => atmRadiatorState%layer_G_( n_layers:1:-1, lambdaNdx, 1 ) )
 
       ! initial conditions:  pi*solar flux = 1;  diffuse incidence = 0
       pifs = rONE

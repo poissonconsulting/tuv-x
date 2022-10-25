@@ -9,6 +9,7 @@ set(SRC radiative_transfer.F90
         radiator_factory.F90
         radiator_warehouse.F90
         solver.F90
+        solver_factory.F90
         ${RADIATOR_SRC}
         ${SOLVER_SRC}
         )

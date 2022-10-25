@@ -547,9 +547,11 @@ The general format for radiative transfer is:
          "vertical profile": "foo",
          "vertical profile units": "molecule cm-3"
        }
-     ]
+     ],
+     "solver": {
+       "type": "delta eddington"
+     }
    }
-
 
 The ``cross sections`` and ``radiators`` are required arrays
 (even if they are of zero length).
@@ -563,6 +565,43 @@ should be considered in the calculation of the radiation
 field.
 Radiator configuration formats are described
 :ref:`below <configuration-radiators>`.
+
+The ``solver`` key is required and specifies the solver to
+use for radiative transfer.
+There are currently two options, described below.
+
+Delta Eddington
+^^^^^^^^^^^^^^^
+
+This is a fast 2-stream solver based on:
+Toon et al., J.Geophys.Res., v94 (D13), Nov 20, 1989.
+The configuration format for the delta-Eddington solver is:
+
+
+.. code-block:: JSON
+
+   "type" : "delta eddington"
+
+
+There are no configuration options for this solver.
+
+Discrete Ordinant
+^^^^^^^^^^^^^^^^^
+
+This is an ``n``-stream solver, where ``n`` is an
+even number between 2 and 32.
+The configuration format for the discrete ordinant solver is:
+
+
+.. code-block:: JSON
+
+   "type": "discrete ordinant",
+   "number of streams": 4
+
+
+The ``number of streams`` is required and specifies the number
+of streams to solve for.
+The value must be an even number between 2 and 32.
 
 
 .. _configuration-photolysis:
@@ -803,6 +842,7 @@ follows:
    {
      "type": "base",
      "name": "foo",
+     "treat as air": true,
      "cross section": "foo",
      "vertical profile": "foo",
      "vertical profile units": "molecule cm-3",
@@ -815,16 +855,22 @@ keys                         Required/Optional
 ===========================  ==============
 ``name``                     optional
 ``type``                     required
+``treat as air``             optional
 ``cross section``            required 
 ``vertical profile``         required
 ``vertical profile units``   required
 ``enable diagnostics``       optional
 ===========================  ==============
 
-The regressoin tests compare the new version of TUV-x to the old version. One
-way is by directly comparing output. The `enable diagnostics` allows for this
-ouptut to be disabled. If this is enabled, a folder named `output` will be 
+The regression tests compare the new version of TUV-x to the old version. One
+way is by directly comparing output. The ``enable diagnostics`` allows for this
+ouptut to be disabled. If this is enabled, a folder named ``output`` will be 
 created in the same directory TUV-x is run from.
+
+The ``treat as air`` flag can be used to indicate that the radiator
+should be treated in a unique way specific to air in the calculation
+of optical properties.
+The default value is false.
 
 The ``cross section`` must be the name of a cross
 section in the list of ``cross sections`` in the

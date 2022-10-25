@@ -25,6 +25,9 @@
     }
   },
   "radiative transfer": {
+    "solver" : {
+      "type" : "delta eddington"
+    },
     "cross sections": [
         {
           "name": "air",

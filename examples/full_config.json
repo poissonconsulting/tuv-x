@@ -85,6 +85,9 @@
       }
    },
    "radiative transfer": {
+      "solver" : {
+         "type" : "delta eddington"
+      },
       "cross sections": [
          {
             "name": "air",
@@ -107,6 +110,7 @@
             "enable diagnostics" : false,
             "name": "air",
             "type": "base",
+            "treat as air": true,
             "cross section": "air",
             "vertical profile": "air",
             "vertical profile units": "molecule cm-3"

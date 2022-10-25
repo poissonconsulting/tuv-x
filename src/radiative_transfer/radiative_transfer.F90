@@ -20,9 +20,7 @@ module tuvx_radiative_transfer
     !
     ! Calculates the atmospheric radiation field
     private
-    integer                                     :: n_streams_ = 0
     class(solver_t), pointer                    :: solver_ => null()
-    type(config_t)                              :: config_        ! Copy of the original radiative transfer component configuration
     type(cross_section_warehouse_t),    pointer :: cross_section_warehouse_   &
                                                        => null( ) ! Copy of original radiative transfer :f:type:`~tuvx_cross_section_warehouse/cross_section_warehouse_t`
     type(radiator_warehouse_t), public, pointer :: radiator_warehouse_        &
@@ -55,9 +53,9 @@ contains
 
     use musica_assert,                 only : assert_msg, die_msg
     use musica_string,                 only : string_t
-    use tuvx_solver_delta_eddington,   only : solver_delta_eddington_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
+    use tuvx_solver_factory,           only : solver_builder
 
     type(radiative_transfer_t), pointer      :: new_radiative_transfer ! New :f:type:`~tuvx_radiative_transfer/radxfer_component_core_t`
     type(config_t),            intent(inout) :: config                 ! radXfer configuration data
@@ -65,7 +63,7 @@ contains
     type(profile_warehouse_t), intent(inout) :: profile_warehouse      ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     character(len=*), parameter :: Iam = 'radiative transfer constructor: '
-    type(string_t)       :: solver
+    type(config_t) :: solver_config
     type(config_t) :: child_config
     type(string_t) :: required_keys(2), optional_keys(1)
 
@@ -91,19 +89,9 @@ contains
     new_radiative_transfer%radiator_warehouse_ =>                             &
         radiator_warehouse_t( child_config, grid_warehouse )
 
-    ! save the configuration (used for preprocessing input data only)
-    new_radiative_transfer%config_ = config
-
     ! get the radiative transfer solver
-    call config%get( "solver", solver, Iam, default="Delta Eddington" )
-    if( solver == 'discrete ordinants' ) then
-      call config%get( "n_streams", new_radiative_transfer%n_streams_, Iam,   &
-                       default = 4 )
-      call die_msg( 900569062,                                                &
-                    "Discrete ordinants method is not currently available" )
-    else
-      allocate( solver_delta_eddington_t :: new_radiative_transfer%solver_ )
-    endif
+    call config%get( "solver", solver_config, Iam )
+    new_radiative_transfer%solver_ => solver_builder( solver_config )
 
   end function constructor
 
@@ -139,10 +127,12 @@ contains
       profile_warehouse, radiation_field )
     ! Calculate the radiation field
 
+    use musica_assert,                 only : die_msg
     use musica_string,                 only : string_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_radiator_warehouse,       only : warehouse_iterator_t
     use tuvx_radiator,                 only : radiator_t
+    use tuvx_radiator,                 only : radiator_state_t
     use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_spherical_geometry,       only : spherical_geometry_t
@@ -199,7 +189,7 @@ contains
     zenithAngle = spherical_geometry%solar_zenith_angle_
     associate( theSolver => this%solver_ )
     radiation_field => theSolver%update_radiation_field(                      &
-                     zenithAngle, this%n_streams_, nlyr, spherical_geometry,  &
+                     zenithAngle, nlyr, spherical_geometry,                   &
                      grid_warehouse, profile_warehouse,                       &
                      this%radiator_warehouse_ )
     end associate
@@ -208,23 +198,27 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  integer function pack_size( this, comm ) 
-    ! Returns the size of a character buffer required to pack the radiator
-    ! state
+  integer function pack_size( this, comm )
+    ! Returns the size of a character buffer required to pack the radiative
+    ! transfer calculator
 
     use musica_mpi,                    only : musica_mpi_pack_size
+    use musica_string,                 only : string_t
+    use tuvx_solver_factory,           only : solver_type_name
 
-    class(radiative_transfer_t), intent(inout) :: this ! radiative transfer state to be packed
-    integer,                 intent(in)     :: comm ! MPI communicator
-
-    pack_size = 0
+    class(radiative_transfer_t), intent(inout) :: this ! radiative transfer to be packed
+    integer,                     intent(in)    :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
-    pack_size = pack_size + musica_mpi_pack_size( this%n_streams_, comm ) +   &
-                this%config_%pack_size( comm ) +                              &
+    type(string_t) :: solver_type
+
+    solver_type = solver_type_name( this%solver_ )
+    pack_size = solver_type%pack_size( comm ) +                               &
                 this%solver_%pack_size( comm ) +                              &
                 this%cross_section_warehouse_%pack_size( comm ) +             &
                 this%radiator_warehouse_%pack_size( comm )
+#else
+    pack_size = 0
 #endif
 
   end function pack_size
@@ -232,22 +226,25 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine mpi_pack( this, buffer, position, comm )
-    ! Packs the radiator state onto a character buffer
+    ! Packs the radiative transfer calculator onto a character buffer
 
     use musica_assert,                 only : assert
     use musica_mpi,                    only : musica_mpi_pack
+    use musica_string,                 only : string_t
+    use tuvx_solver_factory,           only : solver_type_name
 
-    class(radiative_transfer_t), intent(inout)    :: this      ! radiator state to be packed
+    class(radiative_transfer_t), intent(inout)    :: this   ! radiative transfer to be packed
     character,                   intent(inout) :: buffer(:) ! memory buffer
     integer,                     intent(inout) :: position  ! current buffer position
     integer,                     intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
+    type(string_t) :: solver_type
     integer :: prev_pos
     prev_pos = position
 
-    call musica_mpi_pack( buffer, position, this%n_streams_,  comm )
-    call this%config_%mpi_pack( buffer, position, comm )
+    solver_type = solver_type_name( this%solver_ )
+    call solver_type%mpi_pack( buffer, position , comm )
     call this%solver_%mpi_pack( buffer, position, comm )
     call this%cross_section_warehouse_%mpi_pack( buffer, position, comm )
     call this%radiator_warehouse_%mpi_pack( buffer, position, comm )
@@ -260,40 +257,30 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine mpi_unpack( this, buffer, position, comm )
-    ! Unpacks a radiator state from a character buffer
+    ! Unpacks a radiative transfer calculator from a character buffer
 
     use musica_assert,                 only : assert, die_msg
     use musica_string,                 only : string_t
     use musica_mpi,                    only : musica_mpi_unpack
-    use tuvx_solver_delta_eddington,   only : solver_delta_eddington_t
+    use tuvx_solver_factory,           only : solver_allocate
 
-    class(radiative_transfer_t), intent(out)   :: this      ! radiator state to be packed
+    class(radiative_transfer_t), intent(out)   :: this      ! radiative transfer to be packed
     character,                   intent(inout) :: buffer(:) ! memory buffer
     integer,                     intent(inout) :: position  ! current buffer position
     integer,                     intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
-    type(string_t) :: solver
-    integer        :: prev_pos
+    type(string_t) :: solver_type
+    integer :: prev_pos
 
     prev_pos = position
 
     allocate( this%cross_section_warehouse_ )
     allocate( this%radiator_warehouse_ )
 
-    call musica_mpi_unpack( buffer, position, this%n_streams_,  comm )
-    call this%config_%mpi_unpack( buffer, position, comm )
-
-    call this%config_%get( "solver", solver, "", default="Delta Eddington" )
-    if( solver == 'discrete ordinants' ) then
-      call die_msg( 900569062,                                                &
-                    "Discrete ordinants method is not currently available" )
-    else
-      allocate( solver_delta_eddington_t :: this%solver_ )
-    endif
-
+    call solver_type%mpi_unpack( buffer, position, comm )
+    this%solver_ => solver_allocate( solver_type )
     call this%solver_%mpi_unpack( buffer, position, comm )
-
     call this%cross_section_warehouse_%mpi_unpack( buffer, position, comm )
     call this%radiator_warehouse_%mpi_unpack( buffer, position, comm )
 

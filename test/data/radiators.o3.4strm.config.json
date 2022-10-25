@@ -1,5 +1,5 @@
 {
-   "enable diagnostics" : true,
+   "enable diagnostics": true,
    "O2 absorption" : {
      "cross section parameters file": "data/cross_sections/O2_parameters.txt"
    },
@@ -75,7 +75,8 @@
    },
    "radiative transfer": {
       "solver" : {
-         "type" : "delta eddington"
+         "type" : "discrete ordinate",
+         "number of streams" : 4
       },
       "cross sections": [
          {
@@ -96,11 +97,10 @@
       ],
       "radiators": [
          {
-            "enable diagnostics" : true,
-            "name": "O2",
+            "name": "O3",
             "type": "base",
-            "cross section": "O2",
-            "vertical profile": "O2",
+            "cross section": "O3",
+            "vertical profile": "O3",
             "vertical profile units": "molecule cm-3"
          }
       ]

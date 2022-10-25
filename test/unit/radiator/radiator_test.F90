@@ -67,13 +67,14 @@ program radiator_test
     b_state%layer_SSA_ = reshape( (/ 0.04_dk, 0.01_dk, 0.02_dk, 0.03_dk /),   &
                                   (/ 2, 2 /) )
     a_state%layer_G_   = reshape( (/ 0.2_dk, 0.4_dk, 0.2_dk, 0.3_dk /),       &
-                                  (/ 2, 2 /) )
+                                  (/ 2, 2, 1 /) )
     b_state%layer_G_   = reshape( (/ 0.4_dk, 0.2_dk, 0.1_dk, 0.5_dk /),       &
-                                  (/ 2, 2 /) )
+                                  (/ 2, 2, 1 /) )
 
     ! test accumulating a single radiator
     one_radiator(1)%val_%state_ = a_state
 
+    allocate( total_state%layer_G_( 2, 2, 1 ) )
     call total_state%accumulate( one_radiator )
 
     call assert( 413535517, almost_equal( a_state%layer_OD_(1,1),             &
@@ -92,14 +93,14 @@ program radiator_test
                                           total_state%layer_SSA_(2,1) ) )
     call assert( 288234375, almost_equal( a_state%layer_SSA_(2,2),            &
                                           total_state%layer_SSA_(2,2) ) )
-    call assert( 735602221, almost_equal( a_state%layer_G_(1,1),              &
-                                          total_state%layer_G_(1,1) ) )
-    call assert( 282970068, almost_equal( a_state%layer_G_(1,2),              &
-                                          total_state%layer_G_(1,2) ) )
-    call assert( 447862665, almost_equal( a_state%layer_G_(2,1),              &
-                                          total_state%layer_G_(2,1) ) )
-    call assert( 277705761, almost_equal( a_state%layer_G_(2,2),              &
-                                          total_state%layer_G_(2,2) ) )
+    call assert( 735602221, almost_equal( a_state%layer_G_(1,1,1),            &
+                                          total_state%layer_G_(1,1,1) ) )
+    call assert( 282970068, almost_equal( a_state%layer_G_(1,2,1),            &
+                                          total_state%layer_G_(1,2,1) ) )
+    call assert( 447862665, almost_equal( a_state%layer_G_(2,1,1),            &
+                                          total_state%layer_G_(2,1,1) ) )
+    call assert( 277705761, almost_equal( a_state%layer_G_(2,2,1),            &
+                                          total_state%layer_G_(2,2,1) ) )
 
     radiators(1)%val_%state_ = a_state
     radiators(2)%val_%state_ = b_state
@@ -117,7 +118,7 @@ program radiator_test
                              0.3_dk * ( 1.0_dk - 0.01_dk ) ) /                &
                            ( 0.2_dk * 0.03_dk + 0.3_dk * 0.01_dk ) ) ) )
 
-    call assert( 802376580, almost_equal( total_state%layer_G_(2,1),          &
+    call assert( 802376580, almost_equal( total_state%layer_G_(2,1,1),        &
                  ( 0.2_dk * 0.03_dk * 0.4_dk + 0.3_dk * 0.01_dk * 0.2_dk ) /  &
                  ( 0.2_dk * 0.03_dk + 0.3_dk * 0.01_dk ) ) )
 

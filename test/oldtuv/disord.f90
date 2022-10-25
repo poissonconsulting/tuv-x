@@ -97,7 +97,7 @@
      else
        pmray = rZERO
      endif
-     this%pmom(strNdx,nlyr:1:-1) = &
+     this%pmom( strNdx, nlyr:1:-1 ) = &
        (pmcld*dscld + pmaer*dsaer + pmsnw*dssnw + pmany*dsany + pmray*dtrl)/dtsct
    enddo
 
@@ -106,10 +106,12 @@
    subroutine calculate( this, nlyr, nstr, albedo, &
                          fdr, fup, fdn, edr, eup, edn )
 
+   use tuv_params,  only : pi
    use DISORD_SUBS, only : PSNDO
 
    class(disord_t), intent(inout) :: this
 
+   real, parameter     :: fourPi = 4. * pi
    INTEGER, intent(in) :: nlyr, nstr
    REAL, intent(in)    :: albedo
    REAL, intent(out)   :: eup(:), edn(:), edr(:)
@@ -118,7 +120,7 @@
    CALL PSNDO( this%dsdh, this%nid, &
                NLYR, this%DTAUC, this%SSALB, this%PMOM, &
                ALBEDO, NSTR, this%umu0, &
-               edr, edn, eup, fdr, fdn, fup )
+               edr, edn, eup, fdr, fup, fdn )
 
    end subroutine calculate
 

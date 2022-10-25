@@ -120,6 +120,7 @@ CSM         PAUSE
       WRITE(*,*)' 3: defin3 (default No. 3, optimized for master mech)' 
       WRITE(*,*)' 4: defin4 (default No. 4, sample of all outputs)'
       WRITE(*,*)' 5: defin5 (default No. 5, spectra for WRF-chem)'
+      WRITE(*,*)' 6: defin6 (default No. 6, n-stream test)'
       
       WRITE(*,*) ' file-name for others '
       READ(*,120) inpfil
@@ -131,6 +132,7 @@ CSM         PAUSE
       IF(inpfil(1:1) .EQ. '3') inpfil = 'defin3'
       IF(inpfil(1:1) .EQ. '4') inpfil = 'defin4'
       IF(inpfil(1:1) .EQ. '5') inpfil = 'defin5'
+      IF(inpfil(1:1) .EQ. '6') inpfil = 'defin6'
       
  12   CONTINUE
       INQUIRE(file='odat/INPUTS/'//inpfil,exist=lexist)

@@ -15,9 +15,9 @@ module tuvx_radiator
   type radiator_state_t
     ! Optical properties for a radiator
 
-    real(kind=dk), allocatable :: layer_OD_(:,:) ! layer optical depth (vertical layer, wavelength bin)
+    real(kind=dk), allocatable :: layer_OD_(:,:)  ! layer optical depth (vertical layer, wavelength bin)
     real(kind=dk), allocatable :: layer_SSA_(:,:) ! layer single scattering albedo (vertical layer, wavelength bin)
-    real(kind=dk), allocatable :: layer_G_(:,:) ! layer asymmetry factor (vertical layer, wavelength bin)
+    real(kind=dk), allocatable :: layer_G_(:,:,:) ! layer asymmetry factor (vertical layer, wavelength bin, stream)
   contains
     ! Accumulates a net radiator state for a set of radiators
     procedure :: accumulate
@@ -40,6 +40,7 @@ module tuvx_radiator
     type(string_t)         :: cross_section_name_ ! Name of the absorption cross-section to use
     type(radiator_state_t) :: state_ ! Optical properties, a :f:type:`~tuvx_radiator/radiator_state_t`
     logical                :: enable_diagnostics_ ! determines if diagnostic output is written or not
+    logical                :: is_air_ = .false. ! Indicates whether the radiator should be treated as "air" in optical property calculations
   contains
     ! Update radiator for new environmental conditions
     procedure :: update_state
@@ -102,7 +103,7 @@ contains
     ! local variables
     character(len=*), parameter   :: Iam = "Base radiator constructor"
     class(grid_t),    pointer     :: z_grid, lambda_grid
-    type(string_t)                :: required_keys(5), optional_keys(1)
+    type(string_t)                :: required_keys(5), optional_keys(2)
 
     required_keys(1) = "name"
     required_keys(2) = "type"
@@ -110,6 +111,7 @@ contains
     required_keys(4) = "vertical profile"
     required_keys(5) = "vertical profile units"
     optional_keys(1) = "enable diagnostics"
+    optional_keys(2) = "treat as air"
 
     call assert_msg( 691711954,                                               &
                      config%validate( required_keys, optional_keys ),         &
@@ -128,13 +130,14 @@ contains
 
     call config%get( 'enable diagnostics', this%enable_diagnostics_, Iam,       &
       default=.false. )
+    call config%get( 'treat as air', this%is_air_, Iam, default = .false. )
 
     call prepare_diagnostic_output( this%enable_diagnostics_ )
 
     ! allocate radiator state variables
     allocate( this%state_%layer_OD_(  z_grid%ncells_, lambda_grid%ncells_ ) )
     allocate( this%state_%layer_SSA_( z_grid%ncells_, lambda_grid%ncells_ ) )
-    allocate( this%state_%layer_G_(   z_grid%ncells_, lambda_grid%ncells_ ) )
+    allocate( this%state_%layer_G_(   z_grid%ncells_, lambda_grid%ncells_, 1 ) )
 
     deallocate( z_grid      )
     deallocate( lambda_grid )
@@ -253,7 +256,8 @@ contains
                 this%vertical_profile_units_%pack_size( comm ) +              &
                 this%cross_section_name_%pack_size( comm ) +                  &
                 this%state_%pack_size( comm ) +                               &
-                musica_mpi_pack_size(this%enable_diagnostics_, comm)
+                musica_mpi_pack_size( this%enable_diagnostics_, comm ) +      &
+                musica_mpi_pack_size( this%is_air_, comm )
 #else
     pack_size = 0
 #endif
@@ -282,7 +286,8 @@ contains
     call this%vertical_profile_units_%mpi_pack( buffer, position, comm )
     call this%cross_section_name_%mpi_pack(     buffer, position, comm )
     call this%state_%mpi_pack(                  buffer, position, comm )
-    call musica_mpi_pack(buffer, position, this%enable_diagnostics_, comm)
+    call musica_mpi_pack( buffer, position, this%enable_diagnostics_, comm )
+    call musica_mpi_pack( buffer, position, this%is_air_,             comm )
     call assert( 449676235, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
@@ -310,7 +315,8 @@ contains
     call this%vertical_profile_units_%mpi_unpack( buffer, position, comm )
     call this%cross_section_name_%mpi_unpack(     buffer, position, comm )
     call this%state_%mpi_unpack(                  buffer, position, comm )
-    call musica_mpi_unpack(buffer, position, this%enable_diagnostics_, comm)
+    call musica_mpi_unpack( buffer, position, this%enable_diagnostics_, comm )
+    call musica_mpi_unpack( buffer, position, this%is_air_,             comm )
     call assert( 216868760, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
@@ -323,36 +329,56 @@ contains
     ! state of a set of radiators, such that the optical properties of the
     ! accumulated state can be used to solve radiative transfer equations for
     ! the set of radiators
+    !
+    ! Optical properties for radiators configured to 'treat as air' are
+    ! unique.
+    use tuvx_constants, only : largest, precis
 
     class(radiator_state_t), intent(inout) :: this
     class(radiator_ptr),     intent(in)    :: radiators(:)
 
-    real(dk), parameter :: kfloor = 1.0_dk / 1.0e36_dk ! smallest value for radiative properties
+    real(dk), parameter :: kfloor = 1.0_dk / largest ! smallest value for radiative properties
+    real(dk), parameter :: kair_asym_factor = 0.1_dk
 
-    integer :: i_radiator
+    integer :: i_radiator, i_stream, n_streams
     real(dk), allocatable :: dscat(:,:)
     real(dk), allocatable :: dscat_accum(:,:)
     real(dk), allocatable :: dabs_accum(:,:)
-    real(dk), allocatable :: asym_accum(:,:)
+    real(dk), allocatable :: asym_accum(:,:,:)
 
     allocate( dscat,       mold = radiators(1)%val_%state_%layer_OD_ )
     allocate( dscat_accum, mold = dscat )
     allocate( dabs_accum,  mold = dscat )
-    allocate( asym_accum,  mold = dscat )
+    allocate( asym_accum,  mold = this%layer_G_ )
 
     dscat_accum = 0.0_dk
     dabs_accum  = 0.0_dk
     asym_accum  = 0.0_dk
 
+    n_streams = size( this%layer_G_,3 )
+
     ! iterate over radiators accumulating radiative properties
     do i_radiator = 1, size( radiators )
-      associate( OD  => radiators( i_radiator )%val_%state_%layer_OD_,        &
-                 SSA => radiators( i_radiator )%val_%state_%layer_SSA_,       &
-                 G   => radiators( i_radiator )%val_%state_%layer_G_ )
+      associate( OD     => radiators( i_radiator )%val_%state_%layer_OD_,     &
+                 SSA    => radiators( i_radiator )%val_%state_%layer_SSA_,    &
+                 G      => radiators( i_radiator )%val_%state_%layer_G_,      &
+                 is_air => radiators( i_radiator )%val_%is_air_ )
         dscat       = OD * SSA
         dscat_accum = dscat_accum + dscat
         dabs_accum  = dabs_accum + OD * ( 1.0_dk - SSA )
-        asym_accum  = asym_accum + G * dscat
+        if( .not. is_air ) then
+          do i_stream = 1, n_streams
+            asym_accum(:,:,i_stream)  = asym_accum(:,:,i_stream) &
+                                      + G(:,:,1)**i_stream * dscat
+          end do
+        else
+        ! rayleigh scattering
+          if( n_streams >= 2 ) then
+            asym_accum(:,:,2)  = asym_accum(:,:,2) + kair_asym_factor * dscat
+          else
+            asym_accum(:,:,1)  = asym_accum(:,:,1) + G(:,:,1) * dscat
+          end if
+        end if
       end associate
     end do
 
@@ -369,7 +395,15 @@ contains
     elsewhere
       this%layer_SSA_ = dscat_accum / this%layer_OD_
     endwhere
-    this%layer_G_ = asym_accum / dscat_accum
+
+    if( n_streams >= 2 ) then
+      this%layer_SSA_ = max( min( this%layer_SSA_,1._dk - precis ),precis )
+      this%layer_OD_  = max( this%layer_OD_,precis )
+    end if
+
+    do i_stream = 1, n_streams
+      this%layer_G_(:,:,i_stream) = asym_accum(:,:,i_stream) / dscat_accum
+    end do
 
   end subroutine accumulate
 

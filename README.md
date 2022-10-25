@@ -51,3 +51,55 @@ ccmake ..
 make
 ./tuv-x
 ```
+
+# Citation
+
+The following bibtex can be used to cite the work that originally developed
+this tool.
+
+A recommended citation is 
+
+> Madronich, Sasha, and Siri Flocke (1999), The role of solar radiation in atmospheric chemistry, in Handbook of Environmental Chemistry, edited by P. Boule, pp. 1-26, Springer-Verlag, Heidelberg.
+
+However, you are encouraged to use the format that best matches the style
+you prefer.
+
+```
+@incollection{madronich_role_1999,
+	address = {Berlin, Heidelberg},
+	series = {The {Handbook} of {Environmental} {Chemistry}},
+	title = {The {Role} of {Solar} {Radiation} in {Atmospheric} {Chemistry}},
+	isbn = {978-3-540-69044-3},
+	url = {https://doi.org/10.1007/978-3-540-69044-3_1},
+	language = {en},
+	booktitle = {Environmental {Photochemistry}},
+	publisher = {Springer},
+	author = {Madronich, Sasha and Flocke, Siri},
+	editor = {Boule, Pierre},
+	year = {1999},
+	doi = {10.1007/978-3-540-69044-3_1},
+	keywords = {Earth-Sun geometry., photolysis rate coefficients, radiative transfer, solar radiation, spectral actinic flux},
+	pages = {1--26},
+}
+```
+
+The TUV-x software can be cited with
+
+```
+@software{acom.software.tuvx,
+  author       = {Matt Dawson and
+                  Kyle Shores and
+                  Stacy Walters},
+  title        = {NCAR/tuv-x: Version 0.2.0},
+  month        = sep,
+  year         = 2022,
+  publisher    = {Zenodo},
+  version      = {v0.2.0},
+  doi          = {10.5281/zenodo.7126040},
+  url          = {https://doi.org/10.5281/zenodo.7126040}
+}
+```
+
+and the specific verstion of TUV-x that you are using can be found by
+clicking on the zenodo banner above. Choose the appropraite version there
+and use the citation provided by Zenodo.

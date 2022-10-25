@@ -122,10 +122,10 @@ contains
     use musica_assert,     only : assert_msg
     use tuvx_profile,      only : profile_t
 
-    class(profile_warehouse_t), intent(inout) :: this
-    character(len=*),           intent(in)    :: name
-    character(len=*),           intent(in)    :: units
-    class(profile_t),           pointer       :: a_profile_ptr
+    class(profile_warehouse_t), intent(in) :: this
+    character(len=*),           intent(in) :: name
+    character(len=*),           intent(in) :: units
+    class(profile_t),           pointer    :: a_profile_ptr
 
     ! Local variables
     character(len=*), parameter :: Iam = 'profile warehouse get_profile: '

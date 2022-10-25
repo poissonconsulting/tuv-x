@@ -30,6 +30,8 @@ module tuvx_photolysis_rates
     procedure :: get
     ! Returns the names of each photolysis reaction
     procedure :: labels
+    ! Returns the number of photolysis reactions
+    procedure :: size => get_number
     ! Returns the number of bytes required to pack the rates onto a buffer
     procedure :: pack_size
     ! Packs the rates onto a character buffer
@@ -57,7 +59,6 @@ contains
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
     use tuvx_cross_section_factory,    only : cross_section_builder
-    use tuvx_diagnostic_util,          only : prepare_diagnostic_output
     use tuvx_quantum_yield_factory,    only : quantum_yield_builder
 
     !> photorates rates
@@ -95,8 +96,7 @@ contains
     iter => reaction_set%get_iterator( )
 
     call reaction_set%get( "enable diagnostics",                              &
-      photolysis_rates%enable_diagnostics_, Iam, default = .false. )
-    call prepare_diagnostic_output( photolysis_rates%enable_diagnostics_ )
+                photolysis_rates%enable_diagnostics_, Iam, default = .false. )
 
     do while( iter%next( ) )
       keychar = reaction_set%key( iter )
@@ -140,7 +140,7 @@ contains
   subroutine get( this, la_srb, spherical_geometry, grid_warehouse,           &
       profile_warehouse, radiation_field, photolysis_rates, file_tag )
 
-    use musica_assert,                 only : die_msg
+    use musica_assert,                 only : assert_msg, die_msg
     use tuvx_constants,                only : hc
     use tuvx_diagnostic_util,          only : diagout
     use tuvx_la_sr_bands,              only : la_sr_bands_t
@@ -162,7 +162,7 @@ contains
     !> Tag used in file name of output data
     character(len=*),           intent(in)    :: file_tag
     !> Calculated photolysis rate constants
-    real(dk), allocatable,      intent(inout) :: photolysis_rates(:,:)
+    real(dk),                   intent(inout) :: photolysis_rates(:,:)
 
     !> Local variables
     character(len=*), parameter :: Iam = "photolysis rates calculator"
@@ -187,9 +187,10 @@ contains
                                             "photon cm-2 s-1" )
 
     nRates = size( this%cross_sections_ )
-    if( .not. allocated( photolysis_rates ) ) then
-      allocate( photolysis_rates( zGrid%ncells_ + 1, nRates ) )
-    endif
+    call assert_msg( 470014831,                                               &
+                     size( photolysis_rates, 1 ) == zGrid%ncells_ + 1 .and.   &
+                     size( photolysis_rates, 2 ) == nRates,                   &
+                     "Bad shape for photolysis rate constant array" )
 
     bin_factor = ( etfl%mid_val_ * 1.e-13_dk * lambdaGrid%mid_ *              &
                    lambdaGrid%delta_ ) / hc
@@ -199,8 +200,10 @@ contains
       actinicFlux( :, vertNdx ) = actinicFlux( :, vertNdx ) * bin_factor
     enddo
 
-    allocate( annotatedjlabel( nRates ) )
-    allocate( xsqyWrk(0) )
+    if( this%enable_diagnostics_ ) then
+      allocate( annotatedjlabel( nRates ) )
+      allocate( xsqyWrk(0) )
+    end if
 
 rate_loop:                                                                    &
     do rateNdx = 1, nRates
@@ -209,12 +212,6 @@ rate_loop:                                                                    &
       end associate
       associate( calc_ftn => this%quantum_yields_( rateNdx )%val_ )
         quantum_yield = calc_ftn%calculate( grid_warehouse, profile_warehouse )
-        if( this%handles_( rateNdx ) == 'HNO4+hv->HO2+NO2' .or.               &
-            this%handles_( rateNdx ) == 'NOCl+hv->NO+Cl' ) then
-          if( any( quantum_yield /= 1._dk ) ) then
-            call die_msg( 54321, 'HNO4 quantum yield != 1.0' )
-          endif
-        endif
       end associate
 
       ! O2 photolysis can have special la & srb band handling
@@ -230,18 +227,19 @@ rate_loop:                                                                    &
         deallocate( airProfile )
       endif
 
-      xsqyWrk = [ xsqyWrk, reshape( cross_section * quantum_yield,            &
-                                    (/ size( cross_section ) /) ) ]
-
+      if( this%enable_diagnostics_ ) then
       associate( enable => this%enable_diagnostics_ )
-      annotatedRate = this%handles_( rateNdx )//'.xsect.new'
-      call diagout( trim( annotatedRate%to_char( ) ), cross_section, enable )
-      annotatedRate = this%handles_( rateNdx )//'.qyld.new'
-      call diagout( trim( annotatedRate%to_char( ) ), quantum_yield, enable )
-      annotatedRate = this%handles_( rateNdx )//'.xsqy.new'
-      call diagout( trim( annotatedRate%to_char( ) ),                         &
-                    cross_section * quantum_yield, enable )
+        xsqyWrk = [ xsqyWrk, reshape( cross_section * quantum_yield,          &
+                                      (/ size( cross_section ) /) ) ]
+        annotatedRate = this%handles_( rateNdx )//'.xsect.new'
+        call diagout( trim( annotatedRate%to_char( ) ), cross_section, enable )
+        annotatedRate = this%handles_( rateNdx )//'.qyld.new'
+        call diagout( trim( annotatedRate%to_char( ) ), quantum_yield, enable )
+        annotatedRate = this%handles_( rateNdx )//'.xsqy.new'
+        call diagout( trim( annotatedRate%to_char( ) ),                       &
+                      cross_section * quantum_yield, enable )
       end associate
+      end if
 
       xsqy = transpose( cross_section * quantum_yield )
       do vertNdx = 1, zGrid%ncells_ + 1
@@ -275,6 +273,22 @@ rate_loop:                                                                    &
     labels = this%handles_
 
   end function labels
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !> Returns the number of photolysis reactions
+  integer function get_number( this )
+
+    use musica_assert,                 only : assert_msg
+
+    !> Photolysis rate calculator
+    class(photolysis_rates_t), intent(in) :: this
+
+    call assert_msg( 472295869, allocated( this%handles_ ),                   &
+                     "Photolysis rates not initialized" )
+    get_number = size( this%handles_ )
+
+  end function get_number
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

@@ -37,7 +37,6 @@ contains
     use musica_config,                 only : config_t
     use tuvx_constants,                only : nzero, pzero
     use tuvx_diagnostic_util,          only : diagout
-    use tuvx_diagnostic_util,          only : prepare_diagnostic_output
     use tuvx_interpolate,              only : interpolator_t,                 &
                                               interpolator_fractional_source_t
     use tuvx_grid,                     only : grid_t
@@ -87,8 +86,6 @@ contains
     call config%get( 'enable diagnostics', this%enable_diagnostics_, Iam,       &
       default=.false. )
 
-    call prepare_diagnostic_output( this%enable_diagnostics_ )
-
     ! allocate radiator state variables
     allocate( this%state_%layer_OD_(  zGrid%ncells_, lambdaGrid%ncells_ ) )
     allocate( this%state_%layer_SSA_( zGrid%ncells_, lambdaGrid%ncells_ ) )
@@ -135,10 +132,10 @@ contains
     ! interpolate input G to state variable
     call config%get( "asymmetry factor", input_G, Iam )
     winput_G = input_OD( : nInputBins - 1 ) * input_G
-    this%state_%layer_G_( :, 1, 1 ) =                                            &
+    this%state_%layer_G_( :, 1, 1 ) =                                         &
         theInterpolator%interpolate( zGrid%edge_, input_zgrid, winput_G, 1 )
-    call diagout( 'gz.aer.new', this%state_%layer_G_( :, 1, 1 ),                 &
-      this%enable_diagnostics_ )
+    call diagout( 'gz.aer.new', this%state_%layer_G_( :, 1, 1 ),              &
+                  this%enable_diagnostics_ )
     do binNdx = 2, lambdaGrid%ncells_
       this%state_%layer_G_( :, binNdx, 1 ) = this%state_%layer_G_( :, 1, 1 )
     enddo
@@ -162,7 +159,7 @@ contains
       where( rad_OD > 0._dk )
         this%state_%layer_SSA_( :, binNdx ) =                                 &
             this%state_%layer_SSA_( :, binNdx ) / rad_OD
-        this%state_%layer_G_( :, binNdx, 1 )   =                                 &
+        this%state_%layer_G_( :, binNdx, 1 )   =                              &
             this%state_%layer_G_( :, binNdx, 1 ) / rad_OD
       elsewhere
         this%state_%layer_SSA_( :, binNdx )  = 1._dk

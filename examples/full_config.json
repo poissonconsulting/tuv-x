@@ -1,5 +1,4 @@
 {
-   "enable diagnostics" : false,
    "__description": "This example configuration includes photolysis and dose rate calculations",
    "O2 absorption" : {
      "cross section parameters file": "data/cross_sections/O2_parameters.txt"
@@ -74,7 +73,6 @@
          }
       },
       "extraterrestrial flux": {
-         "enable diagnostics" : false,
          "type": "extraterrestrial flux",
          "units": "photon cm-2 s-1",
          "file path": ["data/profiles/solar/susim_hi.flx",
@@ -107,7 +105,6 @@
       ],
       "radiators": [
          {
-            "enable diagnostics" : false,
             "name": "air",
             "type": "base",
             "treat as air": true,
@@ -116,7 +113,6 @@
             "vertical profile units": "molecule cm-3"
          },
          {
-            "enable diagnostics" : false,
             "name": "O2",
             "type": "base",
             "cross section": "O2",
@@ -124,7 +120,6 @@
             "vertical profile units": "molecule cm-3"
          },
          {
-            "enable diagnostics" : false,
             "name": "O3",
             "type": "base",
             "cross section": "O3",
@@ -132,7 +127,6 @@
             "vertical profile units": "molecule cm-3"
          },
          {
-            "enable diagnostics" : false,
             "name": "aerosols",
             "type": "aerosol",
             "optical depths": [2.40e-01, 1.06e-01, 4.56e-02, 1.91e-02, 1.01e-02, 7.63e-03,
@@ -151,7 +145,6 @@
       ]
    },
    "photolysis reactions": {
-      "enable diagnostics" : false,
       "O2+hv->O+O": {
          "cross section": {
             "netcdf files": ["data/cross_sections/O2_1.nc"],

@@ -21,6 +21,7 @@ module tuvx_core
   public :: core_t
 
   type :: core_t
+    private
     ! The TUV-x core_t class defines the API for interactions
     ! with a host application
     type(grid_warehouse_t),      pointer :: grid_warehouse_ => null()
@@ -32,9 +33,20 @@ module tuvx_core
     type(dose_rates_t),          pointer :: dose_rates_ => null()
     logical                              :: enable_diagnostics_ ! determines if diagnostic output is written or not
   contains
+    ! Calculate photolysis rate constants and dose rates
     procedure :: run
-    procedure :: output_photolysis_rate_constants
-    procedure :: output_dose_rates
+    ! Returns a grid from the warehouse
+    procedure :: get_grid
+    ! Returns a profile from the warehouse
+    procedure :: get_profile
+    ! Returns the number of photolysis reactions
+    procedure :: number_of_photolysis_reactions
+    ! Returns the number of dose rates
+    procedure :: number_of_dose_rates
+    ! Returns the set of photolysis reaction labels
+    procedure :: photolysis_reaction_labels
+    ! Returns the set of dose rate labels
+    procedure :: dose_rate_labels
     ! Returns the number of bytes required to pack the core onto a buffer
     procedure :: pack_size
     ! Packs the core onto a character buffer
@@ -58,7 +70,6 @@ contains
     use musica_assert,                 only : assert_msg
     use musica_string,                 only : string_t
     use tuvx_diagnostic_util,          only : diagout
-    use tuvx_diagnostic_util,          only : prepare_diagnostic_output
     use tuvx_profile,                  only : profile_t
 
     type(string_t),                       intent(in) :: config   ! Full TUV-x configuration data
@@ -92,8 +103,6 @@ contains
 
     call core_config%get( 'enable diagnostics', new_core%enable_diagnostics_,  &
       Iam, default=.false. )
-    
-    call prepare_diagnostic_output( new_core%enable_diagnostics_ )
 
     ! Instantiate and initialize grid warehouse
     call core_config%get( "grids", child_config, Iam )
@@ -164,276 +173,180 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine run( this )
+  subroutine run( this, solar_zenith_angle, photolysis_rate_constants,        &
+      dose_rates, diagnostic_label )
     ! Performs calculations for specified photolysis and dose rates for a
     ! given set of conditions
 
-    use musica_string,                   only : string_t
+    use musica_string,                   only : string_t, to_char
     use tuvx_profile,                    only : profile_t
     use tuvx_radiator,                   only : radiator_t
     use tuvx_solver,                     only : radiation_field_t
     use tuvx_diagnostic_util,            only : diagout
-    use tuvx_radiator_warehouse,       only : warehouse_iterator_t
+    use tuvx_radiator_warehouse,         only : warehouse_iterator_t
 
-    class(core_t), intent(inout)  :: this ! TUV-x core
+    class(core_t),              intent(inout) :: this ! TUV-x core
+    real(dk),                   intent(in)    :: solar_zenith_angle             ! [degrees]
+    real(dk),         optional, intent(out)   :: photolysis_rate_constants(:,:) ! (vertical level, reaction) [s-1]
+    real(dk),         optional, intent(out)   :: dose_rates(:,:)                ! (vertical level, reaction) [s-1]
+    character(len=*), optional, intent(in)    :: diagnostic_label               ! label used in diagnostic file names
 
     ! Local variables
-    character(len=*), parameter       :: Iam = 'Photolysis core run: '
-    integer                           :: i_ndx
-    ! photolysis rate constants (time, vertical level, reaction)
-    real(dk), allocatable             :: all_photo_rates(:,:,:)
-    ! photolysis rate constants (vertical level, reaction)
-    real(dk), allocatable             :: photo_rates(:,:)
-    ! dose rates (time, vertical level, dose rate type)
-    real(dk), allocatable             :: all_dose_rates(:,:,:)
-    ! dose rates (vertical level, dose rate type)
-    real(dk), allocatable             :: dose_rates(:,:)
-    character(len=2)                  :: number
-    type(string_t)                    :: file_path
-    class(profile_t),         pointer :: solar_zenith_angles => null( )
-    class(radiator_t),        pointer :: radiator => null()
-    class(radiation_field_t), pointer :: radiation_field => null( )
-    type(warehouse_iterator_t), pointer  :: warehouse_iter => null( )
+    character(len=*), parameter         :: Iam = 'Photolysis core run: '
+    character(len=2)                    :: number
+    type(string_t)                      :: file_path
+    class(radiator_t),          pointer :: radiator => null()
+    class(radiation_field_t),   pointer :: radiation_field => null( )
+    type(warehouse_iterator_t), pointer :: warehouse_iter => null( )
+    character(len=:), allocatable       :: diag_label
 
-    ! get the solar zenith angles
-    solar_zenith_angles =>                                                    &
-        this%profile_warehouse_%get_profile( "solar zenith angle", "degrees" )
+    if( present( diagnostic_label ) ) then
+      diag_label = diagnostic_label
+    else
+      diag_label = ""
+    end if
 
     ! calculate the radiation field
-    sza_loop: do i_ndx = 1,size(solar_zenith_angles%edge_val_)
-      if( associated( this%spherical_geometry_ ) ) then
-        call this%spherical_geometry_%set_parameters(                         &
-            solar_zenith_angles%edge_val_(i_ndx), this%grid_warehouse_ )
-      endif
-      call this%radiative_transfer_%calculate( this%la_sr_bands_,             &
-                                               this%spherical_geometry_,      &
-                                               this%grid_warehouse_,          &
-                                               this%profile_warehouse_,       &
-                                               radiation_field )
-      write(number,'(i2.2)') i_ndx
-      call diagout( 'radField.' // number // '.new',                          &
-                    radiation_field%fdr_ + radiation_field%fup_ +             &
-                      radiation_field%fdn_, this%enable_diagnostics_  )
-      if( associated( this%photolysis_rates_ ) ) then
-        if( allocated( photo_rates ) ) then
-          deallocate( photo_rates )
-        endif
-        call this%photolysis_rates_%get( this%la_sr_bands_,                   &
-                                         this%spherical_geometry_,            &
-                                         this%grid_warehouse_,                &
-                                         this%profile_warehouse_,             &
-                                         radiation_field,                     &
-                                         photo_rates,                         &
-                                         number )
-        if( .not. allocated( all_photo_rates ) ) then
-          allocate( all_photo_rates( size( solar_zenith_angles%edge_val_ ),   &
-                                     size( photo_rates, 1 ),                  &
-                                     size( photo_rates, 2 ) ) )
-        end if
-        all_photo_rates( i_ndx, :, : ) = photo_rates(:,:)
-      end if
-      if( associated( this%dose_rates_ ) ) then
-        if( allocated( dose_rates ) ) then
-          deallocate( dose_rates )
-        endif
-        call this%dose_rates_%get( this%grid_warehouse_,                      &
-                                   this%profile_warehouse_,                   &
-                                   radiation_field,                           &
-                                   dose_rates,                                &
-                                   number )
-        if( .not. allocated( all_dose_rates ) ) then
-          allocate( all_dose_rates( size( solar_zenith_angles%edge_val_ ),    &
-                                    size( dose_rates, 1 ),                    &
-                                    size( dose_rates, 2 ) ) )
-        end if
-        all_dose_rates( i_ndx, :, : ) = dose_rates(:,:)
-      endif
-      deallocate( radiation_field )
-    enddo sza_loop
-
-    ! output photolysis rate constants
-    if( associated( this%photolysis_rates_ ) ) then
-      file_path = "photolysis_rate_constants.nc"
-      call this%output_photolysis_rate_constants( all_photo_rates, file_path )
+    if( associated( this%spherical_geometry_ ) ) then
+      call this%spherical_geometry_%set_parameters( solar_zenith_angle,       &
+                                                    this%grid_warehouse_ )
+    endif
+    call this%radiative_transfer_%calculate( this%la_sr_bands_,               &
+                                             this%spherical_geometry_,        &
+                                             this%grid_warehouse_,            &
+                                             this%profile_warehouse_,         &
+                                             radiation_field )
+    call diagout( 'radField.' // diag_label // '.new',                        &
+                  radiation_field%fdr_ + radiation_field%fup_ +               &
+                    radiation_field%fdn_, this%enable_diagnostics_  )
+    if( associated( this%photolysis_rates_ ) .and.                            &
+        present( photolysis_rate_constants ) ) then
+      call this%photolysis_rates_%get( this%la_sr_bands_,                     &
+                                       this%spherical_geometry_,              &
+                                       this%grid_warehouse_,                  &
+                                       this%profile_warehouse_,               &
+                                       radiation_field,                       &
+                                       photolysis_rate_constants,             &
+                                       diag_label )
     end if
-
-    ! output dose rates
-    if( associated( this%dose_rates_ ) ) then
-      file_path = "dose_rates.nc"
-      call this%output_dose_rates( all_dose_rates, file_path )
-    end if
+    if( associated( this%dose_rates_ ) .and. present( dose_rates ) ) then
+      call this%dose_rates_%get( this%grid_warehouse_,                        &
+                                 this%profile_warehouse_,                     &
+                                 radiation_field,                             &
+                                 dose_rates,                                  &
+                                 diag_label )
+    endif
+    deallocate( radiation_field )
 
     ! diagnostic output
-    warehouse_iter => this%radiative_transfer_%radiator_warehouse_%get_iterator( )
+    warehouse_iter =>                                                         &
+        this%radiative_transfer_%radiator_warehouse_%get_iterator( )
     do while( warehouse_iter%next( ) )
       radiator => this%radiative_transfer_%                                   &
         radiator_warehouse_%get_radiator( warehouse_iter )
       call radiator%output_diagnostics()
     enddo
-
-    deallocate( solar_zenith_angles )
+    deallocate( warehouse_iter )
 
   end subroutine run
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine output_photolysis_rate_constants( this, values, file_path )
-    ! Outputs calculated photolysis rate constants
+  function get_grid( this, grid_name, units ) result( grid )
+    ! Returns a copy of a grid from the warehouse
 
-    use musica_assert,                 only : assert
-    use musica_io,                     only : io_t
-    use musica_io_netcdf,              only : io_netcdf_t
-    use musica_string,                 only : string_t
+    use musica_assert,                 only : assert_msg
     use tuvx_grid,                     only : grid_t
-    use tuvx_netcdf,                   only : clean_string
-    use tuvx_profile,                  only : profile_t
 
-    class(core_t),    intent(in) :: this          ! TUV-x core
-    real(dk),         intent(in) :: values(:,:,:) ! Photolysis rate constants (time, vertical level, reaction)
-    type(string_t),   intent(in) :: file_path     ! File path to output to
+    class(core_t),    intent(in) :: this
+    character(len=*), intent(in) :: grid_name
+    character(len=*), intent(in) :: units
+    class(grid_t),    pointer    :: grid
 
-    character(len=*), parameter :: Iam = "photolysis output"
-    class(io_t),        pointer :: out_file
-    integer                     :: i_rxn
-    type(string_t)              :: var_name, dim_names(2), units
-    type(string_t), allocatable :: rxn_names(:)
-    class(profile_t),   pointer :: sza
-    class(grid_t),      pointer :: time, vertical
-    integer                     :: stat
+    call assert_msg( 285057977, associated( this%grid_warehouse_ ),           &
+                     "Grids not available" )
+    grid => this%grid_warehouse_%get_grid( grid_name, units )
 
-    call assert( 337750978, associated( this%photolysis_rates_ ) )
-    sza => this%profile_warehouse_%get_profile( "solar zenith angle",         &
-                                                "degrees" )
-    time => this%grid_warehouse_%get_grid( "time", "hours" )
-    vertical => this%grid_warehouse_%get_grid( "height", "km" )
-    rxn_names = this%photolysis_rates_%labels( )
-    call assert( 182934700,                                                   &
-                 size( sza%edge_val_ ) .eq. size( time%edge_ ) )
-    call assert( 394136298,                                                   &
-                 size( values, 1 ) .eq. size( time%edge_ ) )
-    call assert( 664629694,                                                   &
-                 size( values, 2 ) .eq. size( vertical%edge_ ) )
-    call assert( 266929622,                                                   &
-                 size( values, 3 ) .eq. size( rxn_names ) )
-
-    ! Remove any existing file with the same name
-    open( unit = 16, iostat = stat, file = file_path%to_char( ),              &
-          status = 'old' )
-    if( stat == 0 ) close( 16, status = 'delete' )
-
-    out_file => io_netcdf_t( file_path )
-
-    var_name = "altitude"
-    dim_names(1) = "vertical_level"
-    units = "km"
-    call out_file%write( var_name, dim_names(1), vertical%edge_, Iam )
-    call out_file%set_variable_units( var_name, units, Iam )
-
-    var_name = "time"
-    dim_names(1) = "time"
-    units = "hr"
-    call out_file%write( var_name, dim_names(1), time%edge_, Iam )
-    call out_file%set_variable_units( var_name, units, Iam )
-
-    var_name = "solar zenith angle"
-    dim_names(1) = "time"
-    units = "degrees"
-    call out_file%write( var_name, dim_names(1), sza%edge_val_, Iam )
-    call out_file%set_variable_units( var_name, units, Iam )
-
-    dim_names(1) = "time"
-    dim_names(2) = "vertical_level"
-    units = "s-1"
-    do i_rxn = 1, size( rxn_names )
-      var_name = clean_string( rxn_names( i_rxn ) )
-      call out_file%write( var_name, dim_names, values( :, :, i_rxn ), Iam )
-      call out_file%set_variable_units( var_name, units, Iam )
-    end do
-    deallocate( sza )
-    deallocate( time )
-    deallocate( vertical )
-    deallocate( out_file )
-
-  end subroutine output_photolysis_rate_constants
+  end function get_grid
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine output_dose_rates( this, values, file_path )
-    ! Outputs calculated dose rates
+  function get_profile( this, profile_name, units ) result( profile )
+    ! Returns a copy of a profile from the warehouse
 
-    use musica_assert,                 only : assert
-    use musica_io,                     only : io_t
-    use musica_io_netcdf,              only : io_netcdf_t
-    use tuvx_grid,                     only : grid_t
-    use tuvx_netcdf,                   only : clean_string
+    use musica_assert,                 only : assert_msg
     use tuvx_profile,                  only : profile_t
 
-    class(core_t),    intent(in) :: this          ! TUV-x core
-    real(dk),         intent(in) :: values(:,:,:) ! Dose rates (time, vertical level, dose rate type)
-    type(string_t),   intent(in) :: file_path     ! File path to output to
+    class(core_t),    intent(in) :: this
+    character(len=*), intent(in) :: profile_name
+    character(len=*), intent(in) :: units
+    class(profile_t), pointer    :: profile
 
-    character(len=*), parameter :: Iam = "photolysis output"
-    class(io_t),        pointer :: out_file
-    integer                     :: i_rate
-    type(string_t)              :: var_name, dim_names(2), units
-    type(string_t), allocatable :: rate_names(:)
-    class(profile_t),   pointer :: sza
-    class(grid_t),      pointer :: time, vertical
-    integer                     :: stat
+    call assert_msg( 780188063, associated( this%profile_warehouse_ ),        &
+                     "Profiles not available" )
+    profile => this%profile_warehouse_%get_profile( profile_name, units )
 
-    call assert( 337750978, associated( this%dose_rates_ ) )
-    sza => this%profile_warehouse_%get_profile( "solar zenith angle",         &
-                                                "degrees" )
-    time => this%grid_warehouse_%get_grid( "time", "hours" )
-    vertical => this%grid_warehouse_%get_grid( "height", "km" )
-    rate_names = this%dose_rates_%labels( )
-    call assert( 182934700,                                                   &
-                 size( sza%edge_val_ ) .eq. size( time%edge_ ) )
-    call assert( 394136298,                                                   &
-                 size( values, 1 ) .eq. size( time%edge_ ) )
-    call assert( 664629694,                                                   &
-                 size( values, 2 ) .eq. size( vertical%edge_ ) )
-    call assert( 266929622,                                                   &
-                 size( values, 3 ) .eq. size( rate_names ) )
+  end function get_profile
 
-    ! Remove any existing file with the same name
-    open( unit = 16, iostat = stat, file = file_path%to_char( ),              &
-          status = 'old' )
-    if( stat == 0 ) close( 16, status = 'delete' )
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    out_file => io_netcdf_t( file_path )
+  integer function number_of_photolysis_reactions( this )
+    ! Returns the number of photolysis reactions
 
-    var_name = "altitude"
-    dim_names(1) = "vertical_level"
-    units = "km"
-    call out_file%write( var_name, dim_names(1), vertical%edge_, Iam )
-    call out_file%set_variable_units( var_name, units, Iam )
+    class(core_t), intent(in) :: this
 
-    var_name = "time"
-    dim_names(1) = "time"
-    units = "hr"
-    call out_file%write( var_name, dim_names(1), time%edge_, Iam )
-    call out_file%set_variable_units( var_name, units, Iam )
+    number_of_photolysis_reactions = 0
+    if( associated( this%photolysis_rates_ ) ) then
+      number_of_photolysis_reactions = this%photolysis_rates_%size( )
+    end if
 
-    var_name = "solar zenith angle"
-    dim_names(1) = "time"
-    units = "degrees"
-    call out_file%write( var_name, dim_names(1), sza%edge_val_, Iam )
-    call out_file%set_variable_units( var_name, units, Iam )
+  end function number_of_photolysis_reactions
 
-    dim_names(1) = "time"
-    dim_names(2) = "vertical_level"
-    do i_rate = 1, size( rate_names )
-      var_name = clean_string( rate_names( i_rate ) )
-      call out_file%write( var_name, dim_names, values( :, :, i_rate ), Iam )
-    end do
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    deallocate( sza )
-    deallocate( time )
-    deallocate( vertical )
-    deallocate( out_file )
+  integer function number_of_dose_rates( this )
+    ! Returns the number of dose rates
 
-  end subroutine output_dose_rates
+    class(core_t), intent(in) :: this
+
+    number_of_dose_rates = 0
+    if( associated( this%dose_rates_ ) ) then
+      number_of_dose_rates = this%dose_rates_%size( )
+    end if
+
+  end function number_of_dose_rates
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function photolysis_reaction_labels( this ) result( labels )
+    ! Returns the set of photolysis reaction labels
+
+    class(core_t),  intent(in)  :: this
+    type(string_t), allocatable :: labels(:)
+
+    if( associated( this%photolysis_rates_ ) ) then
+      labels = this%photolysis_rates_%labels( )
+    else
+      allocate( labels( 0 ) )
+    end if
+
+  end function photolysis_reaction_labels
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function dose_rate_labels( this ) result( labels )
+    ! Returns the set of dose rate labels
+
+    class(core_t),  intent(in)  :: this
+    type(string_t), allocatable :: labels(:)
+
+    if( associated( this%dose_rates_ ) ) then
+      labels = this%dose_rates_%labels( )
+    else
+      allocate( labels( 0 ) )
+    end if
+
+  end function dose_rate_labels
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

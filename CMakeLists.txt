@@ -12,10 +12,17 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake-modules)
 ################################################################################
 # options
 
-option(ENABLE_COVERAGE "Enable code coverage output" ON)
 option(ENABLE_MPI "Enable MPI parallel support" OFF)
+option(ENABLE_TESTS "Build tests" ON)
+option(ENABLE_COVERAGE "Enable code coverage output" ON)
 option(ENABLE_MEMCHECK "Enable memory checking in tests" ON)
 option(ENABLE_NC_CONFIG "Use nc-config to determine NetCDF libraries" OFF)
+
+################################################################################
+# Set up include and lib directories
+
+set(TUVX_MOD_DIR "${PROJECT_BINARY_DIR}/include")
+set(TUVX_LIB_DIR "${PROJECT_BINARY_DIR}/lib")
 
 ################################################################################
 # Compiler specific flags
@@ -97,6 +104,10 @@ include_directories(${NETCDF_INCLUDE_DIR})
 ################################################################################
 # musica-core library
 
+# Only utility modules are needed by TUV-x
+set(ENABLE_UTIL_ONLY ON)
+set(MUSICA_MOD_DIR ${TUVX_MOD_DIR})
+set(MUSICA_LIB_DIR ${TUVX_LIB_DIR})
 add_subdirectory(libs/musica-core/src)
 include_directories(${CMAKE_BINARY_DIR}/libs/musica-core/src)
 
@@ -120,6 +131,8 @@ include_directories(${CMAKE_BINARY_DIR}/src)
 # TUV-x tests
 
 enable_testing()
-add_subdirectory(test)
+if(ENABLE_TESTS)
+  add_subdirectory(test)
+endif()
 
 ################################################################################

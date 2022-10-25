@@ -22,13 +22,16 @@ module tuvx_dose_rates
     ! Spectral weights
     type(spectral_weight_ptr), allocatable :: spectral_weights_(:)
     ! Configuration label for the dose rate
-    type(string_t), allocatable          :: handles_(:)
-    logical :: enable_diagnostics_ ! Enable writing diagnostic output, defaults to false
+    type(string_t),            allocatable :: handles_(:)
+    ! Flag for enabling diagnostic output
+    logical                                :: enable_diagnostics_
   contains
     ! Returns the dose rates for a given set of conditions
     procedure :: get
     ! Returns the names of each dose rate
     procedure :: labels
+    ! Returns the number of dose rates
+    procedure :: size => get_number
     ! Returns the number of bytes required to pack the dose rates onto a
     ! buffer
     procedure :: pack_size
@@ -55,7 +58,6 @@ contains
 
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
-    use tuvx_diagnostic_util,          only : prepare_diagnostic_output
     use tuvx_spectral_weight_factory,  only : spectral_weight_builder
 
     !> Dose rate configuration
@@ -69,7 +71,6 @@ contains
 
     ! Local variables
     character(len=*), parameter :: Iam = "dose_rates_t constructor"
-
     type(config_t) :: wght_config, spectral_weight_config
     class(iterator_t), pointer  :: iter
     type(spectral_weight_ptr)   :: spectral_weight
@@ -83,17 +84,14 @@ contains
     allocate( string_t :: rates%handles_(0) )
     allocate( rates%spectral_weights_(0) )
 
-    call config%get( "enable diagnostics", dose_rates%enable_diagnostics_,     &
-      Iam, default = .false. )
-    call prepare_diagnostic_output( dose_rates%enable_diagnostics_ )
+    call config%get( "enable diagnostics", rates%enable_diagnostics_, Iam,    &
+                     default = .false. )
 
     ! iterate over dose rates
     iter => config%get_iterator( )
     do while( iter%next( ) )
       keychar  = config%key( iter )
-      if (keychar .eq. 'enable diagnostics') then
-        cycle
-      endif
+      if( keychar .eq. "enable diagnostics" ) cycle
 
       wght_key = keychar
       rates%handles_ = [ rates%handles_, wght_key ]
@@ -119,6 +117,7 @@ contains
       dose_rates, file_tag )
     ! calculates dose rate constants
 
+    use musica_assert,                 only : assert_msg
     use tuvx_diagnostic_util,          only : diagout
     use tuvx_solver,                   only : radiation_field_t
 
@@ -132,7 +131,7 @@ contains
     !> Tag used in file name of output data
     character(len=*),          intent(in)    :: file_tag
     !> Calculated dose rate constants (vertical layer, dose rate type)
-    real(dk), allocatable,     intent(inout) :: dose_rates(:,:)
+    real(dk),                  intent(inout) :: dose_rates(:,:)
 
     ! Local variables
     character(len=*), parameter :: Iam = "dose rates calculator:"
@@ -140,7 +139,6 @@ contains
     real(dk), allocatable :: spectral_weight(:)
     real(dk), allocatable :: tmp_spectral_weight(:)
     real(dk), allocatable :: sirrad(:,:)
-    character(len=64), allocatable :: annotatedslabel(:)
     class(grid_t),    pointer :: zGrid => null()
     class(grid_t),    pointer :: lambdaGrid => null()
     class(profile_t), pointer :: etfl => null()
@@ -150,20 +148,21 @@ contains
     etfl => profile_warehouse%get_profile( "extraterrestrial flux",           &
                                            "photon cm-2 s-1" )
 
-    allocate( tmp_spectral_weight(0) )
+    if( this%enable_diagnostics_ ) then
+      allocate( tmp_spectral_weight(0) )
+    end if
 
     nRates = size( this%spectral_weights_ )
-    if( .not. allocated( dose_rates ) ) then
-      allocate( dose_rates( zGrid%ncells_ + 1, nRates ) )
-    endif
+    call assert_msg( 116265931,                                               &
+                     size( dose_rates, 1 ) == zGrid%ncells_ + 1 .and.         &
+                     size( dose_rates, 2 ) == nRates ,                        &
+                     "Bad shape for dose rates array" )
 
     !> spectral irradiance
     sirrad = radiation_field%edr_ + radiation_field%eup_ + radiation_field%edn_
     do wavNdx = 1, lambdaGrid%ncells_
       sirrad( :, wavNdx ) = sirrad( :, wavNdx ) * etfl%mid_val_( wavNdx )
     enddo
-
-    allocate( annotatedslabel( nRates ) )
 
 rate_loop:                                                                    &
     do rateNdx = 1, nRates
@@ -172,7 +171,9 @@ rate_loop:                                                                    &
                                               profile_warehouse )
       end associate
 
-      tmp_spectral_weight = [ tmp_spectral_weight, spectral_weight ]
+      if( this%enable_diagnostics_ ) then
+        tmp_spectral_weight = [ tmp_spectral_weight, spectral_weight ]
+      end if
       dose_rates( :, rateNdx ) = matmul( sirrad, spectral_weight )
 
       if( allocated( spectral_weight ) ) deallocate( spectral_weight )
@@ -200,6 +201,21 @@ rate_loop:                                                                    &
     labels = this%handles_
 
   end function labels
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function get_number( this )
+    ! Returns the number of dose rates
+
+    use musica_assert,                 only : assert_msg
+
+    class(dose_rates_t), intent(in) :: this
+
+    call assert_msg( 952537624, allocated( this%handles_ ),                   &
+                     "Dose rates not initialized" )
+    get_number = size( this%handles_ )
+
+  end function get_number
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

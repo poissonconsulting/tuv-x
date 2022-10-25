@@ -40,9 +40,12 @@ add_library(tuvxlib ${TUVX_SRC} ${GRID_SRC} ${PROFILE_SRC}
                     ${CROSS_SECTION_SRC} ${QUANTUM_YIELD_SRC} ${SPECTRAL_WGHT_SRC}
                     ${RADIATIVE_TRANSFER_SRC} ${LINEAR_ALGEBRA_SRC})
 target_link_libraries(tuvxlib musicalib ${NETCDF_LIBS})
-set_target_properties(tuvxlib PROPERTIES OUTPUT_NAME tuvx)
+set_target_properties(tuvxlib PROPERTIES OUTPUT_NAME tuvx
+                                         ARCHIVE_OUTPUT_DIRECTORY ${TUVX_LIB_DIR}
+                                         Fortran_MODULE_DIRECTORY ${TUVX_MOD_DIR})
 
 add_executable(tuv-x tuvx.F90)
 target_link_libraries(tuv-x tuvxlib)
+target_include_directories(tuvxlib PUBLIC ${TUVX_MOD_DIR})
 
 ################################################################################

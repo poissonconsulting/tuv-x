@@ -1,6 +1,6 @@
    "__description": "This file contains all the dose rates that can be calculated using data in this folder",
    "dose rates": {
-      "enable diagnostics" : true,
+      "enable diagnostics": true,
       "RB Meter, model 501": {
          "weights": {
             "netcdf files": ["data/spectral_weights/RB-Meter,model_501_spectral_wght_1.nc"],

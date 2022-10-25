@@ -11,7 +11,7 @@ module tuvx_diagnostic_util
   implicit none
 
   private
-  public :: diagout, prepare_diagnostic_output
+  public :: diagout
 
   interface diagout
     module procedure :: diagnostic_1d
@@ -25,15 +25,23 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine prepare_diagnostic_output( enable_output )
-    ! Creates the folder to hold diagnostic output if it doesn't exist
-    logical :: enable_output ! Enables diagnostic output
+  logical function output_enabled( enable_output )
+    ! Returns true if the output policy enables diagnostic output and ensures
+    ! the output folder exists if output is enabled
 
-    if ( enable_output ) then
-      call execute_command_line( "mkdir -p output"  )
-    endif
+    logical, optional :: enable_output ! Enables diagnostic output
+    logical, save :: folder_created = .false.
 
-  end subroutine prepare_diagnostic_output
+    output_enabled = .true.
+    if( present( enable_output ) ) then
+      output_enabled = enable_output
+    end if
+    if( output_enabled .and. .not. folder_created ) then
+      call execute_command_line( "mkdir -p output" )
+      folder_created = .true.
+    end if
+
+  end function output_enabled
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -46,7 +54,7 @@ contains
 
     integer :: ios
 
-    if (.not. enable_output ) return
+    if (.not. output_enabled( enable_output ) ) return
 
     open( unit = 44, file = 'output/' // filename, form = 'unformatted',      &
       iostat = ios)
@@ -77,7 +85,7 @@ contains
     integer :: ios
     character(len=256) :: iomsg
 
-    if (.not. enable_output ) return
+    if (.not. output_enabled( enable_output ) ) return
 
     open( unit = 44, file = 'output/' // filename, form = 'unformatted',      &
       iostat = ios)
@@ -107,7 +115,7 @@ contains
 
     integer :: ios
 
-    if (.not. enable_output ) return
+    if (.not. output_enabled( enable_output ) ) return
 
     open( unit = 44, file = 'output/' // filename, form = 'unformatted',      &
       iostat = ios)
@@ -136,7 +144,7 @@ contains
     integer :: ios
     character(len=512) :: iomsg
 
-    if (.not. enable_output ) return
+    if (.not. output_enabled( enable_output ) ) return
 
     open( unit = 44, file = 'output/' // filename, form = 'unformatted',      &
       iostat = ios)
@@ -169,7 +177,7 @@ contains
     integer :: ios, idx
     character(len=512) :: iomsg
 
-    if (.not. enable_output ) return
+    if (.not. output_enabled( enable_output ) ) return
 
     open( unit = 44, file = 'output/' // filename, iostat = ios)
     if( ios /= 0 ) then

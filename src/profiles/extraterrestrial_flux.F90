@@ -33,7 +33,6 @@ contains
     use musica_string,                 only : string_t
     use tuvx_constants,                only : hc, deltax
     use tuvx_diagnostic_util,          only : diagout
-    use tuvx_diagnostic_util,          only : prepare_diagnostic_output
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_grid,                     only : grid_t
     use tuvx_interpolate
@@ -83,8 +82,6 @@ contains
 
     call config%get( 'enable diagnostics', this%enable_diagnostics, Iam,       &
       default=.false. )
-
-    call prepare_diagnostic_output( this%enable_diagnostics )
 
     defaultInterpolator = 'conserving'
 

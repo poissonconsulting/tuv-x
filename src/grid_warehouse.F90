@@ -118,10 +118,10 @@ contains
     use musica_assert,                 only : assert_msg
     use tuvx_grid,                     only : grid_t
 
-    class(grid_warehouse_t), intent(inout) :: this     ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
-    character(len=*),        intent(in)    :: name     ! The name of a grid, see :ref:`configuration-grids` for grid names
-    character(len=*),        intent(in)    :: units    ! The units of the grid
-    class(grid_t), pointer                 :: a_grid_ptr ! The :f:type:`~tuvx_grid/grid_t` which matches the name passed in
+    class(grid_warehouse_t), intent(in) :: this     ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    character(len=*),        intent(in) :: name     ! The name of a grid, see :ref:`configuration-grids` for grid names
+    character(len=*),        intent(in) :: units    ! The units of the grid
+    class(grid_t), pointer              :: a_grid_ptr ! The :f:type:`~tuvx_grid/grid_t` which matches the name passed in
 
     integer :: ndx
     logical :: found

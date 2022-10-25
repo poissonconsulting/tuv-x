@@ -92,7 +92,6 @@ contains
 
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
-    use tuvx_diagnostic_util,          only : prepare_diagnostic_output
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_grid,                     only : grid_t
 
@@ -131,8 +130,6 @@ contains
     call config%get( 'enable diagnostics', this%enable_diagnostics_, Iam,       &
       default=.false. )
     call config%get( 'treat as air', this%is_air_, Iam, default = .false. )
-
-    call prepare_diagnostic_output( this%enable_diagnostics_ )
 
     ! allocate radiator state variables
     allocate( this%state_%layer_OD_(  z_grid%ncells_, lambda_grid%ncells_ ) )

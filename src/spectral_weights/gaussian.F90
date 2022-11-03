@@ -66,6 +66,7 @@ contains
       class is( spectral_weight_gaussian_t )
         call config%get( 'centroid', this%centroid, Iam )
     end select
+    this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
 
   end function constructor
 
@@ -88,9 +89,9 @@ contains
     real(dk), parameter         :: rTWO = 2.0_dk
     real(dk)                    :: accum
 
-    class(grid_t), pointer      :: lambdaGrid => null()
+    class(grid_t), pointer      :: lambdaGrid
 
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     spectral_weight = exp( -( log( rTWO ) * .04_dk                            &
                       * ( lambdaGrid%mid_ - this%centroid )**2 ) )
@@ -123,7 +124,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine mpi_pack( this, buffer, pos, comm )
+  subroutine mpi_pack( this, buffer, position, comm )
     ! Packs the spectral weight onto a character buffer
 
     use musica_assert,                 only : assert
@@ -131,23 +132,23 @@ contains
 
     class(spectral_weight_gaussian_t), intent(in)    :: this      ! spectral weight to be packed
     character,                         intent(inout) :: buffer(:) ! memory buffer
-    integer,                           intent(inout) :: pos       ! current buffer position
+    integer,                           intent(inout) :: position  ! current buffer position
     integer,                           intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos
 
-    prev_pos = pos
-    call this%spectral_weight_t%mpi_pack( buffer, pos, comm )
-    call musica_mpi_pack( buffer, pos, this%centroid, comm )
-    call assert( 803704767, pos - prev_pos <= this%pack_size( comm ) )
+    prev_pos = position
+    call this%spectral_weight_t%mpi_pack( buffer, position, comm )
+    call musica_mpi_pack( buffer, position, this%centroid, comm )
+    call assert( 803704767, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
   end subroutine mpi_pack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine mpi_unpack( this, buffer, pos, comm )
+  subroutine mpi_unpack( this, buffer, position, comm )
     ! Unpacks the spectral weight onto a character buffer
 
     use musica_assert,                 only : assert
@@ -155,16 +156,16 @@ contains
 
     class(spectral_weight_gaussian_t), intent(out)   :: this      ! spectral weight to be unpacked
     character,                         intent(inout) :: buffer(:) ! memory buffer
-    integer,                           intent(inout) :: pos       ! current buffer position
+    integer,                           intent(inout) :: position  ! current buffer position
     integer,                           intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos
 
-    prev_pos = pos
-    call this%spectral_weight_t%mpi_unpack( buffer, pos, comm )
-    call musica_mpi_unpack( buffer, pos, this%centroid, comm )
-    call assert( 284610975, pos - prev_pos <= this%pack_size( comm ) )
+    prev_pos = position
+    call this%spectral_weight_t%mpi_unpack( buffer, position, comm )
+    call musica_mpi_unpack( buffer, position, this%centroid, comm )
+    call assert( 284610975, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
   end subroutine mpi_unpack

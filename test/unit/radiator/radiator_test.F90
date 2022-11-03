@@ -11,14 +11,21 @@ program radiator_test
   use musica_mpi,                      only : musica_mpi_init,                &
                                               musica_mpi_finalize
   use radiator_core,                   only : radiator_core_t
+#ifdef MUSICA_USE_OPENMP
+  use omp_lib
+#endif
 
   implicit none
 
-  class(radiator_core_t), pointer :: core
+  type :: core_ptr
+    class(radiator_core_t), pointer :: core_
+  end type core_ptr
+  type(core_ptr), allocatable :: ptrs(:)
 
   ! Command-line options
   character(len=256) :: argument
   type(string_t)     :: configFileSpec
+  integer            :: i_thread
 
   call musica_mpi_init( )
 
@@ -28,15 +35,33 @@ program radiator_test
   configFileSpec = argument
 
   ! instatiate and initialize radiator core object
-  core => radiator_core_t( configFileSpec )
+#ifdef MUSICA_USE_OPENMP
+  write(*,*) "Testing with ", omp_get_max_threads( ), " threads"
+  allocate( ptrs( omp_get_max_threads( ) ) )
+#else
+  write(*,*) "Testing without OpenMP support"
+  allocate( ptrs( 1 ) )
+#endif
+
+  do i_thread = 1, size( ptrs )
+    ptrs( i_thread )%core_ => radiator_core_t( configFileSpec )
+  end do
 
   ! set radiator cross sections
-  call core%test()
+  ! \todo redo core so it can be used to test run functions with OpenMP
+  associate( core => ptrs( 1 )%core_ )
+    call core%test( )
+  end associate
 
-  deallocate( core )
+  do i_thread = 1, size( ptrs )
+    deallocate( ptrs( i_thread )%core_ )
+  end do
+  deallocate( ptrs )
 
   ! test radiator_state_t functions
+  !$omp parallel
   call test_state( )
+  !$omp end parallel
 
   call musica_mpi_finalize( )
 

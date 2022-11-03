@@ -12,7 +12,7 @@ module tuvx_radiator_warehouse
   implicit none
 
   private
-  public :: radiator_warehouse_t, warehouse_iterator_t
+  public :: radiator_warehouse_t, warehouse_iterator_t, radiator_warehouse_ptr
 
   type radiator_warehouse_t
     ! Radiator warehouse
@@ -23,14 +23,17 @@ module tuvx_radiator_warehouse
   contains
     !> @name Returns a pointer to a requested radiator
     !! @{
-    procedure, private :: get_radiator_from_handle
-    procedure, private :: get_radiator_from_iterator
-    generic   :: get_radiator => get_radiator_from_handle, get_radiator_from_iterator
-    !> Returns the index associated with a given radiator name
-    procedure, public  :: get_radiator_ndx_from_handle
+    procedure, private :: get_radiator_char, get_radiator_string,             &
+                          get_radiator_ptr, get_radiator_iterator
+    generic   :: get_radiator => get_radiator_char, get_radiator_string,      &
+                                 get_radiator_ptr, get_radiator_iterator
     !> @}
+    !> Returns a pointer to a radiator in the warehouse
+    procedure, private :: get_ptr_char, get_ptr_string
+    generic :: get_ptr => get_ptr_char, get_ptr_string
     !> Returns whether a radiator exists in the warehouse
-    procedure :: in_warehouse
+    procedure, private :: exists_char, exists_string
+    generic :: exists => exists_char, exists_string
     !> Returns the name for a radiator from an iterator
     procedure :: name => get_name
     !> Gets an iterator for the warehouse
@@ -64,22 +67,40 @@ module tuvx_radiator_warehouse
     module procedure :: constructor
   end interface
 
+  !> Pointer to a radiatorin the warehouse
+  type :: radiator_warehouse_ptr
+    private
+    integer :: index_ = 0
+  contains
+    !> Returns the number of bytes required to pack the pointer onto a buffer
+    procedure :: pack_size => ptr_pack_size
+    !> Packs the pointer onto a character buffer
+    procedure :: mpi_pack => ptr_mpi_pack
+    !> Unpacks a pointer from a character buffer into the object
+    procedure :: mpi_unpack => ptr_mpi_unpack
+  end type radiator_warehouse_ptr
+
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function constructor( config, grid_warehouse ) result( radiator_warehouse )
+  function constructor( config, grid_warehouse, profile_warehouse,            &
+     cross_section_warehouse ) result( radiator_warehouse )
     ! Constructs radiator_warehouse_t abjects
 
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
     use musica_string,                 only : string_t
+    use tuvx_cross_section_warehouse,  only : cross_section_warehouse_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_radiator_factory,         only : radiator_builder
 
-    type(config_t), intent(inout)        :: config ! Radiator configuration
-    type(grid_warehouse_t), intent(inout):: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
-    class(radiator_warehouse_t), pointer :: radiator_warehouse ! A :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
+    type(config_t),                  intent(inout) :: config ! Radiator configuration
+    type(grid_warehouse_t),          intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t),       intent(inout) :: profile_warehouse ! profile warehouse
+    type(cross_section_warehouse_t), intent(inout) :: cross_section_warehouse ! cross section warehouse
+    class(radiator_warehouse_t),     pointer       :: radiator_warehouse ! A :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
 
     ! local variables
     character(len=*), parameter     :: Iam = "Radiator warehouse constructor"
@@ -98,7 +119,9 @@ contains
       call config%get( iter, radiator_config, Iam )
 
       ! build and store the radiator
-      aRadiator%val_ => radiator_builder( radiator_config, grid_warehouse )
+      aRadiator%val_ => radiator_builder( radiator_config, grid_warehouse,    &
+                                          profile_warehouse,                  &
+                                          cross_section_warehouse )
 
       temp_names = radiator_warehouse%handle_
       deallocate( radiator_warehouse%handle_ )
@@ -122,70 +145,58 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function get_radiator_from_handle( this, radiator_handle )                  &
-      result( radiator )
+  function get_radiator_char( this, name ) result( radiator )
     ! Returns a pointer to a requested radiator
 
-    use musica_assert,                 only : assert_msg
-    use musica_string,                 only : string_t
     use tuvx_radiator,                 only : radiator_t
 
     class(radiator_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
-    type(string_t),              intent(in)    :: radiator_handle ! Name associated with requested radiator
+    character(len=*),            intent(in)    :: name ! Name associated with requested radiator
     class(radiator_t),           pointer       :: radiator ! Pointer to the requested radiator of type :f:type:`~tuvx_radiator/radiator_t`
 
-    ! Local variables
-    character(len=*), parameter :: Iam = 'radiator warehouse get radiator'
-    integer :: ndx
-    logical :: found
+    type(radiator_warehouse_ptr) :: ptr
 
-    found = .false.
-    do ndx = 1, size( this%handle_ )
-      if( radiator_handle .eq. this%handle_( ndx ) ) then
-        found = .true.
-        exit
-      endif
-    end do
-    call assert_msg( 200578546, found,                                        &
-                     "Invalid radiator handle: '"//                           &
-                     radiator_handle%to_char()//"'" )
-    radiator => this%radiators_(ndx)%val_
+    ptr = this%get_ptr_char( name )
+    radiator => this%radiators_( ptr%index_ )%val_
 
-  end function get_radiator_from_handle
+  end function get_radiator_char
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function get_radiator_ndx_from_handle( this, radiator_handle )              &
-      result( index )
-    ! Returns the index associated with a given radiator
-    !
-    ! If the radiator is not found, returns -1
+  function get_radiator_string( this, name ) result( radiator )
+    ! Returns a pointer to a radiator
 
     use musica_string,                 only : string_t
+    use tuvx_radiator,                 only : radiator_t
 
-    class(radiator_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
-    type(string_t),              intent(in)    :: radiator_handle ! Requested radiator name
-    integer                                    :: index ! Index of requested radiator in warehouse
+    class(radiator_warehouse_t), intent(inout) :: this ! this radiator warehouse
+    type(string_t),              intent(in)    :: name ! name of the radiator
+    class(radiator_t),           pointer       :: radiator
 
-    ! Local variables
-    character(len=*), parameter :: Iam =                                      &
-        'radiator warehouse get radiator index'
-    logical :: found
+    radiator => this%get_radiator_char( name%to_char( ) )
 
-    found = .false.
-    do index = 1, size( this%handle_ )
-      if( radiator_handle .eq. this%handle_( index ) ) then
-        found = .true.
-        exit
-      endif
-    end do
-    if( .not. found ) index = -1
-
-  end function get_radiator_ndx_from_handle
+  end function get_radiator_string
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function get_radiator_from_iterator( this, iterator ) result( radiator )
+  function get_radiator_ptr( this, ptr ) result( radiator )
+    ! Returns a pointer to a radiator
+
+    use musica_assert,                 only : assert_msg
+    use tuvx_radiator,                 only : radiator_t
+
+    class(radiator_warehouse_t),  intent(inout) :: this     ! this radiator warehouse
+    type(radiator_warehouse_ptr), intent(in)    :: ptr      ! pointer to the raditor in the warehouse
+    class(radiator_t),            pointer       :: radiator ! pointer to the radiator
+
+    call assert_msg( 432301788, ptr%index_ > 0, "Invalid radiator pointer" )
+    radiator => this%radiators_( ptr%index_ )%val_
+
+  end function get_radiator_ptr
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_radiator_iterator( this, iterator ) result( radiator )
     ! Returns a pointer to a radiator in the warehouse from an iterator
 
     use tuvx_radiator,                 only : radiator_t
@@ -200,32 +211,86 @@ contains
 
     radiator => this%radiators_( iterator%id_ )%val_
 
-  end function get_radiator_from_iterator
+  end function get_radiator_iterator
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function in_warehouse( this, radiator_handle )
+  function get_ptr_char( this, name ) result( ptr )
+    ! Returns a pointer to a radiator in the warehouse
+
+    use musica_assert,                 only : assert_msg
+
+    class(radiator_warehouse_t), intent(in) :: this
+    character(len=*),            intent(in) :: name
+    type(radiator_warehouse_ptr)            :: ptr
+
+    integer :: ndx
+    logical :: found
+
+    found = .false.
+    do ndx = 1, size( this%handle_ )
+      if( name .eq. this%handle_( ndx ) ) then
+        found = .true.
+        exit
+      endif
+    end do
+    call assert_msg( 200578546, found,                                        &
+                     "Invalid radiator handle: '"//name//"'" )
+    ptr%index_ = ndx
+
+  end function get_ptr_char
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_ptr_string( this, name ) result( ptr )
+
+    use musica_string,                 only : string_t
+
+    class(radiator_warehouse_t), intent(in) :: this
+    type(string_t),              intent(in) :: name
+    type(radiator_warehouse_ptr)            :: ptr
+
+    ptr = this%get_ptr_char( name%to_char( ) )
+
+  end function get_ptr_string
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function exists_char( this, name )
     ! Returns whether a radiator exists in the warehouse
 
-    use musica_string,      only : string_t
-
     class(radiator_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
-    type(string_t),              intent(in)    :: radiator_handle ! Name associated with requested radiator
-    logical                                    :: in_warehouse ! Flag indicating whether the radiator exists in the warehouse
+    character(len=*),            intent(in)    :: name ! Name associated with requested radiator
+    logical                                    :: exists_char ! Flag indicating whether the radiator exists in the warehouse
 
     ! Local variables
     character(len=*), parameter :: Iam = 'radiator in warehouse'
     integer :: ndx
 
-    in_warehouse = .false.
+    exists_char = .false.
     do ndx = 1, size( this%handle_ )
-      if( radiator_handle == this%handle_( ndx ) ) then
-        in_warehouse = .true.
+      if( name == this%handle_( ndx ) ) then
+        exists_char = .true.
         exit
       endif
     end do
 
-  end function in_warehouse
+  end function exists_char
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function exists_string( this, name )
+    ! Returns whether a radiator exists in the warehouse
+
+    use musica_string,      only : string_t
+
+    class(radiator_warehouse_t), intent(inout) :: this
+    type(string_t),              intent(in)    :: name
+    logical                                    :: exists_string
+
+    exists_string = this%exists_char( name%to_char( ) )
+
+  end function exists_string
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -430,6 +495,70 @@ contains
     endif
 
   end subroutine finalize
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function ptr_pack_size( this, comm ) result( pack_size )
+    ! Returns the number of bytes required to pack the pointer onto a buffer
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(radiator_warehouse_ptr), intent(in) :: this ! This radiator pointer
+    integer,                       intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    pack_size = musica_mpi_pack_size( this%index_, comm )
+#else
+    pack_size = 0
+#endif
+
+  end function ptr_pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine ptr_mpi_pack( this, buffer, position, comm )
+    ! Packs a pointer onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(radiator_warehouse_ptr), intent(in)    :: this      ! pointer to be packed
+    character,                     intent(inout) :: buffer(:) ! memory buffer
+    integer,                       intent(inout) :: position  ! current buffer position
+    integer,                       intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position, this%index_, comm )
+    call assert( 776713787, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine ptr_mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine ptr_mpi_unpack( this, buffer, position, comm )
+    ! Unpacks a pointer from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(radiator_warehouse_ptr), intent(out)   :: this      ! pointer to be packed
+    character,                     intent(inout) :: buffer(:) ! memory buffer
+    integer,                       intent(inout) :: position  ! current buffer position
+    integer,                       intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, this%index_, comm )
+    call assert( 381920193, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine ptr_mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

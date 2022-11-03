@@ -7,9 +7,9 @@ module tuvx_dose_rates
   use musica_constants,                only : dk => musica_dk
   use musica_string,                   only : string_t
   use tuvx_spectral_weight,            only : spectral_weight_ptr
-  use tuvx_grid_warehouse,             only : grid_warehouse_t
+  use tuvx_grid_warehouse,             only : grid_warehouse_ptr
   use tuvx_grid,                       only : grid_t
-  use tuvx_profile_warehouse,          only : profile_warehouse_t
+  use tuvx_profile_warehouse,          only : profile_warehouse_ptr
   use tuvx_profile,                    only : profile_t
 
   implicit none
@@ -25,6 +25,12 @@ module tuvx_dose_rates
     type(string_t),            allocatable :: handles_(:)
     ! Flag for enabling diagnostic output
     logical                                :: enable_diagnostics_
+    ! Height grid
+    type(grid_warehouse_ptr) :: height_grid_
+    ! Wavelength grid
+    type(grid_warehouse_ptr) :: wavelength_grid_
+    ! Extraterrestrial flux profile
+    type(profile_warehouse_ptr) :: etfl_profile_
   contains
     ! Returns the dose rates for a given set of conditions
     procedure :: get
@@ -58,7 +64,9 @@ contains
 
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_spectral_weight_factory,  only : spectral_weight_builder
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     !> Dose rate configuration
     type(config_t),            intent(inout) :: config
@@ -86,6 +94,11 @@ contains
 
     call config%get( "enable diagnostics", rates%enable_diagnostics_, Iam,    &
                      default = .false. )
+
+    rates%height_grid_ = grid_warehouse%get_ptr( "height", "km" )
+    rates%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
+    rates%etfl_profile_ = profile_warehouse%get_ptr( "extraterrestrial flux", &
+                                                     "photon cm-2 s-1" )
 
     ! iterate over dose rates
     iter => config%get_iterator( )
@@ -119,7 +132,9 @@ contains
 
     use musica_assert,                 only : assert_msg
     use tuvx_diagnostic_util,          only : diagout
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_solver,                   only : radiation_field_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     !> Dose rate constant calculator
     class(dose_rates_t),       intent(inout) :: this
@@ -139,14 +154,13 @@ contains
     real(dk), allocatable :: spectral_weight(:)
     real(dk), allocatable :: tmp_spectral_weight(:)
     real(dk), allocatable :: sirrad(:,:)
-    class(grid_t),    pointer :: zGrid => null()
-    class(grid_t),    pointer :: lambdaGrid => null()
-    class(profile_t), pointer :: etfl => null()
+    class(grid_t),    pointer :: zGrid
+    class(grid_t),    pointer :: lambdaGrid
+    class(profile_t), pointer :: etfl
 
-    zGrid => grid_warehouse%get_grid( "height", "km" )
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    etfl => profile_warehouse%get_profile( "extraterrestrial flux",           &
-                                           "photon cm-2 s-1" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
+    etfl => profile_warehouse%get_profile( this%etfl_profile_ )
 
     if( this%enable_diagnostics_ ) then
       allocate( tmp_spectral_weight(0) )
@@ -179,10 +193,12 @@ rate_loop:                                                                    &
       if( allocated( spectral_weight ) ) deallocate( spectral_weight )
     end do rate_loop
 
-    call diagout( 'annotatedslabels.new', this%handles_,                      &
-      this%enable_diagnostics_ )
-    call diagout( 'sw.'//file_tag//'.new', tmp_spectral_weight,               &
-      this%enable_diagnostics_ )
+    if( this%enable_diagnostics_ ) then
+      call diagout( 'annotatedslabels.new', this%handles_,                      &
+        this%enable_diagnostics_ )
+      call diagout( 'sw.'//file_tag//'.new', tmp_spectral_weight,               &
+        this%enable_diagnostics_ )
+    end if
 
     if( associated( zGrid ) ) deallocate( zGrid )
     if( associated( lambdaGrid ) ) deallocate( lambdaGrid )
@@ -256,6 +272,11 @@ rate_loop:                                                                    &
         pack_size = pack_size + this%handles_( i_elem )%pack_size( comm )
       end do
     end if
+    pack_size = pack_size +                                                   &
+                musica_mpi_pack_size( this%enable_diagnostics_, comm ) +      &
+                this%height_grid_%pack_size( comm ) +                         &
+                this%wavelength_grid_%pack_size( comm ) +                     &
+                this%etfl_profile_%pack_size( comm )
 #else
     pack_size = 0
 #endif
@@ -301,6 +322,10 @@ rate_loop:                                                                    &
         call this%handles_( i_elem )%mpi_pack( buffer, position, comm )
       end do
     end if
+    call musica_mpi_pack( buffer, position, this%enable_diagnostics_, comm )
+    call this%height_grid_%mpi_pack(     buffer, position, comm )
+    call this%wavelength_grid_%mpi_pack( buffer, position, comm )
+    call this%etfl_profile_%mpi_pack(    buffer, position, comm )
     call assert( 258716172, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
@@ -346,6 +371,10 @@ rate_loop:                                                                    &
         call this%handles_( i_elem )%mpi_unpack( buffer, position, comm )
       end do
     end if
+    call musica_mpi_unpack( buffer, position, this%enable_diagnostics_, comm )
+    call this%height_grid_%mpi_unpack(     buffer, position, comm )
+    call this%wavelength_grid_%mpi_unpack( buffer, position, comm )
+    call this%etfl_profile_%mpi_unpack(    buffer, position, comm )
     call assert( 143039054, position - prev_pos <= this%pack_size( comm ) )
 #endif
 

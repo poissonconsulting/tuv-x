@@ -52,6 +52,7 @@ contains
                      "phytoplankton boucher spectral wght." )
 
     allocate( spectral_weight_phytoplankton_boucher_t :: this )
+    this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
 
   end function constructor
 
@@ -75,9 +76,9 @@ contains
     real(dk), parameter  :: a  = 112.5_dk
     real(dk), parameter  :: b  = -.6223_dk
     real(dk), parameter  :: c  = 7.67e-4_dk
-    class(grid_t), pointer      :: lambdaGrid => null()
+    class(grid_t), pointer      :: lambdaGrid
 
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     allocate( spectral_weight( lambdaGrid%ncells_ ) )
 

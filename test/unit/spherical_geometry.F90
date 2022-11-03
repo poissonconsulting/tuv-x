@@ -35,8 +35,8 @@ contains
     integer :: pos, pack_size
     integer, parameter :: comm = MPI_COMM_WORLD
 
-    integer :: nid(3)
-    real(dk) :: dsdh(3,3), sza
+    integer :: nid(0:2)
+    real(dk) :: dsdh(0:2,3), sza
 
     nid = (/ 14, 53, 12 /)
     dsdh(:,1) = (/ 41.25_dk, 0.241_dk, -412.3_dk /)
@@ -73,8 +73,8 @@ contains
     call assert( 108226007, allocated( calculator%dsdh_ ) )
     call assert( 615337946, calculator%solar_zenith_angle_ == sza )
     call assert( 885117521, size( calculator%nid_ ) == size( nid ) )
-    call assert( 830637735, calculator%nid_(1) == nid(1) )
-    call assert( 992171559, calculator%nid_(2) == nid(2) )
+    call assert( 830637735, calculator%nid_(0) == nid(0) )
+    call assert( 992171559, calculator%nid_(1) == nid(1) )
     call assert( 539539406, calculator%nid_(2) == nid(2) )
     call check_values( calculator%dsdh_, dsdh, 1.0e-6_dk )
 

@@ -94,13 +94,14 @@ contains
     integer :: lambdaNdx, nzdim, vertNdx
     real(dk)    :: Tadj, Tfac
     real(dk),         allocatable :: modelTemp(:)
-    class(grid_t),    pointer     :: zGrid => null( )
-    class(grid_t),    pointer     :: lambdaGrid => null( )
-    class(profile_t), pointer     :: mdlTemperature => null( )
+    class(grid_t),    pointer     :: zGrid
+    class(grid_t),    pointer     :: lambdaGrid
+    class(profile_t), pointer     :: mdlTemperature
 
-    zGrid => grid_warehouse%get_grid( "height", "km" )
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    mdlTemperature => profile_warehouse%get_profile( "temperature", "K" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
+    mdlTemperature =>                                                         &
+        profile_warehouse%get_profile( this%temperature_profile_ )
 
     nzdim = zGrid%ncells_ + 1
     if( present( at_mid_point ) ) then

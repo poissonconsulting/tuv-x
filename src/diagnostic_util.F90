@@ -6,7 +6,6 @@ module tuvx_diagnostic_util
   ! Diagnostic utilities
 
   use musica_constants, only : dk => musica_dk
-  use musica_string,    only : string_t
 
   implicit none
 
@@ -28,14 +27,26 @@ contains
   logical function output_enabled( enable_output )
     ! Returns true if the output policy enables diagnostic output and ensures
     ! the output folder exists if output is enabled
+    ! Output can only be enabled on the primary MPI task and OpenMP thread
 
-    logical, optional :: enable_output ! Enables diagnostic output
+    use musica_mpi,                    only : musica_mpi_rank, MPI_COMM_WORLD
+#ifdef MUSICA_USE_OPENMP
+    use omp_lib
+#endif
+
+    logical       :: enable_output ! Enables diagnostic output
     logical, save :: folder_created = .false.
 
-    output_enabled = .true.
-    if( present( enable_output ) ) then
+    output_enabled = .false.
+#ifdef MUSICA_USE_OPENMP
+    if( omp_get_thread_num( ) == 0 ) then
+#endif
+    if( musica_mpi_rank( MPI_COMM_WORLD ) == 0 ) then
       output_enabled = enable_output
     end if
+#ifdef MUSICA_USE_OPENMP
+    end if
+#endif
     if( output_enabled .and. .not. folder_created ) then
       call execute_command_line( "mkdir -p output" )
       folder_created = .true.
@@ -170,8 +181,10 @@ contains
   subroutine diagnostic_array_string_t( filename, variable, enable_output )
     ! Output 2D double diagnostics to a specified file
 
+    use musica_string,                 only : string_t
+
     character(len=*), intent(in)              :: filename      ! File path to output to
-    type(string_t), allocatable, intent(in)   :: variable(:) ! Diagnostics to output
+    type(string_t), allocatable, intent(in)   :: variable(:)   ! Diagnostics to output
     logical                                   :: enable_output ! Enables diagnostic output
 
     integer :: ios, idx

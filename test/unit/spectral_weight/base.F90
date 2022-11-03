@@ -88,6 +88,7 @@ contains
         unpacked%spectral_weight_parms(1)%array,                              &
         the_weight%spectral_weight_parms(1)%array,                            &
         0.01_dk )
+      deallocate( unpacked )
     end if
 
   end subroutine test_spectral_weight_t

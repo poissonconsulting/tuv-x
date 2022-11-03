@@ -5,6 +5,8 @@ module tuvx_cross_section
 ! The base cross section type and related functions
 
   use musica_constants,                only : dk => musica_dk
+  use tuvx_grid_warehouse,             only : grid_warehouse_ptr
+  use tuvx_profile_warehouse,          only : profile_warehouse_ptr
 
   implicit none
 
@@ -32,6 +34,12 @@ module tuvx_cross_section
 
     ! Cross section parameter sets
     type(cross_section_parms_t), allocatable :: cross_section_parms(:)
+    ! Height grid pointer
+    type(grid_warehouse_ptr) :: height_grid_
+    ! Wavelength grid pointer
+    type(grid_warehouse_ptr) :: wavelength_grid_
+    ! Temperature profile pointer
+    type(profile_warehouse_ptr) :: temperature_profile_
   contains
     !> Calculate the cross section
     procedure :: calculate
@@ -44,8 +52,6 @@ module tuvx_cross_section
     procedure :: mpi_pack
     ! Unpacks the cross section from a character buffer into the object
     procedure :: mpi_unpack
-    ! Unpacks a cross section from a character buffer into the object
-    final     :: finalize
   end type cross_section_t
 
   interface cross_section_t
@@ -130,8 +136,12 @@ contains
     class(grid_t), pointer :: lambdaGrid
     type(interpolator_conserving_t) :: interpolator
 
-    !> Get model wavelength grids
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    ! Get grid and profile pointers
+    new_obj%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
+    new_obj%height_grid_ = grid_warehouse%get_ptr( "height", "km" )
+    new_obj%temperature_profile_ =                                            &
+        profile_warehouse%get_ptr( "temperature", "K" )
+    lambdaGrid => grid_warehouse%get_grid( new_obj%wavelength_grid_ )
 
     !> get cross section netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
@@ -205,10 +215,10 @@ file_loop: &
     integer :: nzdim
     character(len=*), parameter :: Iam =                                      &
         'radXfer base cross section calculate: '
-    class(grid_t), pointer     :: zGrid => null( )
+    class(grid_t), pointer     :: zGrid
     real(dk),      allocatable :: wrkCrossSection(:,:)
 
-    zGrid => grid_warehouse%get_grid( "height", "km" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
 
     nzdim = zGrid%ncells_ + 1
     if( present( at_mid_point ) ) then
@@ -336,6 +346,10 @@ file_loop: &
                     this%cross_section_parms( i_param )%pack_size( comm )
       end do
     end if
+    pack_size = pack_size +                                                   &
+                this%height_grid_%pack_size( comm ) +                         &
+                this%wavelength_grid_%pack_size( comm ) +                     &
+                this%temperature_profile_%pack_size( comm )
 #else
     pack_size = 0
 #endif
@@ -369,6 +383,9 @@ file_loop: &
                                                            comm )
       end do
     end if
+    call this%height_grid_%mpi_pack(         buffer, position, comm )
+    call this%wavelength_grid_%mpi_pack(     buffer, position, comm )
+    call this%temperature_profile_%mpi_pack( buffer, position, comm )
     call assert( 345613473, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
@@ -403,6 +420,9 @@ file_loop: &
                                                              comm )
       end do
     end if
+    call this%height_grid_%mpi_unpack(         buffer, position, comm )
+    call this%wavelength_grid_%mpi_unpack(     buffer, position, comm )
+    call this%temperature_profile_%mpi_unpack( buffer, position, comm )
     call assert( 764657896, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
@@ -477,29 +497,6 @@ file_loop: &
 #endif
 
   end subroutine parms_mpi_unpack
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  subroutine finalize( this )
-    ! finalize the cross section type
-
-    type(cross_section_t), intent(inout) :: this ! This :f:type:`~tuvx_cross_section/cross_section_t`
-
-    integer :: ndx
-
-    if( allocated( this%cross_section_parms ) ) then
-      do ndx = 1,size( this%cross_section_parms )
-        if( allocated( this%cross_section_parms( ndx )%array ) ) then
-          deallocate( this%cross_section_parms( ndx )%array )
-        endif
-        if( allocated( this%cross_section_parms( ndx )%temperature ) ) then
-          deallocate( this%cross_section_parms( ndx )%temperature )
-        endif
-      enddo
-      deallocate( this%cross_section_parms )
-    endif
-
-  end subroutine finalize
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

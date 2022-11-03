@@ -30,7 +30,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function constructor( config, grid_warehouse ) result( this )
+  function constructor( config, grid_warehouse, profile_warehouse )           &
+      result( this )
     ! Initialize radiator_t object
 
     use musica_assert,                 only : assert_msg
@@ -41,10 +42,12 @@ contains
                                               interpolator_fractional_source_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    type(radiator_aerosol_t), pointer     :: this ! This :f:type:`~tuvx_radiator_aerosol/radiator_aerosol_t`
-    type(config_t), intent(inout)         :: config ! Radiator configuration object
-    type(grid_warehouse_t), intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(radiator_aerosol_t),  pointer       :: this ! This :f:type:`~tuvx_radiator_aerosol/radiator_aerosol_t`
+    type(config_t),            intent(inout) :: config ! Radiator configuration object
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! profile warehouse
 
     ! Local variables
     character(len=*), parameter   :: Iam = "Aerosol radiator constructor"

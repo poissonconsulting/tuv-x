@@ -34,7 +34,8 @@ program test_la_sr_bands
   profile_warehouse => profile_warehouse_t( profile_config, grid_warehouse )
 
   if( musica_mpi_rank( comm ) == 0 ) then
-    la_sr_bands_ => la_sr_bands_t( la_config, grid_warehouse)
+    la_sr_bands_ =>                                                           &
+        la_sr_bands_t( la_config, grid_warehouse, profile_warehouse )
     pack_size = la_sr_bands_%pack_size( comm )
     allocate( buffer( pack_size ) )
     pos = 0

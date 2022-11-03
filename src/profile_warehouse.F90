@@ -11,14 +11,20 @@ module tuvx_profile_warehouse
   implicit none
 
   private
-  public :: profile_warehouse_t
+  public :: profile_warehouse_t, profile_warehouse_ptr
 
   type profile_warehouse_t
     private
     type(profile_ptr), allocatable :: profiles_(:)
   contains
-    procedure, private :: get_profile_char, get_profile_string
-    generic :: get_profile => get_profile_char, get_profile_string
+    ! returns a copy of a profile object
+    procedure, private :: get_profile_char, get_profile_string, get_profile_ptr
+    generic :: get_profile => get_profile_char, get_profile_string,           &
+                              get_profile_ptr
+    ! returns a pointer to a profile object
+    procedure, private :: get_ptr_char, get_ptr_string
+    generic :: get_ptr => get_ptr_char, get_ptr_string
+    ! checks if a profile is present in the warehouse
     procedure :: exists_char, exists_string
     generic :: exists => exists_char, exists_string
     ! adds a profile or set of profiles to the warehouse
@@ -42,6 +48,19 @@ module tuvx_profile_warehouse
     ! profile_warehouse_t constructor
     module procedure :: constructor
   end interface
+
+  !> Pointer to a profile in the warehouse
+  type :: profile_warehouse_ptr
+    private
+    integer :: index_ = 0
+  contains
+    !> Returns the number of bytes required to pack the pointer onto a buffer
+    procedure :: pack_size => ptr_pack_size
+    !> Packs the pointer onto a character buffer
+    procedure :: mpi_pack => ptr_mpi_pack
+    !> Unpacks a pointer from a character buffer into the object
+    procedure :: mpi_unpack => ptr_mpi_unpack
+  end type profile_warehouse_ptr
 
 contains
 
@@ -127,8 +146,59 @@ contains
     character(len=*),           intent(in) :: units
     class(profile_t),           pointer    :: a_profile_ptr
 
-    ! Local variables
-    character(len=*), parameter :: Iam = 'profile warehouse get_profile: '
+    type(profile_warehouse_ptr) :: ptr
+
+    ptr = this%get_ptr( name, units )
+    allocate( a_profile_ptr, source = this%profiles_( ptr%index_ )%val_ )
+
+  end function get_profile_char
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_profile_string( this, name, units ) result( a_profile_ptr )
+    ! Get a copy of a profile object
+
+    use musica_string,                 only : string_t
+    use tuvx_profile,                  only : profile_t
+
+    class(profile_warehouse_t), intent(in) :: this
+    type(string_t),             intent(in) :: name
+    type(string_t),             intent(in) :: units
+    class(profile_t), pointer              :: a_profile_ptr
+
+    a_profile_ptr => this%get_profile_char( name%to_char( ), units%to_char( ) )
+
+  end function get_profile_string
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_profile_ptr( this, ptr ) result( profile )
+    ! Returns a copy of a profile from the warehouse
+
+    use musica_assert,                 only : assert_msg
+    use tuvx_profile,                  only : profile_t
+
+    class(profile_warehouse_t),  intent(in) :: this    ! The profile warehouse
+    type(profile_warehouse_ptr), intent(in) :: ptr     ! Pointer to a profile in the warehouse
+    class(profile_t),            pointer    :: profile ! Copy of the profile
+
+    call assert_msg( 419668898, ptr%index_ > 0, "Invalid profile pointer" )
+    allocate( profile, source = this%profiles_( ptr%index_ )%val_ )
+
+  end function get_profile_ptr
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_ptr_char( this, name, units ) result( ptr )
+    ! Returns a pointer to a profile in the warehouse
+
+    use musica_assert,                 only : assert_msg
+
+    class(profile_warehouse_t), intent(in) :: this
+    character(len=*),           intent(in) :: name
+    character(len=*),           intent(in) :: units
+    type(profile_warehouse_ptr)            :: ptr
+
     integer :: ndx
     logical :: found
 
@@ -142,30 +212,29 @@ contains
 
     call assert_msg( 460768214, found, "Invalid profile handle: '"//name//"'" )
     call assert_msg( 465479557,                                               &
-                     units .eq. this%profiles_( ndx )%val_%units( ),      &
+                     units .eq. this%profiles_( ndx )%val_%units( ),          &
                      "Profile '"//name//"' has units of '"//                  &
-                     this%profiles_( ndx )%val_%units( )//"' not '"//     &
+                     this%profiles_( ndx )%val_%units( )//"' not '"//         &
                      units//"' as requested." )
-    allocate( a_profile_ptr, source = this%profiles_( ndx )%val_ )
+    ptr%index_ = ndx
 
-  end function get_profile_char
+  end function get_ptr_char
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function get_profile_string( this, name, units ) result( a_profile_ptr )
-    ! Get a copy of a profile object
+  function get_ptr_string( this, name, units ) result( ptr )
+    ! Returns a pointer to a profile object in the warehouse
 
     use musica_string,                 only : string_t
-    use tuvx_profile,                  only : profile_t
 
-    class(profile_warehouse_t), intent(inout) :: this
-    type(string_t),             intent(in)    :: name
-    type(string_t),             intent(in)    :: units
-    class(profile_t), pointer                 :: a_profile_ptr
+    class(profile_warehouse_t), intent(in) :: this
+    type(string_t),             intent(in) :: name
+    type(string_t),             intent(in) :: units
+    type(profile_warehouse_ptr)            :: ptr
 
-    a_profile_ptr => this%get_profile_char( name%to_char( ), units%to_char( ) )
+    ptr = this%get_ptr_char( name%to_char( ), units%to_char( ) )
 
-  end function get_profile_string
+  end function get_ptr_string
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -174,9 +243,9 @@ contains
 
     use musica_assert,                 only : assert_msg
 
-    class(profile_warehouse_t), intent(inout) :: this
-    character(len=*),           intent(in)    :: name
-    character(len=*),           intent(in)    :: units
+    class(profile_warehouse_t), intent(in) :: this
+    character(len=*),           intent(in) :: name
+    character(len=*),           intent(in) :: units
 
     integer :: ndx
 
@@ -428,6 +497,70 @@ contains
     endif
 
   end subroutine finalize
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function ptr_pack_size( this, comm ) result( pack_size )
+    ! Returns the number of bytes required to pack the pointer onto a buffer
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(profile_warehouse_ptr), intent(in) :: this ! This profile pointer
+    integer,                      intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    pack_size = musica_mpi_pack_size( this%index_, comm )
+#else
+    pack_size = 0
+#endif
+
+  end function ptr_pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine ptr_mpi_pack( this, buffer, position, comm )
+    ! Packs a pointer onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(profile_warehouse_ptr), intent(in)    :: this      ! pointer to be packed
+    character,                    intent(inout) :: buffer(:) ! memory buffer
+    integer,                      intent(inout) :: position  ! current buffer position
+    integer,                      intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position, this%index_, comm )
+    call assert( 153924730, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine ptr_mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine ptr_mpi_unpack( this, buffer, position, comm )
+    ! Unpacks a pointer from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(profile_warehouse_ptr), intent(out)   :: this      ! pointer to be packed
+    character,                    intent(inout) :: buffer(:) ! memory buffer
+    integer,                      intent(inout) :: position  ! current buffer position
+    integer,                      intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, this%index_, comm )
+    call assert( 266243075, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine ptr_mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

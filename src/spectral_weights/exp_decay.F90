@@ -53,6 +53,7 @@ contains
                      "exp decay spectral wght." )
 
     allocate( spectral_weight_exp_decay_t :: this )
+    this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
 
   end function constructor
 
@@ -73,9 +74,9 @@ contains
 
     ! Local variables
 
-    class(grid_t), pointer      :: lambdaGrid => null( )
+    class(grid_t), pointer      :: lambdaGrid
 
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     allocate( spectral_weight( lambdaGrid%ncells_ ) )
 

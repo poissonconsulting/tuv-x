@@ -84,11 +84,11 @@ contains
     integer            :: nzdim
     integer            :: vertNdx
     real(dk),      allocatable :: wrkCrossSection(:)
-    class(grid_t), pointer     :: zGrid => null( )
-    class(grid_t), pointer     :: lambdaGrid => null( )
+    class(grid_t), pointer     :: zGrid
+    class(grid_t), pointer     :: lambdaGrid
 
-    zGrid => grid_warehouse%get_grid( "height", "km" )
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     nzdim = zGrid%ncells_ + 1
     if( present( at_mid_point ) ) then

@@ -11,7 +11,7 @@ module tuvx_cross_section_warehouse
   implicit none
 
   private
-  public :: cross_section_warehouse_t
+  public :: cross_section_warehouse_t, cross_section_warehouse_ptr
 
   !> Radiative tranfser cross section type
   type cross_section_warehouse_t
@@ -20,7 +20,12 @@ module tuvx_cross_section_warehouse
     type(string_t), allocatable          :: handles_(:) ! cross section "handle"
   contains
     !> Get a copy of a specific cross section
-    procedure :: get
+    procedure, private :: get_copy_char, get_copy_string
+    procedure, private :: get_copy_ptr
+    generic :: get => get_copy_char, get_copy_string, get_copy_ptr
+    !> Returns a pointer to a cross section in the warehouse
+    procedure, private :: get_ptr_char, get_ptr_string
+    generic :: get_ptr => get_ptr_char, get_ptr_string
     !> Returns the number of bytes required to pack the warehouse onto a buffer
     procedure :: pack_size
     !> Packs the warehouse onto a character buffer
@@ -35,6 +40,19 @@ module tuvx_cross_section_warehouse
   interface cross_section_warehouse_t
     module procedure :: constructor
   end interface
+
+  !> Pointer to a cross section in the warehouse
+  type :: cross_section_warehouse_ptr
+    private
+    integer :: index_ = 0
+  contains
+    !> Returns the number of bytes required to pack the pointer onto a buffer
+    procedure :: pack_size => ptr_pack_size
+    !> Packs the pointer onto a character buffer
+    procedure :: mpi_pack => ptr_mpi_pack
+    !> Unpacks a pointer from a character buffer into the object
+    procedure :: mpi_unpack => ptr_mpi_unpack
+  end type cross_section_warehouse_ptr
 
 contains
 
@@ -101,7 +119,25 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function get( this, cross_section_name ) result( cross_section )
+  function get_copy_char( this, name ) result( cross_section )
+    ! Get a copy of a specific cross section object
+
+    use tuvx_cross_section,            only : cross_section_t
+
+    class(cross_section_warehouse_t), intent(in) :: this          ! cross section warehouse
+    character(len=*),                 intent(in) :: name          ! name of the cross section to copy
+    class(cross_section_t), pointer              :: cross_section ! copy of the cross section
+
+    type(cross_section_warehouse_ptr) :: ptr
+
+    ptr = this%get_ptr( name )
+    allocate( cross_section, source = this%cross_sections_( ptr%index_ )%val_ )
+
+  end function get_copy_char
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_copy_string( this, name ) result( cross_section )
     ! Get a copy of a specific radiative transfer cross section object
 
     use musica_assert,                 only : die_msg
@@ -110,29 +146,73 @@ contains
 
     class(cross_section_t),           pointer       :: cross_section ! Pointer to a copy of the requested :f:type:`~tuvx_cross_section/cross_section_t`
     class(cross_section_warehouse_t), intent(inout) :: this ! A :f:type:`~tuvx_cross_section_warehouse/cross_section_warehouse_t`
-    type(string_t),                   intent(in)    :: cross_section_name ! Name of the cross section to find
+    type(string_t),                   intent(in)    :: name ! Name of the cross section to find
 
-    ! Local variables
-    character(len=*), parameter :: Iam = 'radXfer cross section warehouse get: '
+    cross_section => this%get_copy_char( name%to_char( ) )
+
+  end function get_copy_string
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_copy_ptr( this, ptr ) result( cross_section )
+    ! Returns a copy of a cross section from the warehouse
+
+    use musica_assert,                 only : assert_msg
+    use tuvx_cross_section,            only : cross_section_t
+
+    class(cross_section_warehouse_t),  intent(in) :: this ! cross section warehouse
+    type(cross_section_warehouse_ptr), intent(in) :: ptr ! cross section pointer
+    class(cross_section_t), pointer               :: cross_section ! copy of the cross section
+
+    call assert_msg( 829999477, ptr%index_ > 0,                               &
+                     "Invalid cross section pointer" )
+    allocate( cross_section, source = this%cross_sections_( ptr%index_ )%val_ )
+
+  end function get_copy_ptr
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_ptr_char( this, name ) result( ptr )
+    ! Returns a pointer to a cross section in the warehouse
+
+    use musica_assert,                 only : die_msg
+
+    class(cross_section_warehouse_t), intent(in) :: this ! cross section warehouse
+    character(len=*),                 intent(in) :: name ! name of the cross section to find
+    type(cross_section_warehouse_ptr)            :: ptr  ! pointer to the cross section
+
     integer :: ndx
     logical :: found
 
     found = .false.
     do ndx = 1, size( this%handles_ )
-      if( cross_section_name .eq. this%handles_( ndx ) ) then
+      if( name .eq. this%handles_( ndx ) ) then
         found = .true.
         exit
       endif
     end do
 
     if( .not. found ) then
-      call die_msg( 980636382, "Invalid cross_section_name: '"//              &
-                               cross_section_name%to_char()//"'" )
+      call die_msg( 980636382, "Invalid cross_section_name: '"//name//"'" )
     endif
-    allocate( cross_section,                                                  &
-              source = this%cross_sections_( ndx )%val_ )
+    ptr%index_ = ndx
 
-  end function get
+  end function get_ptr_char
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_ptr_string( this, name ) result( ptr )
+    ! Returns a pointer to a cross section in the warehouse
+
+    use musica_string,                 only : string_t
+
+    class(cross_section_warehouse_t), intent(in) :: this ! cross section warehouse
+    type(string_t),                   intent(in) :: name ! name of the cross section to find
+    type(cross_section_warehouse_ptr)            :: ptr  ! pointer to the cross section
+
+    ptr = this%get_ptr_char( name%to_char( ) )
+
+  end function get_ptr_string
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -269,6 +349,70 @@ contains
     end if
 
   end subroutine finalize
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function ptr_pack_size( this, comm ) result( pack_size )
+    ! Returns the number of bytes required to pack the pointer onto a buffer
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(cross_section_warehouse_ptr), intent(in) :: this ! This cross section pointer
+    integer,                            intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    pack_size = musica_mpi_pack_size( this%index_, comm )
+#else
+    pack_size = 0
+#endif
+
+  end function ptr_pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine ptr_mpi_pack( this, buffer, position, comm )
+    ! Packs a pointer onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(cross_section_warehouse_ptr), intent(in)    :: this      ! pointer to be packed
+    character,                          intent(inout) :: buffer(:) ! memory buffer
+    integer,                            intent(inout) :: position  ! current buffer position
+    integer,                            intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position, this%index_, comm )
+    call assert( 344231889, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine ptr_mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine ptr_mpi_unpack( this, buffer, position, comm )
+    ! Unpacks a pointer from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(cross_section_warehouse_ptr), intent(out)   :: this      ! pointer to be packed
+    character,                          intent(inout) :: buffer(:) ! memory buffer
+    integer,                            intent(inout) :: position  ! current buffer position
+    integer,                            intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, this%index_, comm )
+    call assert( 286393330, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine ptr_mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

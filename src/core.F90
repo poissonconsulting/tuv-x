@@ -166,7 +166,8 @@ contains
     ! instantiate and initialize lyman alpha, srb type
     call core_config%get( "O2 absorption", child_config, Iam )
     new_core%la_sr_bands_ => la_sr_bands_t( child_config,                     &
-                                            new_core%grid_warehouse_ )
+                                            new_core%grid_warehouse_,         &
+                                            new_core%profile_warehouse_ )
 
 
   end function constructor
@@ -178,7 +179,6 @@ contains
     ! Performs calculations for specified photolysis and dose rates for a
     ! given set of conditions
 
-    use musica_string,                   only : string_t, to_char
     use tuvx_profile,                    only : profile_t
     use tuvx_radiator,                   only : radiator_t
     use tuvx_solver,                     only : radiation_field_t
@@ -194,10 +194,9 @@ contains
     ! Local variables
     character(len=*), parameter         :: Iam = 'Photolysis core run: '
     character(len=2)                    :: number
-    type(string_t)                      :: file_path
-    class(radiator_t),          pointer :: radiator => null()
-    class(radiation_field_t),   pointer :: radiation_field => null( )
-    type(warehouse_iterator_t), pointer :: warehouse_iter => null( )
+    class(radiator_t),          pointer :: radiator
+    class(radiation_field_t),   pointer :: radiation_field
+    type(warehouse_iterator_t), pointer :: warehouse_iter
     character(len=:), allocatable       :: diag_label
 
     if( present( diagnostic_label ) ) then
@@ -207,18 +206,18 @@ contains
     end if
 
     ! calculate the radiation field
-    if( associated( this%spherical_geometry_ ) ) then
-      call this%spherical_geometry_%set_parameters( solar_zenith_angle,       &
-                                                    this%grid_warehouse_ )
-    endif
+    call this%spherical_geometry_%set_parameters( solar_zenith_angle,         &
+                                                  this%grid_warehouse_ )
     call this%radiative_transfer_%calculate( this%la_sr_bands_,               &
                                              this%spherical_geometry_,        &
                                              this%grid_warehouse_,            &
                                              this%profile_warehouse_,         &
                                              radiation_field )
-    call diagout( 'radField.' // diag_label // '.new',                        &
-                  radiation_field%fdr_ + radiation_field%fup_ +               &
+    if( this%enable_diagnostics_ ) then
+      call diagout( 'radField.' // diag_label // '.new',                      &
+                    radiation_field%fdr_ + radiation_field%fup_ +             &
                     radiation_field%fdn_, this%enable_diagnostics_  )
+    end if
     if( associated( this%photolysis_rates_ ) .and.                            &
         present( photolysis_rate_constants ) ) then
       call this%photolysis_rates_%get( this%la_sr_bands_,                     &
@@ -239,14 +238,16 @@ contains
     deallocate( radiation_field )
 
     ! diagnostic output
-    warehouse_iter =>                                                         &
-        this%radiative_transfer_%radiator_warehouse_%get_iterator( )
-    do while( warehouse_iter%next( ) )
-      radiator => this%radiative_transfer_%                                   &
-        radiator_warehouse_%get_radiator( warehouse_iter )
-      call radiator%output_diagnostics()
-    enddo
-    deallocate( warehouse_iter )
+    if( this%enable_diagnostics_ ) then
+      warehouse_iter =>                                                       &
+          this%radiative_transfer_%radiator_warehouse_%get_iterator( )
+      do while( warehouse_iter%next( ) )
+        radiator => this%radiative_transfer_%                                 &
+          radiator_warehouse_%get_radiator( warehouse_iter )
+        call radiator%output_diagnostics()
+      enddo
+      deallocate( warehouse_iter )
+    end if
 
   end subroutine run
 

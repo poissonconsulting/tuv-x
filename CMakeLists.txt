@@ -12,7 +12,9 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake-modules)
 ################################################################################
 # options
 
+include(CMakeDependentOption)
 option(ENABLE_MPI "Enable MPI parallel support" OFF)
+cmake_dependent_option(ENABLE_OPENMP "Enable OpenMP support" OFF "ENABLE_MPI" OFF)
 option(ENABLE_TESTS "Build tests" ON)
 option(ENABLE_COVERAGE "Enable code coverage output" ON)
 option(ENABLE_MEMCHECK "Enable memory checking in tests" ON)
@@ -36,6 +38,38 @@ endif()
 
 if(ENABLE_MPI)
   add_definitions(-DMUSICA_USE_MPI)
+endif()
+
+################################################################################
+# Memory check
+
+if(ENABLE_MEMCHECK)
+  find_file(MEMCHECK_SUPPRESS_FILE
+    DOC "Suppression file for memory checking"
+    NAMES openmpi-valgrind.supp
+    PATHS
+      /usr/share/openmpi
+      /usr/lib64/openmpi/share
+      /usr/lib64/openmpi/share/openmpi
+      /usr/share)
+  if(MEMCHECK_SUPPRESS_FILE)
+    set(MEMCHECK_SUPPRESS "--suppressions=${PROJECT_SOURCE_DIR}/test/valgrind.supp --suppressions=${MEMCHECK_SUPPRESS_FILE}")
+  else()
+    set(MEMCHECK_SUPPRESS "--suppressions=${PROJECT_SOURCE_DIR}/test/valgrind.supp")
+  endif()
+endif()
+
+################################################################################
+# OpenMP
+
+if(ENABLE_OPENMP)
+  find_package(OpenMP)
+  if(OpenMP_Fortran_FOUND)
+    message(STATUS "Compiling with OpenMP support")
+    add_definitions(-DMUSICA_USE_OPENMP)
+  else()
+    message(FATAL_ERROR "OpenMP package not found")
+  endif()
 endif()
 
 ################################################################################

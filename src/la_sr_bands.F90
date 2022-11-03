@@ -5,6 +5,8 @@ module tuvx_la_sr_bands
   ! Calculator of properties of the Lyman-Alpha and Shuman-Runge bands
 
   use musica_constants,                only : dk => musica_dk
+  use tuvx_grid_warehouse,             only : grid_warehouse_ptr
+  use tuvx_profile_warehouse,          only : profile_warehouse_ptr
 
   implicit none
 
@@ -39,6 +41,9 @@ module tuvx_la_sr_bands
     logical  :: has_la_srb ! .true. if has_la OR has_srb are .true.
     real(dk) :: AC( nPoly, nsrb ) ! Chebyshev polynomial coefficients
     real(dk) :: BC( nPoly, nsrb ) ! Chebyshev polynomial coefficients
+    type(grid_warehouse_ptr) :: height_grid_
+    type(grid_warehouse_ptr) :: wavelength_grid_
+    type(profile_warehouse_ptr) :: temperature_profile_
   contains
     procedure :: optical_depth => la_srb_OD
     procedure :: cross_section => la_srb_xs
@@ -68,7 +73,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function constructor( config, grid_warehouse ) result( new_la_sr_bands )
+  function constructor( config, grid_warehouse, profile_warehouse )           &
+      result( this )
     ! Checks that the user wavelength grid, WL(IW), is compatible
     ! with the wavelengths for the parameterizations of the Lyman-alpha and
     ! SRB.
@@ -79,10 +85,12 @@ contains
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    type(la_sr_bands_t),    pointer       :: new_la_sr_bands
-    type(config_t),         intent(inout) :: config         ! Lyman-Alpha Shumann Runge configuration
-    type(grid_warehouse_t), intent(inout) :: grid_warehouse ! Grid warehouse
+    type(la_sr_bands_t),       pointer       :: this
+    type(config_t),            intent(inout) :: config            ! Lyman-Alpha Shumann Runge configuration
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse    ! Grid warehouse
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse ! profile warehouse
 
     character(len=*), parameter :: Iam = 'la_srb initialize: '
 
@@ -90,70 +98,72 @@ contains
     type(string_t)         :: file_path
     class(grid_t), pointer :: lambdaGrid
 
-    allocate( new_la_sr_bands )
+    allocate( this )
 
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    this%height_grid_         = grid_warehouse%get_ptr( "height", "km" )
+    this%wavelength_grid_     = grid_warehouse%get_ptr( "wavelength", "nm" )
+    this%temperature_profile_ = profile_warehouse%get_ptr( "temperature", "K" )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     ! Are la and srb grids fully "inside" the model grid?
-    new_la_sr_bands%has_la  = lambdaGrid%edge_( iONE ) <= wlla( iONE ) .and.  &
+    this%has_la  = lambdaGrid%edge_( iONE ) <= wlla( iONE ) .and.             &
         lambdaGrid%edge_( lambdaGrid%ncells_ + iONE ) >= wlla( kla )
-    new_la_sr_bands%has_srb = lambdaGrid%edge_( iONE ) <= wlsrb( iONE ) .and. &
+    this%has_srb = lambdaGrid%edge_( iONE ) <= wlsrb( iONE ) .and.            &
         lambdaGrid%edge_( lambdaGrid%ncells_ + iONE ) >= wlsrb( ksrb )
-    new_la_sr_bands%has_la_srb = new_la_sr_bands%has_la .or.                  &
-        new_la_sr_bands%has_srb
+    this%has_la_srb = this%has_la .or. this%has_srb
 
-    has_la_srb: if( new_la_sr_bands%has_la_srb ) then
+    has_la_srb: if( this%has_la_srb ) then
       nw = lambdaGrid%ncells_ + iONE
-      if( new_la_sr_bands%has_la ) then
+      if( this%has_la ) then
         ! locate Lyman-alpha wavelengths on grid
-        new_la_sr_bands%ila = 0
+        this%ila = 0
         do iw = iONE, nw
           if( abs( lambdaGrid%edge_( iw ) - wlla( iONE ) ) < rTEN * precis )  &
               then
-            new_la_sr_bands%ila = iw
+            this%ila = iw
             exit
           endif
         enddo
         ! check Lyman-alpha wavelength grid
-        if( new_la_sr_bands%ila == 0 ) then
+        if( this%ila == 0 ) then
           write(*,*) 'For wavelengths below 205.8 nm, only the'
           write(*,*) 'pre-specified wavelength grid is permitted'
           write(*,*) 'Use nwint=-156, or edit subroutine gridw.f'
           call die_msg( 489201491,' Lyman alpha grid mis-match - 1' )
         endif
         do iw = 2, nla + iONE
-          if( abs( lambdaGrid%edge_( new_la_sr_bands%ila + iw - iONE )        &
+          if( abs( lambdaGrid%edge_( this%ila + iw - iONE )                   &
                    - wlla( iw ) ) > rTEN * precis ) then
             call die_msg( 20002,' Lyman alpha grid mis-match - 2' )
           endif
         enddo
       endif
-      if( new_la_sr_bands%has_srb ) then
+      if( this%has_srb ) then
         ! locate Schumann-Runge wavelengths on grid
-        new_la_sr_bands%isrb = 0
+        this%isrb = 0
         do iw = iONE, nw
           if( abs( lambdaGrid%edge_( iw ) - wlsrb( iONE ) ) < rTEN * precis ) &
               then
-            new_la_sr_bands%isrb = iw
+            this%isrb = iw
             exit
           endif
         enddo
         ! check Schumann-Runge wavelength grid
-        if( new_la_sr_bands%isrb == 0 ) then
+        if( this%isrb == 0 ) then
           write(*,*) 'For wavelengths below 205.8 nm, only the'
           write(*,*) 'pre-specified wavelength grid is permitted'
           write(*,*) 'Use nwint=-156, or edit subroutine gridw.f'
           call die_msg( 188479138,' SRB grid mis-match - 1' )
         endif
         do iw = 2, nsrb + iONE
-          if( abs( lambdaGrid%edge_( new_la_sr_bands%isrb + iw - iONE )       &
+          if( abs( lambdaGrid%edge_( this%isrb + iw - iONE )                  &
                    - wlsrb( iw ) ) > rTEN * precis ) then
             call die_msg( 467595614,' SRB grid mismatch - w' )
           endif
         enddo
         ! Loads Chebyshev polynomial Coeff.
         call config%get( 'cross section parameters file', file_path, Iam )
-        call new_la_sr_bands%init_srb_xs( file_path )
+        call this%init_srb_xs( file_path )
       endif
     endif has_la_srb
 
@@ -190,9 +200,9 @@ contains
     integer :: iw
     real(dk)    :: secchi(size(air_slant_column))
     real(dk)    :: o2scol(size(air_slant_column))
-    class(grid_t),    pointer :: zGrid => null( ) ! specified altitude working grid [km]
-    class(grid_t),    pointer :: lambdaGrid => null( )
-    class(profile_t), pointer :: temperature => null( )
+    class(grid_t),    pointer :: zGrid ! specified altitude working grid [km]
+    class(grid_t),    pointer :: lambdaGrid
+    class(profile_t), pointer :: temperature
 
     ! Lyman-alpha variables
     ! O2 optical depth and equivalent cross section in the Lyman-alpha region
@@ -206,16 +216,16 @@ contains
     has_la_srb: if( this%has_la_srb ) then
 
       ! get specific grids and vertical profiles
-      zGrid => grid_warehouse%get_grid( "height", "km" )
-      lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-      temperature => profile_warehouse%get_profile( "temperature", "K" )
+      zGrid => grid_warehouse%get_grid( this%height_grid_ )
+      lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
+      temperature => profile_warehouse%get_profile( this%temperature_profile_ )
 
       nzm1 = zGrid%ncells_
       nz   = nzm1 +  iONE
 
-      call assert_msg( 543202773, size( air_slant_column, dim=1) == nz,       &
+      call assert_msg( 543202773, size( air_slant_column, dim=1 ) == nz,      &
                      'invalid dimension size of the air slant column.' //     &
-                     'The slant air column must be one larger than the ' //    &
+                     'The slant air column must be one larger than the ' //   &
                      'number of cells in the vertical grid')
 
       ! O2 slant column
@@ -304,9 +314,9 @@ contains
     has_la_srb: if( this%has_la_srb ) then
 
       ! get specific grids and vertical profiles
-      zGrid => grid_warehouse%get_grid( "height", "km" )
-      lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-      temperature => profile_warehouse%get_profile( "temperature", "K" )
+      zGrid => grid_warehouse%get_grid( this%height_grid_ )
+      lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
+      temperature => profile_warehouse%get_profile( this%temperature_profile_ )
 
       nzm1 = zGrid%ncells_
       nz   = nzm1 +  iONE
@@ -376,7 +386,10 @@ contains
                 musica_mpi_pack_size( this%has_srb,    comm ) +               &
                 musica_mpi_pack_size( this%has_la_srb, comm ) +               &
                 musica_mpi_pack_size( ac,              comm ) +               &
-                musica_mpi_pack_size( bc,              comm )
+                musica_mpi_pack_size( bc,              comm ) +               &
+                this%height_grid_%pack_size(           comm ) +               &
+                this%wavelength_grid_%pack_size(       comm ) +               &
+                this%temperature_profile_%pack_size(   comm )
 #else
     pack_size = 0
 #endif
@@ -410,6 +423,9 @@ contains
     call musica_mpi_pack( buffer, position, this%has_la_srb, comm )
     call musica_mpi_pack( buffer, position, ac,              comm )
     call musica_mpi_pack( buffer, position, bc,              comm )
+    call this%height_grid_%mpi_pack(         buffer, position, comm )
+    call this%wavelength_grid_%mpi_pack(     buffer, position, comm )
+    call this%temperature_profile_%mpi_pack( buffer, position, comm )
     call assert( 708555791, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
@@ -440,6 +456,9 @@ contains
     call musica_mpi_unpack( buffer, position, this%has_la_srb, comm )
     call musica_mpi_unpack( buffer, position, ac,              comm )
     call musica_mpi_unpack( buffer, position, bc,              comm )
+    call this%height_grid_%mpi_unpack(         buffer, position, comm )
+    call this%wavelength_grid_%mpi_unpack(     buffer, position, comm )
+    call this%temperature_profile_%mpi_unpack( buffer, position, comm )
     this%ac = ac
     this%bc = bc
     call assert( 683591141, position - prev_pos <= this%pack_size( comm ) )

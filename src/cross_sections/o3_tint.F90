@@ -78,7 +78,7 @@ contains
     character(len=:), allocatable :: msg
     type(netcdf_t),   allocatable :: netcdf_obj
     type(string_t),   allocatable :: netcdfFiles(:)
-    class(grid_t),    pointer     :: lambdaGrid => null( )
+    class(grid_t),    pointer     :: lambdaGrid
     type(interpolator_conserving_t) :: interpolator
     type(string_t) :: required_keys(2), optional_keys(3)
 
@@ -95,7 +95,11 @@ contains
     allocate( this )
 
     ! Get model wavelength grids
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
+    this%height_grid_ = grid_warehouse%get_ptr( "height", "km" )
+    this%temperature_profile_ =                                               &
+        profile_warehouse%get_ptr( "temperature", "K" )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     ! get cross section netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
@@ -224,13 +228,14 @@ file_loop: &
     real(dk)    :: Tadj, Tstar
     real(dk),         allocatable :: modelTemp(:)
     real(dk),         allocatable :: wrkCrossSection(:,:)
-    class(grid_t),    pointer     :: zGrid => null( )
-    class(grid_t),    pointer     :: lambdaGrid => null( )
-    class(profile_t), pointer     :: mdlTemperature => null( )
+    class(grid_t),    pointer     :: zGrid
+    class(grid_t),    pointer     :: lambdaGrid
+    class(profile_t), pointer     :: mdlTemperature
 
-    zGrid => grid_warehouse%get_grid( "height", "km" )
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    mdlTemperature => profile_warehouse%get_profile( "temperature", "K" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
+    mdlTemperature =>                                                         &
+        profile_warehouse%get_profile( this%temperature_profile_ )
 
     ! temperature at model cell midpoint or edge
     nzdim     = zGrid%ncells_ + 1

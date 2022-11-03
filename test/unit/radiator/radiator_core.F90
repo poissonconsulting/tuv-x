@@ -18,7 +18,9 @@ module radiator_core
   use tuvx_radiator_warehouse,    only : radiator_warehouse_t
   use tuvx_radiator,     only : radiator_t
   use tuvx_radiator,     only : radiator_state_t
-
+#ifdef MUSICA_USE_OPENMP
+  use omp_lib
+#endif
   implicit none
 
   private
@@ -83,7 +85,9 @@ contains
     call tst_config%get( "radiators", child_config, Iam )
     radiator_core_obj%theRadiatorWarehouse_ =>                                &
         radiator_warehouse_t( child_config,                                   &
-                              radiator_core_obj%theGridWareHouse_ )
+                              radiator_core_obj%theGridWareHouse_,            &
+                              radiator_core_obj%theProfileWarehouse_,         &
+                              radiator_core_obj%theradXferXsectWarehouse_ )
 
   end function constructor
 
@@ -195,7 +199,7 @@ contains
       call assert( 761314313, pos <= pack_size )
     end if
 
-    ! Evaluate radiator state
+     ! Evaluate radiator state
     call assert( 312238775, all( RaylieghRadiator%state_%layer_OD_ >= 0._dk ) )
     write(*,*) Iam // 'layer_OD_ is (',size(RaylieghRadiator%state_%layer_OD_,dim=1),' x ', &
                       size(RaylieghRadiator%state_%layer_OD_,dim=2),')'
@@ -232,6 +236,10 @@ contains
     deallocate(iter)
     call assert( 771640568, found )
 
+    if( musica_mpi_rank( comm ) .ne. 0 ) then
+      deallocate( RaylieghRadiator )
+      deallocate( radiators        )
+    end if
     deallocate( zGrid )
     deallocate( lambdaGrid )
     deallocate( AirProfile )

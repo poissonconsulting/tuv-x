@@ -78,13 +78,17 @@ contains
     logical     :: found, monopos
     type(netcdf_t),   allocatable :: netcdf_obj
     type(string_t),   allocatable :: netcdfFiles(:)
-    class(grid_t),    pointer     :: lambdaGrid => null( )
+    class(grid_t),    pointer     :: lambdaGrid
     type(interpolator_conserving_t) :: interpolator
 
     allocate( this )
 
-    !> Get model wavelength grid
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
+    this%height_grid_ = grid_warehouse%get_ptr( "height", "km" )
+    this%temperature_profile_ =                                               &
+        profile_warehouse%get_ptr( "temperature", "K" )
+    this%air_profile_ = profile_warehouse%get_ptr( "air", "molecule cm-3" )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     ! get quantum yield netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
@@ -185,13 +189,14 @@ contains
     integer     :: fileNdx, tNdx, vertNdx
     real(dk)    :: Tadj, Tstar
     real(dk),         allocatable :: WrkQuantumYield(:,:)
-    class(grid_t),    pointer     :: zGrid => null( )
-    class(grid_t),    pointer     :: lambdaGrid => null( )
-    class(profile_t), pointer     :: mdlTemperature => null( )
+    class(grid_t),    pointer     :: zGrid
+    class(grid_t),    pointer     :: lambdaGrid
+    class(profile_t), pointer     :: mdlTemperature
 
-    zGrid => grid_warehouse%get_grid( "height", "km" )
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    mdlTemperature => profile_warehouse%get_profile( "temperature", "K" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
+    mdlTemperature =>                                                         &
+        profile_warehouse%get_profile( this%temperature_profile_ )
 
     allocate( wrkQuantumYield( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )
     wrkQuantumYield = 0.0_dk

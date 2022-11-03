@@ -29,6 +29,15 @@
          "units": "molecule cm-3",
          "file path": "data/profiles/atmosphere/ussa.dens"
       },
+      "CO2": {
+        "type": "from config file",
+        "units": "molecule cm-3",
+        "uniform value": 2.54e13,
+        "grid": {
+          "name": "height",
+          "units": "km"
+        }
+      },
       "temperature": {
          "type": "from csv file",
          "units": "K",
@@ -52,6 +61,10 @@
       {
          "name": "air",
          "type": "air"
+      },
+      {
+         "name": "CO2",
+         "type": "air"
       }
    ],
    "radiators": [
@@ -59,6 +72,7 @@
          "enable diagnostics" : true,
          "name": "air",
          "type": "base",
+         "treat as air": true,
          "cross section": "air",
          "vertical profile": "air",
          "vertical profile units": "molecule cm-3"

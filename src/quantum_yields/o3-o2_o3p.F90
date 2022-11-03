@@ -82,13 +82,13 @@ contains
     integer     :: wNdx, vertNdx
     real(dk)    :: kt, q1, q2, T300, lambda
     real(dk)    :: qfac1, qfac2
-    class(grid_t),    pointer :: lambdaGrid => null( )
-    class(grid_t),    pointer :: zGrid => null( )
-    class(profile_t), pointer :: temperature => null( )
+    class(grid_t),    pointer :: lambdaGrid
+    class(grid_t),    pointer :: zGrid
+    class(profile_t), pointer :: temperature
 
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    zGrid => grid_warehouse%get_grid( "height", "km" )
-    temperature => profile_warehouse%get_profile( "temperature", "K" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
+    temperature => profile_warehouse%get_profile( this%temperature_profile_ )
 
     allocate( quantum_yield( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )
     quantum_yield = rZERO

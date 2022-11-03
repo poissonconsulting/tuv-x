@@ -7,7 +7,9 @@ module tuvx_radiative_transfer
   use musica_config,                   only : config_t
   use musica_constants,                only : dk => musica_dk
   use tuvx_cross_section_warehouse,    only : cross_section_warehouse_t
-  use tuvx_radiator_warehouse,         only : radiator_warehouse_t
+  use tuvx_profile_warehouse,          only : profile_warehouse_ptr
+  use tuvx_radiator_warehouse,         only : radiator_warehouse_t,           &
+                                              radiator_warehouse_ptr
   use tuvx_solver,                     only : solver_t
 
   implicit none
@@ -25,6 +27,9 @@ module tuvx_radiative_transfer
                                                        => null( ) ! Copy of original radiative transfer :f:type:`~tuvx_cross_section_warehouse/cross_section_warehouse_t`
     type(radiator_warehouse_t), public, pointer :: radiator_warehouse_        &
                                                        => null( ) ! Copy of original :f:type:`~tuvx_radiator/radiator_warehouse_t`
+    logical                                     :: O2_exists_   ! indicates whether O2 exists as a profile
+    type(radiator_warehouse_ptr)                :: O2_radiator_ ! pointer to the O2 radiator in the radiator warehouse
+    type(profile_warehouse_ptr)                 :: air_profile_ ! pointer to the air profile in the profile warehouse
   contains
     procedure :: name => component_name
     procedure :: description
@@ -48,7 +53,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   function constructor( config, grid_warehouse, profile_warehouse )           &
-      result( new_radiative_transfer )
+      result( this )
     ! Initializes the components necessary to solve radiative transfer
 
     use musica_assert,                 only : assert_msg, die_msg
@@ -57,7 +62,7 @@ contains
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_solver_factory,           only : solver_builder
 
-    type(radiative_transfer_t), pointer      :: new_radiative_transfer ! New :f:type:`~tuvx_radiative_transfer/radxfer_component_core_t`
+    type(radiative_transfer_t), pointer      :: this ! New :f:type:`~tuvx_radiative_transfer/radxfer_component_core_t`
     type(config_t),            intent(inout) :: config                 ! radXfer configuration data
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse         ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     type(profile_warehouse_t), intent(inout) :: profile_warehouse      ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
@@ -76,22 +81,32 @@ contains
                      "Bad configuration data format for "//                   &
                      "radiative transfer." )
 
-    allocate( new_radiative_transfer )
+    allocate( this )
 
     ! instantiate and initialize the radXfer cross section warehouse
     call config%get( "cross sections", child_config, Iam )
-    new_radiative_transfer%cross_section_warehouse_ =>                        &
+    this%cross_section_warehouse_ =>                        &
         cross_section_warehouse_t( child_config, grid_warehouse,              &
                                    profile_warehouse )
 
     ! instantiate and initialize the radiator warehouse
     call config%get( "radiators", child_config, Iam )
-    new_radiative_transfer%radiator_warehouse_ =>                             &
-        radiator_warehouse_t( child_config, grid_warehouse )
+    this%radiator_warehouse_ =>                             &
+        radiator_warehouse_t( child_config, grid_warehouse, profile_warehouse,&
+                              this%cross_section_warehouse_ )
+
+    ! set up pointers to radiators and profiles
+    this%O2_exists_ = this%radiator_warehouse_%exists( "O2" )
+    if( this%O2_exists_ ) then
+      this%O2_radiator_ = this%radiator_warehouse_%get_ptr( "O2" )
+      this%air_profile_ =                                     &
+          profile_warehouse%get_ptr( "air", "molecule cm-3" )
+    end if
 
     ! get the radiative transfer solver
     call config%get( "solver", solver_config, Iam )
-    new_radiative_transfer%solver_ => solver_builder( solver_config )
+    this%solver_ => solver_builder( solver_config, grid_warehouse,            &
+                                    profile_warehouse )
 
   end function constructor
 
@@ -128,7 +143,6 @@ contains
     ! Calculate the radiation field
 
     use musica_assert,                 only : die_msg
-    use musica_string,                 only : string_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_radiator_warehouse,       only : warehouse_iterator_t
     use tuvx_radiator,                 only : radiator_t
@@ -154,10 +168,9 @@ contains
     integer                              :: radNdx
     real(dk)                             :: zenithAngle
     real(dk), allocatable                :: airVcol(:), airScol(:)
-    type(string_t)                       :: Handle
-    type(warehouse_iterator_t), pointer  :: iter => null( )
-    class(radiator_t),          pointer  :: aRadiator => null()
-    class(profile_t),           pointer  :: airprofile => null()
+    type(warehouse_iterator_t), pointer  :: iter
+    class(radiator_t),          pointer  :: aRadiator
+    class(profile_t),           pointer  :: airprofile
 
     ! iterate over radiators
     iter => this%radiator_warehouse_%get_iterator( )
@@ -169,18 +182,16 @@ contains
     deallocate( iter )
 
     ! look for O2 radiator; Lyman Alpha and SR bands
-    Handle = 'O2'
-    radNdx = this%radiator_warehouse_%get_radiator_ndx_from_handle( Handle )
-    if( radNdx > 0 ) then
-      aRadiator => this%radiator_warehouse_%get_radiator( Handle )
-      airprofile => profile_warehouse%get_profile( "air", "molecule cm-3" )
+    if( this%O2_exists_ ) then
+      aRadiator => this%radiator_warehouse_%get_radiator( this%O2_radiator_ )
+      airprofile => profile_warehouse%get_profile( this%air_profile_ )
       allocate( airVcol( airprofile%ncells_ ),                                &
                 airScol( airprofile%ncells_ + 1 ) )
-      call spherical_geometry%airmas( airprofile%exo_layer_dens_, airVcol,    &
-                                      airScol )
+      call spherical_geometry%air_mass( airprofile%exo_layer_dens_, airVcol,  &
+                                        airScol )
       call la_srb%optical_depth( grid_warehouse, profile_warehouse, airVcol,  &
                                  airScol, aRadiator%state_%layer_OD_ )
-      deallocate( airVcol,airScol )
+      deallocate( airVcol, airScol )
       deallocate( airprofile )
     endif
 
@@ -216,7 +227,10 @@ contains
     pack_size = solver_type%pack_size( comm ) +                               &
                 this%solver_%pack_size( comm ) +                              &
                 this%cross_section_warehouse_%pack_size( comm ) +             &
-                this%radiator_warehouse_%pack_size( comm )
+                this%radiator_warehouse_%pack_size( comm ) +                  &
+                musica_mpi_pack_size( this%O2_exists_, comm ) +               &
+                this%O2_radiator_%pack_size( comm ) +                         &
+                this%air_profile_%pack_size( comm )
 #else
     pack_size = 0
 #endif
@@ -248,6 +262,9 @@ contains
     call this%solver_%mpi_pack( buffer, position, comm )
     call this%cross_section_warehouse_%mpi_pack( buffer, position, comm )
     call this%radiator_warehouse_%mpi_pack( buffer, position, comm )
+    call musica_mpi_pack( buffer, position, this%O2_exists_, comm )
+    call this%O2_radiator_%mpi_pack( buffer, position, comm )
+    call this%air_profile_%mpi_pack( buffer, position, comm )
 
     call assert( 742641642, position - prev_pos <= this%pack_size( comm ) )
 #endif
@@ -283,6 +300,9 @@ contains
     call this%solver_%mpi_unpack( buffer, position, comm )
     call this%cross_section_warehouse_%mpi_unpack( buffer, position, comm )
     call this%radiator_warehouse_%mpi_unpack( buffer, position, comm )
+    call musica_mpi_unpack( buffer, position, this%O2_exists_, comm )
+    call this%O2_radiator_%mpi_unpack( buffer, position, comm )
+    call this%air_profile_%mpi_unpack( buffer, position, comm )
 
     call assert( 559826176, position - prev_pos <= this%pack_size( comm ) )
 #endif

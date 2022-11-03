@@ -44,6 +44,7 @@ contains
     integer, parameter :: comm = MPI_COMM_WORLD
     real(dk) :: grid_mids(3), grid_edges(4)
     logical :: found
+    type(grid_warehouse_ptr) :: ptr
 
     host_grid => grid_from_host_t( "foo", "bars", 3 )
     host_grids => grid_warehouse_t( )
@@ -54,10 +55,12 @@ contains
       call config%from_file( "test/data/grid.simple.config.json" )
       grids => grid_warehouse_t( config )
       call grids%add( host_grids )
-      pack_size = grids%pack_size( comm )
+      ptr = grids%get_ptr( "time", "hours" )
+      pack_size = grids%pack_size( comm ) + ptr%pack_size( comm )
       allocate( buffer( pack_size ) )
       pos = 0
       call grids%mpi_pack( buffer, pos, comm )
+      call ptr%mpi_pacK(   buffer, pos, comm )
       call assert( 441119696, pos <= pack_size )
     end if
     deallocate( host_grids )
@@ -70,6 +73,7 @@ contains
       pos = 0
       allocate( grids )
       call grids%mpi_unpack( buffer, pos, comm )
+      call ptr%mpi_unpack(   buffer, pos, comm )
       call assert( 211670994, pos <= pack_size )
     end if
 
@@ -82,6 +86,15 @@ contains
     call assert( 571710742, almost_equal( grid%edge_(1), 5.0_dk  ) )
     call assert( 237400659, almost_equal( grid%edge_(2), 10.0_dk ) )
     call assert( 684768505, almost_equal( grid%edge_(3), 15.0_dk ) )
+    deallocate( grid )
+
+    grid => grids%get_grid( ptr )
+    call assert( 700665311, allocated( grid%mid_   ) )
+    call assert( 530508407, allocated( grid%edge_  ) )
+    call assert( 977876253, allocated( grid%delta_ ) )
+    call assert( 525244100, almost_equal( grid%edge_(1), 5.0_dk  ) )
+    call assert( 420095596, almost_equal( grid%edge_(2), 10.0_dk ) )
+    call assert( 867463442, almost_equal( grid%edge_(3), 15.0_dk ) )
     deallocate( grid )
 
     grid_name = "foo"

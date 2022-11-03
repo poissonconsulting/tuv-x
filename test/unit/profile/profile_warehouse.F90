@@ -27,7 +27,8 @@ contains
     use tuvx_profile,               only : profile_t
     use tuvx_profile_from_host,     only : profile_from_host_t,               &
                                            profile_updater_t
-    use tuvx_profile_warehouse,     only : profile_warehouse_t
+    use tuvx_profile_warehouse,     only : profile_warehouse_t,               &
+                                           profile_warehouse_ptr
 
     character(len=*), parameter :: grid_config = 'test/data/grid.test.config.json'
     character(len=*), parameter :: profile_config = 'test/data/profile.temperature.config.json'
@@ -44,6 +45,7 @@ contains
     character, allocatable :: buffer(:)
     integer :: pos, pack_size
     integer, parameter :: comm = MPI_COMM_WORLD
+    type(profile_warehouse_ptr) :: ptr
 
     host_profile => profile_from_host_t( "foo", "bars", 3 )
     host_profiles => profile_warehouse_t( )
@@ -57,10 +59,12 @@ contains
       profile_warehouse =>                                                    &
           profile_warehouse_t( profile_tst_config, grid_warehouse )
       call profile_warehouse%add( host_profiles )
-      pack_size = profile_warehouse%pack_size( comm )
+      ptr = profile_warehouse%get_ptr( "temperature", "K" )
+      pack_size = profile_warehouse%pack_size( comm ) + ptr%pack_size( comm )
       allocate( buffer( pack_size ) )
       pos = 0
       call profile_warehouse%mpi_pack( buffer, pos, comm )
+      call ptr%mpi_pack( buffer, pos, comm )
       call assert( 893633789, pos <= pack_size )
     end if
     deallocate( host_profiles )
@@ -73,12 +77,18 @@ contains
       pos = 0
       allocate( profile_warehouse )
       call profile_warehouse%mpi_unpack( buffer, pos, comm )
+      call ptr%mpi_unpack( buffer, pos, comm )
       call assert( 436189624, pos <= pack_size )
     end if
     deallocate( buffer )
 
     profile_ptr => profile_warehouse%get_profile( "temperature", "K" )
+    call assert( 418832741, associated(profile_ptr) )
+    call assert( 811107812, profile_ptr%handle_ == "temperature" )
+    call assert( 241345302, profile_ptr%units( ) == "K" )
+    deallocate( profile_ptr )
 
+    profile_ptr => profile_warehouse%get_profile( ptr )
     call assert( 418832741, associated(profile_ptr) )
     call assert( 811107812, profile_ptr%handle_ == "temperature" )
     call assert( 241345302, profile_ptr%units( ) == "K" )

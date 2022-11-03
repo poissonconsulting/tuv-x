@@ -69,12 +69,11 @@ contains
     integer                    :: vertNdx, lambdaNdx
     real(dk)                   :: lambda
     real(dk),      allocatable :: wrkQuantumYield(:)
-    class(grid_t), pointer     :: lambdaGrid => null( )
-    class(grid_t), pointer     :: zGrid => null( )
+    class(grid_t), pointer     :: lambdaGrid
+    class(grid_t), pointer     :: zGrid
 
-    ! Get model wavelength grid
-    zGrid => grid_warehouse%get_grid( "height", "km" )
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     allocate( wrkQuantumYield( lambdaGrid%ncells_) )
     allocate( quantum_yield( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )

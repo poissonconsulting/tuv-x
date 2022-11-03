@@ -9,7 +9,7 @@ exec_oldtuv() {
   ./oldtuv DO_RAYLEIGH < test/regression/tuv_scenario_2.in
 }
 exec_newtuv() {
-  valgrind --error-exitcode=1 --trace-children=yes --leak-check=full ./tuv-x test/data/radiators.rayleigh.config.json
+  valgrind --error-exitcode=1 --trace-children=yes --leak-check=full --gen-suppressions=all --suppressions=test/valgrind.supp ./tuv-x test/data/radiators.rayleigh.config.json
 }
 exec_analysis() {
   python3 tool/diagnostics/var.compare.py test/regression/radiators/radiation.rayleigh.compare.json

@@ -85,9 +85,10 @@ contains
     class(grid_t),    pointer     :: zGrid
     class(profile_t), pointer     :: temperature
 
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    zGrid => grid_warehouse%get_grid( "height", "km" )
-    temperature => profile_warehouse%get_profile( "temperature", "K" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
+    temperature =>                                                            &
+        profile_warehouse%get_profile( this%temperature_profile_ )
 
     nzdim = zGrid%ncells_ + 1
     if( present( at_mid_point ) ) then

@@ -14,6 +14,15 @@
     }
   },
   "profiles" : {
+    "surface albedo": {
+        "type": "from config file",
+        "units": "none",
+        "uniform value": 0.10,
+        "grid": {
+          "name": "wavelength",
+          "units": "nm"
+        }
+    },
     "temperature": {
         "type": "from csv file",
         "units": "K",
@@ -22,6 +31,15 @@
           "name": "height",
           "units": "km"
         }
+    },
+    "air": {
+      "type": "from config file",
+      "units": "molecule cm-3",
+      "uniform value": 2.54e19,
+      "grid": {
+        "name": "height",
+        "units": "km"
+      }
     }
   },
   "radiative transfer": {

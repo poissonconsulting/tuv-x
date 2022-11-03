@@ -53,6 +53,7 @@ contains
                      "uv index spectral wght." )
 
     allocate( spectral_weight_uv_index_t :: this )
+    this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
 
   end function constructor
 
@@ -72,9 +73,9 @@ contains
     real(kind=dk), allocatable               :: spectral_weight(:) ! The calculated spectral weights (wavelength) [unitless]
 
     ! Local variables
-    class(grid_t), pointer      :: lambdaGrid => null()
+    class(grid_t), pointer      :: lambdaGrid
 
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     spectral_weight = 40._dk * sw_fery( lambdaGrid%mid_ )
 

@@ -6,8 +6,7 @@ module tuvx_spectral_weight
 
   use musica_constants,       only : dk => musica_dk
   use musica_config,          only : config_t
-  use tuvx_grid_warehouse,    only : grid_warehouse_t
-  use tuvx_profile_warehouse, only : profile_warehouse_t
+  use tuvx_grid_warehouse,    only : grid_warehouse_ptr
 
   implicit none
 
@@ -23,6 +22,8 @@ module tuvx_spectral_weight
   type :: spectral_weight_t
     ! Calculator for spectral weights
     type(spectral_weight_parms_t), allocatable :: spectral_weight_parms(:)
+    ! Wavelength grid pointer
+    type(grid_warehouse_ptr) :: wavelength_grid_
   contains
     procedure :: calculate => run
     procedure, private :: add_points
@@ -51,6 +52,8 @@ contains
 
     use musica_assert,                 only : assert_msg
     use musica_string,                 only : string_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     class(spectral_weight_t),  pointer       :: new_spectral_weight  ! New :f:type:`~tuvx_spectral_weight/spectral_weight_t`
     type(config_t),            intent(inout) :: config ! Spectral weight configuration data
@@ -88,7 +91,9 @@ contains
     use musica_string,                 only : string_t
     use tuvx_interpolate,              only : interpolator_conserving_t
     use tuvx_grid,                     only : grid_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_netcdf,                   only : netcdf_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     class(spectral_weight_t),  pointer       :: this   ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
     type(config_t),            intent(inout) :: config ! Spectral weight configuration data
@@ -108,11 +113,12 @@ contains
     logical :: found
     type(netcdf_t), allocatable :: netcdf_obj
     type(string_t), allocatable :: netcdfFiles(:)
-    class(grid_t), pointer      :: lambdaGrid => null()
+    class(grid_t), pointer      :: lambdaGrid
     type(interpolator_conserving_t) :: interpolator
 
     ! Get model wavelength grid
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     ! Get spectral wght netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
@@ -166,6 +172,9 @@ contains
   function run( this, grid_warehouse, profile_warehouse )                     &
       result( spectral_weight )
     ! Calculate the spectral wght for a given set of environmental conditions
+
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     class(spectral_weight_t),  intent(in)     :: this ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
@@ -279,15 +288,13 @@ contains
     integer :: ndx
     logical :: is_allocated
 
-    pack_size = 0
-
 #ifdef MUSICA_USE_MPI
     is_allocated = allocated( this%spectral_weight_parms )
 
-    pack_size = pack_size + musica_mpi_pack_size(is_allocated, comm)
+    pack_size = musica_mpi_pack_size(is_allocated, comm)
 
     if (is_allocated) then
-      pack_size = pack_size + musica_mpi_pack_size(                             &
+      pack_size = pack_size + musica_mpi_pack_size(                           &
         size( this%spectral_weight_parms ), comm )
 
       do ndx = 1,size( this%spectral_weight_parms )
@@ -299,53 +306,58 @@ contains
           this%spectral_weight_parms( ndx )%temperature, comm )
       enddo
     endif
+    pack_size = pack_size +                                                   &
+                this%wavelength_grid_%pack_size( comm )
+#else
+    pack_size = 0
 #endif
 
   end function pack_size
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine mpi_pack(this, buffer, pos, comm)
+  subroutine mpi_pack( this, buffer, position, comm )
     ! Pack the given value to the buffer, advancing position
 
     use musica_mpi, only : musica_mpi_pack
     use musica_assert,                 only : assert
 
     class(spectral_weight_t), intent(in) :: this ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
-    character, intent(inout) :: buffer(:)        ! Memory buffer
-    integer, intent(inout) :: pos                ! Current buffer position
-    integer,           intent(in) :: comm        ! MPI communicator
+    character, intent(inout) :: buffer(:) ! Memory buffer
+    integer,   intent(inout) :: position  ! Current buffer position
+    integer,   intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_position, ndx
     logical :: is_allocated
     is_allocated = allocated( this%spectral_weight_parms )
 
-    prev_position = pos
+    prev_position = position
 
-    call musica_mpi_pack( buffer, pos, is_allocated, comm )
+    call musica_mpi_pack( buffer, position, is_allocated, comm )
 
     if (is_allocated) then
       ! first pack the number of arrays we have
-      call musica_mpi_pack( buffer, pos, size(this%spectral_weight_parms), comm )
+      call musica_mpi_pack( buffer, position,                                 &
+                            size( this%spectral_weight_parms ), comm )
 
       do ndx = 1,size( this%spectral_weight_parms )
-        call musica_mpi_pack( buffer, pos,                                      &
+        call musica_mpi_pack( buffer, position,                               &
           this%spectral_weight_parms( ndx )%array, comm )
-        call musica_mpi_pack( buffer, pos,                                      &
+        call musica_mpi_pack( buffer, position,                               &
           this%spectral_weight_parms( ndx )%temperature, comm )
       enddo
     endif
-
+    call this%wavelength_grid_%mpi_pack( buffer, position, comm )
     call assert(243454577, &
-         pos - prev_position <= this%pack_size(comm))
+         position - prev_position <= this%pack_size( comm ) )
 #endif
 
   end subroutine mpi_pack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine mpi_unpack(this, buffer, pos, comm)
+  subroutine mpi_unpack( this, buffer, position, comm )
     ! Unpack the given value from the buffer, advancing position
 
     use musica_mpi, only : musica_mpi_unpack
@@ -353,32 +365,32 @@ contains
 
     class(spectral_weight_t), intent(out) :: this ! This :f:type:`~tuvx_spectral_weight/spectral_weight_t`
     character,         intent(inout) :: buffer(:) ! memory buffer
-    integer,           intent(inout) :: pos       ! current buffer position
+    integer,           intent(inout) :: position  ! current buffer position
     integer,           intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_position, ndx, n_params
     logical :: is_allocated
 
-    prev_position = pos
+    prev_position = position
 
-    call musica_mpi_unpack( buffer, pos, is_allocated, comm )
+    call musica_mpi_unpack( buffer, position, is_allocated, comm )
 
     if (is_allocated) then
-      call musica_mpi_unpack( buffer, pos, n_params, comm )
+      call musica_mpi_unpack( buffer, position, n_params, comm )
 
       allocate( this%spectral_weight_parms( n_params) )
 
       do ndx = 1, n_params
-        call musica_mpi_unpack( buffer, pos,                                    &
+        call musica_mpi_unpack( buffer, position,                             &
           this%spectral_weight_parms( ndx )%array, comm )
-        call musica_mpi_unpack( buffer, pos,                                    &
+        call musica_mpi_unpack( buffer, position,                             &
           this%spectral_weight_parms( ndx )%temperature, comm )
       enddo
     endif
-
+    call this%wavelength_grid_%mpi_unpack( buffer, position, comm )
     call assert(567335412, &
-         pos - prev_position <= this%pack_size(comm))
+         position - prev_position <= this%pack_size( comm ) )
 #endif
 
   end subroutine mpi_unpack

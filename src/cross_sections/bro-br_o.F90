@@ -55,8 +55,8 @@ contains
     logical :: found
     type(netcdf_t),   allocatable :: netcdf_obj
     type(string_t),   allocatable :: netcdfFiles(:)
-    class(grid_t),    pointer     :: lambdaGrid => null( )
-    class(grid_t),    pointer     :: zGrid => null( )
+    class(grid_t),    pointer     :: lambdaGrid
+    class(grid_t),    pointer     :: zGrid
     type(interpolator_fractional_target_t) :: interpolator
     type(string_t) :: required_keys(2), optional_keys(1)
 
@@ -71,8 +71,10 @@ contains
     allocate( this )
 
     ! Get model wavelength grids
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    zGrid => grid_warehouse%get_grid( "height", "km" )
+    this%height_grid_ = grid_warehouse%get_ptr( "height", "km" )
+    this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     ! Get cross section netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )

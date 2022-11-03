@@ -9,7 +9,7 @@ module tuvx_grid_warehouse
   implicit none
 
   private
-  public :: grid_warehouse_t
+  public :: grid_warehouse_t, grid_warehouse_ptr
 
   !> Grid warehouse type
   type :: grid_warehouse_t
@@ -17,8 +17,11 @@ module tuvx_grid_warehouse
     type(grid_ptr), allocatable :: grids_(:) ! grid objects
   contains
     !> get a copy of a grid object
-    procedure, private :: get_grid_char, get_grid_string
-    generic :: get_grid => get_grid_char, get_grid_string
+    procedure, private :: get_grid_char, get_grid_string, get_grid_ptr
+    generic :: get_grid => get_grid_char, get_grid_string, get_grid_ptr
+    !> returns a pointer to a grid object
+    procedure, private :: get_ptr_char, get_ptr_string
+    generic :: get_ptr => get_ptr_char, get_ptr_string
     !> checks if a grid is present in the warehouse
     procedure, private :: exists_char, exists_string
     generic :: exists => exists_char, exists_string
@@ -43,6 +46,19 @@ module tuvx_grid_warehouse
     module procedure :: constructor_empty
     module procedure :: constructor
   end interface
+
+  !> Pointer to a grid in the warehouse
+  type :: grid_warehouse_ptr
+    private
+    integer :: index_ = 0
+  contains
+    !> Returns the number of bytes required to pack the pointer onto a buffer
+    procedure :: pack_size => ptr_pack_size
+    !> Packs the pointer onto a character buffer
+    procedure :: mpi_pack => ptr_mpi_pack
+    !> Unpacks a pointer from a character buffer into the object
+    procedure :: mpi_unpack => ptr_mpi_unpack
+  end type grid_warehouse_ptr
 
 contains
 
@@ -115,7 +131,8 @@ contains
   function get_grid_char( this, name, units ) result( a_grid_ptr )
     ! Get copy of a grid object
 
-    use musica_assert,                 only : assert_msg
+    use musica_assert,                 only : assert_msg, die_msg
+    use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
 
     class(grid_warehouse_t), intent(in) :: this     ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
@@ -123,23 +140,10 @@ contains
     character(len=*),        intent(in) :: units    ! The units of the grid
     class(grid_t), pointer              :: a_grid_ptr ! The :f:type:`~tuvx_grid/grid_t` which matches the name passed in
 
-    integer :: ndx
-    logical :: found
+    type(grid_warehouse_ptr) :: ptr
 
-    found = .false.
-    do ndx = 1, size( this%grids_ )
-      if( name .eq. this%grids_( ndx )%val_%handle_ ) then
-        found = .true.
-        exit
-      endif
-    end do
-    call assert_msg( 345804219, found, "Invalid grid name: '"//name//"'" )
-    call assert_msg( 509243577,                                               &
-                     units .eq. this%grids_( ndx )%val_%units( ),             &
-                     "Grid '"//name//"' has units of '"//                     &
-                     this%grids_( ndx )%val_%units( )//"' not '"//            &
-                     units//"' as requested." )
-    allocate( a_grid_ptr, source = this%grids_( ndx )%val_ )
+    ptr = this%get_ptr_char( name, units )
+    allocate( a_grid_ptr, source = this%grids_( ptr%index_ )%val_ )
 
   end function get_grid_char
 
@@ -159,6 +163,75 @@ contains
     a_grid_ptr => this%get_grid_char( name%to_char( ), units%to_char( ) )
 
   end function get_grid_string
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_grid_ptr( this, ptr ) result( grid )
+    ! Returns a copy of a grid from a grid pointer
+
+    use musica_assert,                 only : assert_msg
+    use tuvx_grid,                     only : grid_t
+
+    class(grid_warehouse_t),  intent(inout) :: this ! This grid warehouse
+    type(grid_warehouse_ptr), intent(in)    :: ptr  ! Pointer to a grid in the warehouse
+    class(grid_t),            pointer       :: grid
+
+    call assert_msg( 870082797, ptr%index_ > 0, "Invalid grid pointer" )
+    allocate( grid, source = this%grids_( ptr%index_ )%val_ )
+
+  end function get_grid_ptr
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_ptr_char( this, name, units ) result( ptr )
+    ! Returns a pointer to a grid object in the warehouse
+
+    use musica_assert,                 only : assert_msg, die_msg
+    use musica_string,                 only : string_t
+
+    class(grid_warehouse_t), intent(in) :: this  ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    character(len=*),        intent(in) :: name  ! The name of a grid, see :ref:`configuration-grids` for grid names
+    character(len=*),        intent(in) :: units ! The units of the grid
+    type(grid_warehouse_ptr)            :: ptr   ! Pointer to the grid in the warehouse
+
+    integer :: ndx
+    logical :: found
+    type(string_t) :: this_units
+
+    found = .false.
+    do ndx = 1, size( this%grids_ )
+      if( name .eq. this%grids_( ndx )%val_%handle_ ) then
+        found = .true.
+        exit
+      endif
+    end do
+    call assert_msg( 345804219, found, "Invalid grid name: '"//name//"'" )
+    this_units = this%grids_( ndx )%val_%units( )
+    if( units .ne. this_units ) then
+      call die_msg( 509243577,                                                &
+                    "Grid '"//name//"' has units of '"//this_units//          &
+                    "' not '"//units//"' as requested." )
+    end if
+    ptr%index_ = ndx
+
+  end function get_ptr_char
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_ptr_string( this, name, units ) result( ptr )
+    ! Returns a pointer to a grid object in the warehouse
+
+    use musica_string,                 only : string_t
+    use tuvx_grid,                     only : grid_t
+
+    class(grid_warehouse_t), intent(inout) :: this  ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(string_t),          intent(in)    :: name  ! The name of a grid, see :ref:`configuration-grids` for grid names
+    type(string_t),          intent(in)    :: units ! The units of the grid
+    type(grid_warehouse_ptr)               :: ptr   ! Pointer to the grid in the warehouse
+
+    ptr = this%get_ptr_char( name%to_char( ), units%to_char( ) )
+
+  end function get_ptr_string
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -415,6 +488,70 @@ contains
     endif
 
   end subroutine finalize
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function ptr_pack_size( this, comm ) result( pack_size )
+    ! Returns the number of bytes required to pack the pointer onto a buffer
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(grid_warehouse_ptr), intent(in) :: this ! This grid pointer
+    integer,                   intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    pack_size = musica_mpi_pack_size( this%index_, comm )
+#else
+    pack_size = 0
+#endif
+
+  end function ptr_pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine ptr_mpi_pack( this, buffer, position, comm )
+    ! Packs a pointer onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(grid_warehouse_ptr), intent(in)    :: this      ! pointer to be packed
+    character,                 intent(inout) :: buffer(:) ! memory buffer
+    integer,                   intent(inout) :: position  ! current buffer position
+    integer,                   intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position, this%index_, comm )
+    call assert( 282334709, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine ptr_mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine ptr_mpi_unpack( this, buffer, position, comm )
+    ! Unpacks a pointer from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(grid_warehouse_ptr), intent(out)   :: this      ! pointer to be packed
+    character,                 intent(inout) :: buffer(:) ! memory buffer
+    integer,                   intent(inout) :: position  ! current buffer position
+    integer,                   intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, this%index_, comm )
+    call assert( 212966592, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine ptr_mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

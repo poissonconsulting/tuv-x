@@ -52,6 +52,7 @@ contains
                      "scup mice spectral wght." )
 
     allocate( spectral_weight_scup_mice_t :: this )
+    this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
 
   end function constructor
 
@@ -73,9 +74,9 @@ contains
     ! Local variables
     real(dk), allocatable       :: factor(:)
 
-    class(grid_t), pointer      :: lambdaGrid => null()
+    class(grid_t), pointer      :: lambdaGrid
 
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
     factor = 1._dk / sw_futr( (/ 300._dk /) )
     spectral_weight = sw_futr( lambdaGrid%mid_ ) * factor(1)
 

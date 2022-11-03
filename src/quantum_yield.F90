@@ -6,6 +6,8 @@ module tuvx_quantum_yield
   ! The base quantum yield type and related functions
 
   use musica_constants,                only : dk => musica_dk
+  use tuvx_grid_warehouse,             only : grid_warehouse_ptr
+  use tuvx_profile_warehouse,          only : profile_warehouse_ptr
 
   implicit none
 
@@ -27,6 +29,14 @@ module tuvx_quantum_yield
   type quantum_yield_t
     ! Calculator for base quantum yield
     type(quantum_yield_parms_t), allocatable :: quantum_yield_parms(:)
+    ! Height grid pointer
+    type(grid_warehouse_ptr) :: height_grid_
+    ! Wavelength grid pointer
+    type(grid_warehouse_ptr) :: wavelength_grid_
+    ! Temperature profile pointer
+    type(profile_warehouse_ptr) :: temperature_profile_
+    ! Air density profile pointer
+    type(profile_warehouse_ptr) :: air_profile_
   contains
     procedure :: calculate => run
     procedure :: add_points
@@ -93,11 +103,16 @@ contains
     character(len=:), allocatable :: msg
     type(netcdf_t), allocatable   :: netcdf_obj
     type(string_t), allocatable   :: netcdfFiles(:)
-    class(grid_t),  pointer       :: lambdaGrid => null( )
+    class(grid_t),  pointer       :: lambdaGrid
     type(interpolator_conserving_t) :: interpolator
 
-    ! Get model wavelength grid
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    ! Get grid and profile pointers
+    this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
+    this%height_grid_ = grid_warehouse%get_ptr( "height", "km" )
+    this%temperature_profile_ =                                               &
+        profile_warehouse%get_ptr( "temperature", "K" )
+    this%air_profile_ = profile_warehouse%get_ptr( "air", "molecule cm-3" )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     ! get quantum yield netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
@@ -179,10 +194,10 @@ file_loop: &
     ! Local variables
     character(len=*), parameter :: Iam = 'base quantum yield calculate'
     integer                     :: vertNdx
-    class(grid_t),  pointer     :: zGrid => null( )
+    class(grid_t),  pointer     :: zGrid
     real(dk),       allocatable :: wrkQuantumYield(:,:)
 
-    zGrid => grid_warehouse%get_grid( "height", "km" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
 
     allocate( wrkQuantumYield(                                                &
       size( this%quantum_yield_parms(1)%array, dim = 1 ), zGrid%ncells_ + 1 ) )
@@ -303,6 +318,11 @@ file_loop: &
           this%quantum_yield_parms( i_param )%pack_size( comm )
       end do
     end if
+    pack_size = pack_size +                                                   &
+                this%height_grid_%pack_size( comm ) +                         &
+                this%wavelength_grid_%pack_size( comm ) +                     &
+                this%temperature_profile_%pack_size( comm ) +                 &
+                this%air_profile_%pack_size( comm )
 #else
     pack_size = 0
 #endif
@@ -336,6 +356,10 @@ file_loop: &
                                                            comm )
       end do
     end if
+    call this%height_grid_%mpi_pack(         buffer, position, comm )
+    call this%wavelength_grid_%mpi_pack(     buffer, position, comm )
+    call this%temperature_profile_%mpi_pack( buffer, position, comm )
+    call this%air_profile_%mpi_pack(         buffer, position, comm )
     call assert( 165656641, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
@@ -370,6 +394,10 @@ file_loop: &
                                                              position, comm )
       end do
     end if
+    call this%height_grid_%mpi_unpack(         buffer, position, comm )
+    call this%wavelength_grid_%mpi_unpack(     buffer, position, comm )
+    call this%temperature_profile_%mpi_unpack( buffer, position, comm )
+    call this%air_profile_%mpi_unpack(         buffer, position, comm )
     call assert( 865270779, position - prev_pos <= this%pack_size( comm ) )
 #endif
 

@@ -58,6 +58,8 @@ contains
     this%handle_ = name
     this%units_  = units
     this%ncells_ = number_of_cells
+    this%hscale_ = 0.0_dk
+    this%enable_diagnostics = .false.
 
     call assert_msg( 253742246, this%ncells_ >= 0,                            &
                      "Invalid profile size for profile from host: '"//        &
@@ -66,6 +68,8 @@ contains
     allocate( this%edge_val_(   this%ncells_ + 1 ) )
     allocate( this%delta_val_(  this%ncells_     ) )
     allocate( this%layer_dens_( this%ncells_     ) )
+    allocate( this%exo_layer_dens_( 0            ) )
+    allocate( this%burden_dens_( 0               ) )
     this%mid_val_(:)    = 0.0_dk
     this%edge_val_(:)   = 0.0_dk
     this%delta_val_(:)  = 0.0_dk

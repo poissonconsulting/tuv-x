@@ -44,11 +44,11 @@ COPY . tuv-x/
 RUN mkdir build \
       && cd build \
       && export JSON_FORTRAN_HOME="/usr/local/jsonfortran-gnu-8.2.0" \
-      && cmake -D CMAKE_BUILD_TYPE=release \
+      && cmake -D CMAKE_BUILD_TYPE=debug \
                -D CMAKE_Fortran_COMPILER=/usr/lib64/openmpi/bin/mpif90 \
                -D ENABLE_OPENMP:BOOL=TRUE \
                -D ENABLE_MPI:BOOL=TRUE \
-               -D ENABLE_MEMCHECK:BOOL=FALSE \
+               -D ENABLE_MEMCHECK:BOOL=TRUE \
                ../tuv-x \
       && make
 

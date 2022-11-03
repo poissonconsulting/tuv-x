@@ -74,6 +74,7 @@ contains
 
       call assert( 871384211, pos > 0 )
       call assert( 132313383, pos <= pack_size )
+      deallocate( unpacked )
     end if
   end subroutine test_mpi
 

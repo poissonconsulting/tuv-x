@@ -76,15 +76,16 @@ contains
     real(dk),         allocatable :: quantum_yield_tmp(:)
     real(dk),         allocatable :: quantum_yield_wrk(:)
     real(dk),         allocatable :: modelTemp(:), modelDens(:)
-    class(grid_t),    pointer     :: zGrid => null( )
-    class(grid_t),    pointer     :: lambdaGrid => null( )
-    class(profile_t), pointer     :: mdlTemperature => null( )
-    class(profile_t), pointer     :: mdlDensity => null( )
+    class(grid_t),    pointer     :: zGrid
+    class(grid_t),    pointer     :: lambdaGrid
+    class(profile_t), pointer     :: mdlTemperature
+    class(profile_t), pointer     :: mdlDensity
 
-    zGrid => grid_warehouse%get_grid( "height", "km" )
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    mdlTemperature => profile_warehouse%get_profile( "temperature", "K" )
-    mdlDensity => profile_warehouse%get_profile( "air", "molecule cm-3" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
+    mdlTemperature =>                                                         &
+        profile_warehouse%get_profile( this%temperature_profile_ )
+    mdlDensity => profile_warehouse%get_profile( this%air_profile_ )
 
     nzdim = zGrid%ncells_ + 1
     modelTemp = mdlTemperature%edge_val_

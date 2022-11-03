@@ -84,8 +84,12 @@ contains
 
     allocate( this )
 
-    ! Get model wavelength grid
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
+    this%height_grid_ = grid_warehouse%get_ptr( "height", "km" )
+    this%temperature_profile_ =                                               &
+        profile_warehouse%get_ptr( "temperature", "K" )
+    this%air_profile_ = profile_warehouse%get_ptr( "air", "molecule cm-3" )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     ! get quantum yield netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
@@ -203,15 +207,15 @@ file_loop: &
     integer     :: nTemp
     integer     :: fileNdx, tNdx, vertNdx
     real(dk)    :: Tadj, Tstar
-    class(grid_t),    pointer :: lambdaGrid => null( )
-    class(grid_t),    pointer :: zGrid => null( )
-    class(profile_t), pointer :: temperature => null( )
+    class(grid_t),    pointer :: lambdaGrid
+    class(grid_t),    pointer :: zGrid
+    class(profile_t), pointer :: temperature
     real(dk), parameter :: rZERO   = 0.0_dk
     real(dk), parameter :: rONE    = 1.0_dk
 
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    zGrid => grid_warehouse%get_grid( "height", "km" )
-    temperature => profile_warehouse%get_profile( "temperature", "K" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
+    temperature => profile_warehouse%get_profile( this%temperature_profile_ )
 
     allocate( quantum_yield(lambdaGrid%ncells_,zGrid%ncells_+1) )
 

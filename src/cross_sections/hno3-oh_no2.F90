@@ -62,7 +62,7 @@ contains
     type(netcdf_t),   allocatable :: netcdf_obj
     type(string_t),   allocatable :: netcdfFiles(:)
     type(config_t)                :: tmp_config, extrap_config
-    class(grid_t),    pointer     :: lambdaGrid => null( )
+    class(grid_t),    pointer     :: lambdaGrid
     type(string_t) :: required_keys(2), optional_keys(3)
     type(interpolator_conserving_t) :: interpolator
 
@@ -76,12 +76,16 @@ contains
                      "Bad configuration data format for "//                   &
                      "HNO3 cross section." )
 
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-
     ! get cross section netcdf filespec
     call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
 
     allocate( this )
+
+    this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
+    this%height_grid_ = grid_warehouse%get_ptr( "height", "km" )
+    this%temperature_profile_ =                                               &
+        profile_warehouse%get_ptr( "temperature", "K" )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
 has_netcdf_file: &
     if( found ) then
@@ -167,13 +171,14 @@ file_loop: &
     real(dk), parameter         :: T0 = 298._dk
     integer           :: vertNdx
     real(dk),         allocatable :: Temp(:)
-    class(grid_t),    pointer     :: lambdaGrid => null( )
-    class(grid_t),    pointer     :: zGrid => null( )
-    class(profile_t), pointer     :: temperature => null( )
+    class(grid_t),    pointer     :: lambdaGrid
+    class(grid_t),    pointer     :: zGrid
+    class(profile_t), pointer     :: temperature
 
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    zGrid => grid_warehouse%get_grid( "height", "km" )
-    temperature => profile_warehouse%get_profile( "temperature", "K" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
+    temperature =>                                                            &
+        profile_warehouse%get_profile( this%temperature_profile_ )
 
     allocate( cross_section( lambdaGrid%ncells_, zGrid%ncells_ + 1 ) )
 

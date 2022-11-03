@@ -6,6 +6,8 @@ module tuvx_solver_delta_eddington
   use tuvx_solver,                    only : solver_t, radiation_field_t
   use musica_constants,               only : dk => musica_dk
   use tuvx_constants,                 only : pi
+  use tuvx_grid_warehouse,            only : grid_warehouse_ptr
+  use tuvx_profile_warehouse,         only : profile_warehouse_ptr
 
   implicit none
 
@@ -22,8 +24,14 @@ module tuvx_solver_delta_eddington
      !
      ! The original delta-Eddington paper is:
      ! Joseph and Wiscombe, J. Atmos. Sci., 33, 2453-2459, 1976
+     type(grid_warehouse_ptr) :: height_grid_
+     type(grid_warehouse_ptr) :: wavelength_grid_
+     type(profile_warehouse_ptr) :: surface_albedo_profile_
   contains
     procedure :: update_radiation_field
+    procedure :: pack_size
+    procedure :: mpi_pack
+    procedure :: mpi_unpack
   end type solver_delta_eddington_t
 
   interface solver_delta_eddington_t
@@ -40,14 +48,19 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Constructs a delta Eddington solver
-  function constructor( config ) result( solver )
+  function constructor( config, grid_warehouse, profile_warehouse )           &
+      result( solver )
 
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     type(config_t),                  intent(inout) :: config
     class(solver_delta_eddington_t), pointer       :: solver
+    type(grid_warehouse_t),          intent(in)    :: grid_warehouse
+    type(profile_warehouse_t),       intent(in)    :: profile_warehouse
 
     type(string_t) :: required_keys(1), optional_keys(0)
 
@@ -58,6 +71,10 @@ contains
                      "Bad configuration format for delta Eddington solver" )
 
     allocate( solver )
+    solver%height_grid_ = grid_warehouse%get_ptr( "height", "km" )
+    solver%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
+    solver%surface_albedo_profile_ =                                          &
+        profile_warehouse%get_ptr( "surface albedo", "none" )
 
   end function constructor
 
@@ -126,13 +143,14 @@ contains
 
     integer                              :: nlambda, lambdaNdx
     type(radiator_state_t)               :: atmRadiatorState
-    class(grid_t),    pointer            :: zGrid => null( )
-    class(grid_t),    pointer            :: lambdaGrid => null( )
-    class(profile_t), pointer            :: surfaceAlbedo => null( )
+    class(grid_t),    pointer            :: zGrid
+    class(grid_t),    pointer            :: lambdaGrid
+    class(profile_t), pointer            :: surfaceAlbedo
 
-    zGrid => grid_warehouse%get_grid( "height", "km" )
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    surfaceAlbedo => profile_warehouse%get_profile( "surface albedo", "none" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
+    surfaceAlbedo =>                                                          &
+        profile_warehouse%get_profile( this%surface_albedo_profile_ )
 
     nlambda = lambdaGrid%ncells_
     radiation_field => radiation_field_t( n_layers + 1, nlambda )
@@ -373,6 +391,76 @@ contains
     deallocate( surfaceAlbedo )
 
   end function update_radiation_field
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function pack_size( this, comm )
+    ! Returns the size of a character buffer required to pack the solver
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(solver_delta_eddington_t), intent(in) :: this ! solver to be packed
+    integer,                         intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    pack_size = this%height_grid_%pack_size(            comm ) +              &
+                this%wavelength_grid_%pack_size(        comm ) +              &
+                this%surface_albedo_profile_%pack_size( comm )
+#else
+    pack_size = 0
+#endif
+
+  end function pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_pack( this, buffer, position, comm )
+    ! Packs the solver onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(solver_delta_eddington_t), intent(in)    :: this      ! solver to be packed
+    character,                       intent(inout) :: buffer(:) ! memory buffer
+    integer,                         intent(inout) :: position  ! current buffer position
+    integer,                         intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+    prev_pos = position
+
+    call this%height_grid_%mpi_pack(            buffer, position, comm )
+    call this%wavelength_grid_%mpi_pack(        buffer, position, comm )
+    call this%surface_albedo_profile_%mpi_pack( buffer, position, comm )
+    call assert( 485414316, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mpi_unpack( this, buffer, position, comm )
+    ! Unpacks a solver from a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(solver_delta_eddington_t), intent(out)   :: this      ! solver to be packed
+    character,                       intent(inout) :: buffer(:) ! memory buffer
+    integer,                         intent(inout) :: position  ! current buffer position
+    integer,                         intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+    prev_pos = position
+
+    call this%height_grid_%mpi_unpack(            buffer, position, comm )
+    call this%wavelength_grid_%mpi_unpack(        buffer, position, comm )
+    call this%surface_albedo_profile_%mpi_unpack( buffer, position, comm )
+    call assert( 764530792, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

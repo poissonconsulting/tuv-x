@@ -45,7 +45,10 @@ set_target_properties(tuvxlib PROPERTIES OUTPUT_NAME tuvx
                                          Fortran_MODULE_DIRECTORY ${TUVX_MOD_DIR})
 
 add_executable(tuv-x tuvx.F90)
-target_link_libraries(tuv-x tuvxlib)
+target_link_libraries(tuv-x PUBLIC tuvxlib)
+if(ENABLE_OPENMP)
+  target_link_libraries(tuv-x PUBLIC OpenMP::OpenMP_Fortran)
+endif()
 target_include_directories(tuvxlib PUBLIC ${TUVX_MOD_DIR})
 
 ################################################################################

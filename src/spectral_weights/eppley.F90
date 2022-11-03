@@ -65,9 +65,9 @@ contains
     real(dk), parameter         :: NINETY = 90.0_dk
     real(dk)                    :: accum
 
-    class(grid_t), pointer      :: lambdaGrid => null()
+    class(grid_t), pointer      :: lambdaGrid
 
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     spectral_weight = this%spectral_weight_parms(1)%array( :, 1 )
     accum = dot_product( spectral_weight, lambdaGrid%delta_ )

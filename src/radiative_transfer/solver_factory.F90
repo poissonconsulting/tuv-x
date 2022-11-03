@@ -18,16 +18,23 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Builder of solver_t objects
-  function solver_builder( config ) result( solver )
+  function solver_builder( config, grid_warehouse, profile_warehouse )        &
+      result( solver )
 
     use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     !> Solver configuration
     type(config_t),  intent(inout) :: config
     !> Configured solver
     class(solver_t), pointer       :: solver
+    !> Grid warehouse
+    type(grid_warehouse_t), intent(in) :: grid_warehouse
+    !> Profile warehouse
+    type(profile_warehouse_t), intent(in) :: profile_warehouse
 
     ! Local variables
     type(string_t) :: solver_type
@@ -38,9 +45,11 @@ contains
 
     select case( solver_type%to_char( ) )
       case( "delta eddington" )
-        solver => solver_delta_eddington_t( config )
+        solver => solver_delta_eddington_t( config, grid_warehouse,           &
+                                            profile_warehouse )
       case( "discrete ordinate" )
-        solver => solver_discrete_ordinate_t( config )
+        solver => solver_discrete_ordinate_t( config, grid_warehouse,         &
+                                              profile_warehouse )
       case default
         call die_msg( 297172205, "Invalid solver type: '"//                   &
                                  solver_type%to_char( ) )

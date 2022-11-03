@@ -6,6 +6,9 @@ module tuvx_radiator
 
   use musica_constants,                only : dk => musica_dk
   use musica_string,                   only : string_t
+  use tuvx_cross_section_warehouse,    only : cross_section_warehouse_ptr
+  use tuvx_grid_warehouse,             only : grid_warehouse_ptr
+  use tuvx_profile_warehouse,          only : profile_warehouse_ptr
 
   implicit none
 
@@ -41,6 +44,10 @@ module tuvx_radiator
     type(radiator_state_t) :: state_ ! Optical properties, a :f:type:`~tuvx_radiator/radiator_state_t`
     logical                :: enable_diagnostics_ ! determines if diagnostic output is written or not
     logical                :: is_air_ = .false. ! Indicates whether the radiator should be treated as "air" in optical property calculations
+    type(grid_warehouse_ptr)          :: height_grid_ ! pointer to the height grid in the grid warehouse
+    type(grid_warehouse_ptr)          :: wavelength_grid_ ! pointer to the wavelength grid in the grid warehouse
+    type(profile_warehouse_ptr)       :: radiator_profile_ ! pointer to the radiator profile in the profile warehouse
+    type(cross_section_warehouse_ptr) :: cross_section_ ! pointer to the cross section for this radiator
   contains
     ! Update radiator for new environmental conditions
     procedure :: update_state
@@ -68,36 +75,46 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function constructor( config, grid_warehouse ) result( new_radiator )
+  function constructor( config, grid_warehouse, profile_warehouse,            &
+     cross_section_warehouse ) result( new_radiator )
     ! Constructs a base_radiator_t object
 
     use musica_config,                 only : config_t
+    use tuvx_cross_section_warehouse,  only : cross_section_warehouse_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    class(radiator_t),      pointer       :: new_radiator ! New :f:type:`~tuvx_radiator/radiator_t` object
-    type(config_t),         intent(inout) :: config ! Radiator configuration
-    type(grid_warehouse_t), intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
-
+    class(radiator_t),               pointer       :: new_radiator ! New :f:type:`~tuvx_radiator/radiator_t` object
+    type(config_t),                  intent(inout) :: config ! Radiator configuration
+    type(grid_warehouse_t),          intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t),       intent(inout) :: profile_warehouse ! profile warehouse
+    type(cross_section_warehouse_t), intent(inout) :: cross_section_warehouse ! cross section warehouse
     allocate( new_radiator )
-    call base_constructor( new_radiator, config, grid_warehouse )
+    call base_constructor( new_radiator, config, grid_warehouse,              &
+                           profile_warehouse, cross_section_warehouse )
 
   end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine base_constructor( this, config, grid_warehouse )
+  subroutine base_constructor( this, config, grid_warehouse,                  &
+      profile_warehouse, cross_section_warehouse )
     ! Initializes a radiator_t object
     !
     ! This should only be called by subclasses of radiator_t
 
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
+    use tuvx_cross_section_warehouse,  only : cross_section_warehouse_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_grid,                     only : grid_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    class(radiator_t),      intent(inout) :: this ! New :f:type:`~tuvx_radiator/radiator_t` object
-    type(config_t),         intent(inout) :: config ! Radiator configuration
-    type(grid_warehouse_t), intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    class(radiator_t),               intent(inout) :: this ! New :f:type:`~tuvx_radiator/radiator_t` object
+    type(config_t),                  intent(inout) :: config ! Radiator configuration
+    type(grid_warehouse_t),          intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t),       intent(inout) :: profile_warehouse ! profile warehouse
+    type(cross_section_warehouse_t), intent(inout) :: cross_section_warehouse ! cross section warehouse
 
     ! local variables
     character(len=*), parameter   :: Iam = "Base radiator constructor"
@@ -117,9 +134,6 @@ contains
                      "Bad configuration data format for "//                   &
                      "base radiator." )
 
-    z_grid => grid_warehouse%get_grid( "height", "km" )
-    lambda_grid => grid_warehouse%get_grid( "wavelength", "nm" )
-
     call config%get( 'name',             this%handle_,                Iam )
     call config%get( 'type',             this%type_,                Iam )
     call config%get( 'vertical profile', this%vertical_profile_name_, Iam )
@@ -127,14 +141,28 @@ contains
                      Iam )
     call config%get( 'cross section',    this%cross_section_name_,    Iam )
 
-    call config%get( 'enable diagnostics', this%enable_diagnostics_, Iam,       &
+    call config%get( 'enable diagnostics', this%enable_diagnostics_, Iam,     &
       default=.false. )
     call config%get( 'treat as air', this%is_air_, Iam, default = .false. )
+
+    this%height_grid_ = grid_warehouse%get_ptr( "height", "km" )
+    this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
+    this%radiator_profile_ =                                                  &
+        profile_warehouse%get_ptr( this%vertical_profile_name_,               &
+                                   this%vertical_profile_units_ )
+    this%cross_section_ =                                                     &
+        cross_section_warehouse%get_ptr( this%cross_section_name_ )
+    z_grid => grid_warehouse%get_grid( this%height_grid_ )
+    lambda_grid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     ! allocate radiator state variables
     allocate( this%state_%layer_OD_(  z_grid%ncells_, lambda_grid%ncells_ ) )
     allocate( this%state_%layer_SSA_( z_grid%ncells_, lambda_grid%ncells_ ) )
     allocate( this%state_%layer_G_(   z_grid%ncells_, lambda_grid%ncells_, 1 ) )
+
+    this%state_%layer_OD_( :,:) = 0.0_dk
+    this%state_%layer_SSA_(:,:) = 0.0_dk
+    this%state_%layer_G_(:,:,:) = 0.0_dk
 
     deallocate( z_grid      )
     deallocate( lambda_grid )
@@ -172,15 +200,14 @@ contains
     class(cross_section_t), pointer :: radiator_cross_section
 
     ! get specific grids and profiles
-    z_grid => grid_warehouse%get_grid( "height", "km" )
-    lambda_grid => grid_warehouse%get_grid( "wavelength", "nm" )
+    z_grid => grid_warehouse%get_grid( this%height_grid_ )
+    lambda_grid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     radiator_profile =>                                                       &
-      profile_warehouse%get_profile( this%vertical_profile_name_,             &
-                                     this%vertical_profile_units_ )
+      profile_warehouse%get_profile( this%radiator_profile_ )
 
     radiator_cross_section =>                                                 &
-      cross_section_warehouse%get( this%cross_section_name_ )
+      cross_section_warehouse%get( this%cross_section_ )
 
     ! check radiator state type allocation
     call assert_msg( 345645215, allocated( this%state_%layer_OD_ ),           &
@@ -190,14 +217,14 @@ contains
     cross_section = radiator_cross_section%calculate( grid_warehouse,         &
                                                       profile_warehouse,      &
                                                       at_mid_point = .true. )
-    call diagout( 'o2xs.new',cross_section, this%enable_diagnostics_ )
+    call diagout( 'o2xs.new', cross_section, this%enable_diagnostics_ )
     do w_index = 1,lambda_grid%ncells_
       this%state_%layer_OD_(:,w_index) = radiator_profile%layer_dens_         &
                                          * cross_section(:,w_index)
     enddo
 
     ! Settings for a gas phase radiator
-    if( this%handle_ == 'air' ) then
+    if( this%is_air_ ) then
       this%state_%layer_SSA_ = 1._dk
       this%state_%layer_G_   = 0._dk
     else
@@ -218,7 +245,7 @@ contains
     use tuvx_diagnostic_util, only : diagout
 
     class(radiator_t), intent(in) :: this ! A :f:type:`~tuvx_radiator/radiator_state_t`
-    type(string_t)                   :: filename
+    character(len=:), allocatable :: filename
 
     select case( this%handle_%to_char( ) )
       case( 'air' )
@@ -230,13 +257,13 @@ contains
       case( 'O2' )
         filename = 'dto2.new'
     case default
-        filename = this%type_
+        filename = this%type_%to_char( )
     end select
 
-    call diagout( filename%val_, this%state_%layer_OD_,                       &
-      this%enable_diagnostics_ )
+    call diagout( filename, this%state_%layer_OD_, this%enable_diagnostics_ )
 
   end subroutine output_diagnostics
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   integer function pack_size( this, comm )
@@ -249,12 +276,17 @@ contains
 
 #ifdef MUSICA_USE_MPI
     pack_size = this%handle_%pack_size( comm ) +                              &
+                this%type_%pack_size( comm ) +                                &
                 this%vertical_profile_name_%pack_size( comm ) +               &
                 this%vertical_profile_units_%pack_size( comm ) +              &
                 this%cross_section_name_%pack_size( comm ) +                  &
                 this%state_%pack_size( comm ) +                               &
                 musica_mpi_pack_size( this%enable_diagnostics_, comm ) +      &
-                musica_mpi_pack_size( this%is_air_, comm )
+                musica_mpi_pack_size( this%is_air_, comm ) +                  &
+                this%height_grid_%pack_size( comm ) +                         &
+                this%wavelength_grid_%pack_size( comm ) +                     &
+                this%radiator_profile_%pack_size( comm ) +                    &
+                this%cross_section_%pack_size( comm )
 #else
     pack_size = 0
 #endif
@@ -279,12 +311,17 @@ contains
 
     prev_pos = position
     call this%handle_%mpi_pack(                 buffer, position, comm )
+    call this%type_%mpi_pack(                   buffer, position, comm )
     call this%vertical_profile_name_%mpi_pack(  buffer, position, comm )
     call this%vertical_profile_units_%mpi_pack( buffer, position, comm )
     call this%cross_section_name_%mpi_pack(     buffer, position, comm )
     call this%state_%mpi_pack(                  buffer, position, comm )
     call musica_mpi_pack( buffer, position, this%enable_diagnostics_, comm )
     call musica_mpi_pack( buffer, position, this%is_air_,             comm )
+    call this%height_grid_%mpi_pack(            buffer, position, comm )
+    call this%wavelength_grid_%mpi_pack(        buffer, position, comm )
+    call this%radiator_profile_%mpi_pack(       buffer, position, comm )
+    call this%cross_section_%mpi_pack(          buffer, position, comm )
     call assert( 449676235, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
@@ -308,12 +345,17 @@ contains
 
     prev_pos = position
     call this%handle_%mpi_unpack(                 buffer, position, comm )
+    call this%type_%mpi_unpack(                   buffer, position, comm )
     call this%vertical_profile_name_%mpi_unpack(  buffer, position, comm )
     call this%vertical_profile_units_%mpi_unpack( buffer, position, comm )
     call this%cross_section_name_%mpi_unpack(     buffer, position, comm )
     call this%state_%mpi_unpack(                  buffer, position, comm )
     call musica_mpi_unpack( buffer, position, this%enable_diagnostics_, comm )
     call musica_mpi_unpack( buffer, position, this%is_air_,             comm )
+    call this%height_grid_%mpi_unpack(            buffer, position, comm )
+    call this%wavelength_grid_%mpi_unpack(        buffer, position, comm )
+    call this%radiator_profile_%mpi_unpack(       buffer, position, comm )
+    call this%cross_section_%mpi_unpack(          buffer, position, comm )
     call assert( 216868760, position - prev_pos <= this%pack_size( comm ) )
 #endif
 

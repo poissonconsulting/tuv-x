@@ -67,6 +67,7 @@ contains
     allocate( spectral_weight_notch_filter_t :: this )
     select type( this )
       class is( spectral_weight_notch_filter_t )
+        this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
         call config%get( 'notch filter begin', this%notch_filter_begin, Iam )
         call config%get( 'notch filter end', this%notch_filter_end, Iam )
     end select
@@ -92,9 +93,9 @@ contains
     real(dk), parameter         :: rZERO = 0.0_dk
     real(dk), parameter         :: rONE  = 1.0_dk
 
-    class(grid_t), pointer      :: lambdaGrid => null()
+    class(grid_t), pointer      :: lambdaGrid
 
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     allocate( spectral_weight( lambdaGrid%ncells_ ) )
 
@@ -132,7 +133,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine mpi_pack( this, buffer, pos, comm )
+  subroutine mpi_pack( this, buffer, position, comm )
     ! Packs the spectral weight onto a character buffer
 
     use musica_assert,                 only : assert
@@ -140,24 +141,24 @@ contains
 
     class(spectral_weight_notch_filter_t), intent(in)    :: this      ! spectral weight to be packed
     character,                             intent(inout) :: buffer(:) ! memory buffer
-    integer,                               intent(inout) :: pos       ! current buffer position
+    integer,                               intent(inout) :: position  ! current buffer position
     integer,                               intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos
 
-    prev_pos = pos
-    call this%spectral_weight_t%mpi_pack( buffer, pos, comm )
-    call musica_mpi_pack( buffer, pos, this%notch_filter_begin, comm )
-    call musica_mpi_pack( buffer, pos, this%notch_filter_end, comm )
-    call assert( 613395225, pos - prev_pos <= this%pack_size( comm ) )
+    prev_pos = position
+    call this%spectral_weight_t%mpi_pack( buffer, position, comm )
+    call musica_mpi_pack( buffer, position, this%notch_filter_begin, comm )
+    call musica_mpi_pack( buffer, position, this%notch_filter_end, comm )
+    call assert( 613395225, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
   end subroutine mpi_pack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine mpi_unpack( this, buffer, pos, comm )
+  subroutine mpi_unpack( this, buffer, position, comm )
     ! Unpacks the spectral weight onto a character buffer
 
     use musica_assert,                 only : assert
@@ -165,17 +166,17 @@ contains
 
     class(spectral_weight_notch_filter_t), intent(out)   :: this      ! spectral weight to be unpacked
     character,                             intent(inout) :: buffer(:) ! memory buffer
-    integer,                               intent(inout) :: pos       ! current buffer position
+    integer,                               intent(inout) :: position  ! current buffer position
     integer,                               intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
     integer :: prev_pos
 
-    prev_pos = pos
-    call this%spectral_weight_t%mpi_unpack( buffer, pos, comm )
-    call musica_mpi_unpack( buffer, pos, this%notch_filter_begin, comm )
-    call musica_mpi_unpack( buffer, pos, this%notch_filter_end,   comm )
-    call assert( 445143855, pos - prev_pos <= this%pack_size( comm ) )
+    prev_pos = position
+    call this%spectral_weight_t%mpi_unpack( buffer, position, comm )
+    call musica_mpi_unpack( buffer, position, this%notch_filter_begin, comm )
+    call musica_mpi_unpack( buffer, position, this%notch_filter_end,   comm )
+    call assert( 445143855, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
   end subroutine mpi_unpack

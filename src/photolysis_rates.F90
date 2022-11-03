@@ -8,9 +8,9 @@ module tuvx_photolysis_rates
   use musica_string,                   only : string_t
   use tuvx_grid,                       only : grid_t
   use tuvx_cross_section,              only : cross_section_ptr
-  use tuvx_grid_warehouse,             only : grid_warehouse_t
+  use tuvx_grid_warehouse,             only : grid_warehouse_ptr
   use tuvx_profile,                    only : profile_t
-  use tuvx_profile_warehouse,          only : profile_warehouse_t
+  use tuvx_profile_warehouse,          only : profile_warehouse_ptr
   use tuvx_quantum_yield,              only : quantum_yield_ptr
 
   implicit none
@@ -25,6 +25,14 @@ module tuvx_photolysis_rates
     real(dk),                    allocatable :: scaling_factors_(:) ! Scaling factor for final rate constant
     type(string_t), allocatable              :: handles_(:) ! User-provided label for the photolysis rate constant
     logical :: enable_diagnostics_ ! Enable writing diagnostic output, defaults to false
+    ! Height grid
+    type(grid_warehouse_ptr) :: height_grid_
+    ! Wavelength grid
+    type(grid_warehouse_ptr) :: wavelength_grid_
+    ! Extraterrestrial flux profile
+    type(profile_warehouse_ptr) :: etfl_profile_
+    ! Air density profile
+    type(profile_warehouse_ptr) :: air_profile_
   contains
     ! Returns the photolysis rate constants for a given set of conditions
     procedure :: get
@@ -59,7 +67,9 @@ contains
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
     use tuvx_cross_section_factory,    only : cross_section_builder
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_quantum_yield_factory,    only : quantum_yield_builder
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     !> photorates rates
     !> Arguments
@@ -97,6 +107,12 @@ contains
 
     call reaction_set%get( "enable diagnostics",                              &
                 photolysis_rates%enable_diagnostics_, Iam, default = .false. )
+
+    rates%height_grid_ = grid_warehouse%get_ptr( "height", "km" )
+    rates%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
+    rates%etfl_profile_ = profile_warehouse%get_ptr( "extraterrestrial flux", &
+                                                     "photon cm-2 s-1" )
+    rates%air_profile_ = profile_warehouse%get_ptr( "air", "molecule cm-3" )
 
     do while( iter%next( ) )
       keychar = reaction_set%key( iter )
@@ -143,7 +159,9 @@ contains
     use musica_assert,                 only : assert_msg, die_msg
     use tuvx_constants,                only : hc
     use tuvx_diagnostic_util,          only : diagout
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_la_sr_bands,              only : la_sr_bands_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_solver,                   only : radiation_field_t
     use tuvx_spherical_geometry,       only : spherical_geometry_t
 
@@ -174,17 +192,16 @@ contains
     real(dk), allocatable :: quantum_yield(:,:)
     real(dk), allocatable :: xsqy(:,:)
     real(dk), allocatable :: actinicFlux(:,:)
-    type(string_t)        :: annotatedRate
+    character(len=:),  allocatable :: annotatedRate
     character(len=64), allocatable :: annotatedjlabel(:)
-    class(grid_t),    pointer :: zGrid => null()
-    class(grid_t),    pointer :: lambdaGrid => null()
-    class(profile_t), pointer :: airProfile => null()
-    class(profile_t), pointer :: etfl => null()
+    class(grid_t),    pointer :: zGrid
+    class(grid_t),    pointer :: lambdaGrid
+    class(profile_t), pointer :: airProfile
+    class(profile_t), pointer :: etfl
 
-    zGrid => grid_warehouse%get_grid( "height", "km" )
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    etfl  => profile_warehouse%get_profile( "extraterrestrial flux",          &
-                                            "photon cm-2 s-1" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
+    etfl  => profile_warehouse%get_profile( this%etfl_profile_ )
 
     nRates = size( this%cross_sections_ )
     call assert_msg( 470014831,                                               &
@@ -216,12 +233,12 @@ rate_loop:                                                                    &
 
       ! O2 photolysis can have special la & srb band handling
       if( trim( this%handles_( rateNdx )%to_char( ) ) == 'O2+hv->O+O' ) then
-        airProfile => profile_warehouse%get_profile( "air", "molecule cm-3" )
+        airProfile => profile_warehouse%get_profile( this%air_profile_ )
         allocate( airVcol( airProfile%ncells_ ),                              &
                   airScol( airProfile%ncells_ + 1 ) )
-        call spherical_geometry%airmas( airProfile%exo_layer_dens_, airVcol,  &
-                                        airScol )
-        call la_srb%cross_section( grid_warehouse, profile_warehouse, airVcol, &
+        call spherical_geometry%air_mass( airProfile%exo_layer_dens_, airVcol,&
+                                          airScol )
+        call la_srb%cross_section( grid_warehouse, profile_warehouse, airVcol,&
                                   airScol, cross_section )
         deallocate( airVcol, airScol )
         deallocate( airProfile )
@@ -231,12 +248,12 @@ rate_loop:                                                                    &
       associate( enable => this%enable_diagnostics_ )
         xsqyWrk = [ xsqyWrk, reshape( cross_section * quantum_yield,          &
                                       (/ size( cross_section ) /) ) ]
-        annotatedRate = this%handles_( rateNdx )//'.xsect.new'
-        call diagout( trim( annotatedRate%to_char( ) ), cross_section, enable )
-        annotatedRate = this%handles_( rateNdx )//'.qyld.new'
-        call diagout( trim( annotatedRate%to_char( ) ), quantum_yield, enable )
-        annotatedRate = this%handles_( rateNdx )//'.xsqy.new'
-        call diagout( trim( annotatedRate%to_char( ) ),                       &
+        annotatedRate = this%handles_( rateNdx )%val_//'.xsect.new'
+        call diagout( trim( annotatedRate ), cross_section, enable )
+        annotatedRate = this%handles_( rateNdx )%val_//'.qyld.new'
+        call diagout( trim( annotatedRate ), quantum_yield, enable )
+        annotatedRate = this%handles_( rateNdx )%val_//'.xsqy.new'
+        call diagout( trim( annotatedRate ),                                  &
                       cross_section * quantum_yield, enable )
       end associate
       end if
@@ -343,6 +360,12 @@ rate_loop:                                                                    &
         pack_size = pack_size + this%handles_( i_elem )%pack_size( comm )
       end do
     end if
+    pack_size = pack_size +                                                   &
+                musica_mpi_pack_size( this%enable_diagnostics_, comm ) +      &
+                this%height_grid_%pack_size( comm ) +                         &
+                this%wavelength_grid_%pack_size( comm ) +                     &
+                this%etfl_profile_%pack_size( comm ) +                        &
+                this%air_profile_%pack_size( comm )
 #else
     pack_size = 0
 #endif
@@ -403,6 +426,11 @@ rate_loop:                                                                    &
         call this%handles_( i_elem )%mpi_pack( buffer, position, comm )
       end do
     end if
+    call musica_mpi_pack( buffer, position, this%enable_diagnostics_, comm )
+    call this%height_grid_%mpi_pack(     buffer, position, comm )
+    call this%wavelength_grid_%mpi_pack( buffer, position, comm )
+    call this%etfl_profile_%mpi_pack(    buffer, position, comm )
+    call this%air_profile_%mpi_pack(     buffer, position, comm )
     call assert( 707537257, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
@@ -462,6 +490,11 @@ rate_loop:                                                                    &
         call this%handles_( i_elem )%mpi_unpack( buffer, position, comm )
       end do
     end if
+    call musica_mpi_unpack( buffer, position, this%enable_diagnostics_, comm )
+    call this%height_grid_%mpi_unpack(     buffer, position, comm )
+    call this%wavelength_grid_%mpi_unpack( buffer, position, comm )
+    call this%etfl_profile_%mpi_unpack(    buffer, position, comm )
+    call this%air_profile_%mpi_unpack(     buffer, position, comm )
     call assert( 534021580, position - prev_pos <= this%pack_size( comm ) )
 #endif
 

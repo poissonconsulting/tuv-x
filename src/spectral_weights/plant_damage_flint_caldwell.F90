@@ -53,6 +53,7 @@ contains
                      "plant damage flint caldwell spectral wght." )
 
     allocate( spectral_weight_plant_damage_flint_caldwell_t :: this )
+    this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
 
   end function constructor
 
@@ -77,9 +78,9 @@ contains
     real(dk), parameter  :: a1 = .1703411_dk
     real(dk), parameter  :: w1 = 307.867_dk
     real(dk), parameter  :: w2 = 390._dk
-    class(grid_t), pointer      :: lambdaGrid => null()
+    class(grid_t), pointer      :: lambdaGrid
 
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     spectral_weight = exp( a0 * exp( -exp( a1                                 &
                                      * ( lambdaGrid%mid_ - w1 ) / 1.15_dk ) ) &

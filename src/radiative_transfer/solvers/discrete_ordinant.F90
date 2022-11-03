@@ -6,6 +6,8 @@ module tuvx_solver_discrete_ordinate
   use tuvx_solver,                    only : solver_t, radiation_field_t
   use musica_constants,               only : dk => musica_dk
   use tuvx_constants,                 only : kPi => pi
+  use tuvx_grid_warehouse,            only : grid_warehouse_ptr
+  use tuvx_profile_warehouse,         only : profile_warehouse_ptr
 
   implicit none
 
@@ -15,6 +17,9 @@ module tuvx_solver_discrete_ordinate
   type, extends(solver_t) :: solver_discrete_ordinate_t
      ! Radiative flux calculator that applies the discrete-ordinate method.
      integer :: n_streams_ ! number of streams
+     type(grid_warehouse_ptr) :: height_grid_
+     type(grid_warehouse_ptr) :: wavelength_grid_
+     type(profile_warehouse_ptr) :: surface_albedo_profile_
    contains
     procedure :: update_radiation_field
     procedure :: pack_size
@@ -37,14 +42,19 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Constructs a discrete ordinate solver
-  function constructor( config ) result( solver )
+  function constructor( config, grid_warehouse, profile_warehouse )           &
+      result( solver )
 
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
     use musica_string,                 only : string_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
 
     type(config_t),                    intent(inout) :: config
     class(solver_discrete_ordinate_t), pointer       :: solver
+    type(grid_warehouse_t),            intent(in)    :: grid_warehouse
+    type(profile_warehouse_t),         intent(in)    :: profile_warehouse
 
     character(len=*), parameter :: Iam = "Discrete ordinate solver constrctor"
     type(string_t) :: required_keys(2), optional_keys(0)
@@ -67,6 +77,10 @@ contains
     call assert_msg( 741820725, mod( solver%n_streams_, 2 ) == 0,             &
                      "Discrete ordinate solver must have an even number of "//&
                      "streams" )
+    solver%height_grid_ = grid_warehouse%get_ptr( "height", "km" )
+    solver%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
+    solver%surface_albedo_profile_ =                                          &
+        profile_warehouse%get_ptr( "surface albedo", "none" )
 
   end function constructor
 
@@ -115,13 +129,14 @@ contains
     real(dk)                             :: umu0
     real(dk), allocatable                :: pmom(:,:)
     type(radiator_state_t)               :: atmRadiatorState
-    class(grid_t),    pointer            :: zGrid => null( )
-    class(grid_t),    pointer            :: lambdaGrid => null( )
-    class(profile_t), pointer            :: surfaceAlbedo => null( )
+    class(grid_t),    pointer            :: zGrid
+    class(grid_t),    pointer            :: lambdaGrid
+    class(profile_t), pointer            :: surfaceAlbedo
 
-    zGrid => grid_warehouse%get_grid( "height", "km" )
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    surfaceAlbedo => profile_warehouse%get_profile( "surface albedo", "none" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
+    surfaceAlbedo =>                                                          &
+        profile_warehouse%get_profile( this%surface_albedo_profile_ )
 
     nlambda = lambdaGrid%ncells_
     radiation_field => radiation_field_t( n_layers + 1, nlambda )
@@ -195,7 +210,10 @@ contains
     integer,                           intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
-    pack_size = musica_mpi_pack_size( this%n_streams_, comm )
+    pack_size = musica_mpi_pack_size( this%n_streams_, comm ) +               &
+                this%height_grid_%pack_size(            comm ) +              &
+                this%wavelength_grid_%pack_size(        comm ) +              &
+                this%surface_albedo_profile_%pack_size( comm )
 #else
     pack_size = 0
 #endif
@@ -220,6 +238,9 @@ contains
     prev_pos = position
 
     call musica_mpi_pack( buffer, position, this%n_streams_, comm )
+    call this%height_grid_%mpi_pack(            buffer, position, comm )
+    call this%wavelength_grid_%mpi_pack(        buffer, position, comm )
+    call this%surface_albedo_profile_%mpi_pack( buffer, position, comm )
     call assert( 807855666, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
@@ -243,6 +264,9 @@ contains
     prev_pos = position
 
     call musica_mpi_unpack( buffer, position, this%n_streams_, comm )
+    call this%height_grid_%mpi_unpack(            buffer, position, comm )
+    call this%wavelength_grid_%mpi_unpack(        buffer, position, comm )
+    call this%surface_albedo_profile_%mpi_unpack( buffer, position, comm )
     call assert( 120962799, position - prev_pos <= this%pack_size( comm ) )
 #endif
 

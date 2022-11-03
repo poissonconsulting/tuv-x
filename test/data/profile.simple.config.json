@@ -1,2 +1,11 @@
 {
+  "temperature": {
+    "type": "from config file",
+    "units": "K",
+    "uniform value": 298.15,
+    "grid": {
+      "name": "height",
+      "units": "km"
+    }
+  }
 }

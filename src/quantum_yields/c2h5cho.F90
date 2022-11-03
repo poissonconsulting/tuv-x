@@ -73,13 +73,13 @@ contains
     real(dk)                      :: air_dens_fac
     real(dk),         allocatable :: quantum_yield_wrk(:)
     real(dk),         allocatable :: modelDens(:)
-    class(grid_t),    pointer     :: zGrid => null( )
-    class(grid_t),    pointer     :: lambdaGrid => null( )
-    class(profile_t), pointer     :: mdlDensity => null( )
+    class(grid_t),    pointer     :: zGrid
+    class(grid_t),    pointer     :: lambdaGrid
+    class(profile_t), pointer     :: mdlDensity
 
-    zGrid => grid_warehouse%get_grid( "height", "km" )
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
-    mdlDensity => profile_warehouse%get_profile( "air", "molecule cm-3" )
+    zGrid => grid_warehouse%get_grid( this%height_grid_ )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
+    mdlDensity => profile_warehouse%get_profile( this%air_profile_ )
 
     nzdim = zGrid%ncells_ + 1
     modelDens = mdlDensity%edge_val_

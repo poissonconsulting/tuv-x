@@ -52,6 +52,7 @@ contains
                      "par spectral wght." )
 
     allocate (spectral_weight_par_t :: this )
+    this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
 
   end function constructor
 
@@ -73,9 +74,9 @@ contains
     ! Local variables
     real(dk), parameter         :: rZERO = 0.0_dk
     real(dk), parameter         :: rONE  = 1.0_dk
-    class(grid_t), pointer      :: lambdaGrid => null()
+    class(grid_t), pointer      :: lambdaGrid
 
-    lambdaGrid => grid_warehouse%get_grid( "wavelength", "nm" )
+    lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     allocate( spectral_weight( lambdaGrid%ncells_ ) )
 

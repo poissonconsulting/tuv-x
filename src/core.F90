@@ -91,7 +91,7 @@ contains
     required_keys(2) = "grids"
     required_keys(3) = "profiles"
     required_keys(4) = "O2 absorption"
-    optional_keys(1) = "photolysis reactions"
+    optional_keys(1) = "photolysis"
     optional_keys(2) = "dose rates"
     optional_keys(3) = "enable diagnostics"
     call assert_msg( 255400232,                                               &
@@ -142,7 +142,7 @@ contains
                                   new_core%profile_warehouse_ )
 
     ! photolysis rate constants
-    call core_config%get( "photolysis reactions", child_config, Iam,          &
+    call core_config%get( "photolysis", child_config, Iam,          &
                           found = found )
     if( found ) then
       new_core%photolysis_rates_ => &

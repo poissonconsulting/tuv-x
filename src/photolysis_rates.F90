@@ -60,10 +60,10 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !> Constructor of photolysis_rates_t objects
-  function constructor( reaction_set, grid_warehouse, profile_warehouse )     &
+  function constructor( photolysis_config, grid_warehouse, profile_warehouse )     &
       result( photolysis_rates )
 
-    use musica_assert,                 only : assert
+    use musica_assert,                 only : assert, assert_msg
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
     use tuvx_cross_section_factory,    only : cross_section_builder
@@ -73,7 +73,7 @@ contains
 
     !> photorates rates
     !> Arguments
-    type(config_t),            intent(inout) :: reaction_set
+    type(config_t),            intent(inout) :: photolysis_config
     !> grid warehouse
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse
     !> profile warehouse
@@ -85,13 +85,21 @@ contains
     character(len=*), parameter :: Iam = "photolysis_rates_t constructor"
 
     real(dk)       :: rate_aliasing_factor
-    type(config_t) :: reaction_config
+    type(config_t) :: reaction_set, reaction_config
     type(config_t) :: cross_section_config, quantum_yield_config
     class(iterator_t), pointer :: iter
     type(cross_section_ptr) :: a_cross_section_ptr
     type(quantum_yield_ptr) :: a_quantum_yield_ptr
     character(len=64)           :: keychar
     type(string_t)              :: reaction_key
+    type(string_t)              :: required_keys(1), optional_keys(1)
+
+    required_keys(1) = "reactions"
+    optional_keys(1) = "enable diagnostics"
+
+    call assert_msg( 425103288,                                               &
+      photolysis_config%validate( required_keys, optional_keys ),             &
+      "Bad configuration data format for photolysis rates." )
 
     allocate( photolysis_rates )
 
@@ -102,10 +110,7 @@ contains
     allocate( rates%quantum_yields_(0) )
     allocate( rates%scaling_factors_(0) )
 
-    ! iterate over photo reactions
-    iter => reaction_set%get_iterator( )
-
-    call reaction_set%get( "enable diagnostics",                              &
+    call photolysis_config%get( "enable diagnostics",                         &
                 photolysis_rates%enable_diagnostics_, Iam, default = .false. )
 
     rates%height_grid_ = grid_warehouse%get_ptr( "height", "km" )
@@ -114,14 +119,15 @@ contains
                                                      "photon cm-2 s-1" )
     rates%air_profile_ = profile_warehouse%get_ptr( "air", "molecule cm-3" )
 
+    ! iterate over photo reactions
+    call photolysis_config%get( "reactions", reaction_set, Iam )
+
+    iter => reaction_set%get_iterator( )
     do while( iter%next( ) )
-      keychar = reaction_set%key( iter )
-      if (keychar .eq. 'enable diagnostics') then
-        cycle
-      endif
-      reaction_key = keychar
-      rates%handles_ = [ rates%handles_, reaction_key ]
       call reaction_set%get( iter, reaction_config, Iam )
+
+      call reaction_config%get( "name", reaction_key, Iam )
+      rates%handles_ = [ rates%handles_, reaction_key ]
 
       ! get cross section first
       call reaction_config%get( "cross section", cross_section_config, Iam )

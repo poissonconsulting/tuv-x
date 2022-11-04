@@ -55,7 +55,7 @@ The TUV-x configuration JSON file has six objects:
      "grids": { ... },
      "profiles": { ... },
      "radiative transfer": { ... },
-     "photolysis reactions": { ... },
+     "photolysis": { ... },
      "dose rates": { ... }
      "enable diagnostics" : false,
    }
@@ -615,23 +615,28 @@ The configuration for photolysis reactions takes the following form:
 .. code-block:: JSON
    :force:
 
-   "photolysis reactions": {
-     "my first reaction": {
-       "cross section": { ... },
-       "quantum yield": { ... },
-       "scaling factor": 1.3
-     },
-     "my second reaction": {
-       "cross section": { ... },
-       "quantum yield": { ... },
-     }
+   "photolysis": {
+     "enable diagnostics": false,
+     "reactions": [
+      {
+        "name": "my first reaction",
+        "cross section": { ... },
+        "quantum yield": { ... },
+        "scaling factor": 1.3
+      },
+      {
+        "name": "my second reaction",
+        "cross section": { ... },
+        "quantum yield": { ... },
+      }
+     ]
    }
 
 
-Each member of ``photolysis reactions`` describes a photolysis
+Each member of ``reactions`` describes a photolysis
 reaction that TUV-x will calculate a rate constant for at runtime.
-The key for each photolysis reaction is a user-defined name
-that will be associated with the calculated rate constant,
+The name for each photolysis reaction is user-defined, 
+associated with the calculated rate constant,
 and can be used for mapping to a chemistry solver or other
 package.
 Each reaction must have a ``cross section``, whose configuration
@@ -641,28 +646,12 @@ configuration is described :ref:`here <configuration-quantum-yields>`.
 The ``scaling factor`` is a optional scaling factor that will be
 applied to the calculated rate constant.
 
-Additionally, diagnostic output can be enabled by adding ``enable diagnostics`` to the
-json configuration like in the sample below. In this case, a folder named
+Diagnostic output can be enabled by setting ``enable diagnostics`` to ``true``.
+This keyword is not required and is ``false`` by default. 
+When enabled,  a folder named
 `output` will be created with some diagnostic output for the cross sections
 and quantum yields. This is only used for regression tests and will be removed
 in the future.
-
-.. code-block:: JSON
-   :force:
-
-   "photolysis reactions": {
-     "enable diagnostics" : true,
-     "my first reaction": {
-       "cross section": { ... },
-       "quantum yield": { ... },
-       "scaling factor": 1.3
-     },
-     "my second reaction": {
-       "cross section": { ... },
-       "quantum yield": { ... },
-     }
-   }
-
 
 The file ``data/photolysis_rate_constants.json`` contains
 configuration data for every photolysis rate constant that

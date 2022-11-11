@@ -138,12 +138,21 @@ include_directories(${NETCDF_INCLUDE_DIR})
 ################################################################################
 # musica-core library
 
-# Only utility modules are needed by TUV-x
-set(ENABLE_UTIL_ONLY ON)
-set(MUSICA_MOD_DIR ${TUVX_MOD_DIR})
-set(MUSICA_LIB_DIR ${TUVX_LIB_DIR})
-add_subdirectory(libs/musica-core/src)
-include_directories(${CMAKE_BINARY_DIR}/libs/musica-core/src)
+find_path(MUSICA_CORE_INCLUDE_DIR musica_math.mod
+  DOC "musica-core include directory (must include musica_*.mod files)"
+  PATHS
+    $ENV{MUSICA_CORE_HOME}/include
+    /opt/local/lib
+    /usr/local/lib
+    /usr/local/lib64)
+find_library(MUSICA_CORE_LIB musica_core
+  DOC "musica-core library"
+  PATHS
+    $ENV{MUSICA_CORE_HOME}/lib
+    /opt/local/lib
+    /usr/local/lib
+    /usr/local/lib64)
+include_directories(${MUSICA_CORE_INCLUDE_DIR})
 
 ################################################################################
 # copy data

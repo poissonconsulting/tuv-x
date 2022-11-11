@@ -39,7 +39,7 @@ add_subdirectory(spectral_weights)
 add_library(tuvxlib ${TUVX_SRC} ${GRID_SRC} ${PROFILE_SRC}
                     ${CROSS_SECTION_SRC} ${QUANTUM_YIELD_SRC} ${SPECTRAL_WGHT_SRC}
                     ${RADIATIVE_TRANSFER_SRC} ${LINEAR_ALGEBRA_SRC})
-target_link_libraries(tuvxlib musicalib ${NETCDF_LIBS})
+target_link_libraries(tuvxlib ${MUSICA_CORE_LIB} ${NETCDF_LIBS} ${JSON_LIB})
 set_target_properties(tuvxlib PROPERTIES OUTPUT_NAME tuvx
                                          ARCHIVE_OUTPUT_DIRECTORY ${TUVX_LIB_DIR}
                                          Fortran_MODULE_DIRECTORY ${TUVX_MOD_DIR})

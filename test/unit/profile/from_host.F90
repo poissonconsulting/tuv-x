@@ -5,6 +5,7 @@ program test_profile_from_host
 
   use musica_mpi,                      only : musica_mpi_init,                &
                                               musica_mpi_finalize
+  use tuvx_test_utils,                 only : check_values
 
   implicit none
 
@@ -34,6 +35,13 @@ contains
     integer :: pos, pack_size
     type(string_t) :: type_name
     integer, parameter :: comm = MPI_COMM_WORLD
+    real(kind=dk), parameter :: tol = 1.0e-10_dk
+    real(kind=dk) :: edges(4)
+    real(kind=dk) :: mids(3)
+    real(kind=dk) :: deltas(3)
+    real(kind=dk) :: dens(3)
+    real(kind=dk) :: exos(4)
+    real(kind=dk) :: burden(3)
 
     if( musica_mpi_rank( comm ) == 0 ) then
       my_profile => profile_from_host_t( "foo", "bars", 3 )
@@ -73,25 +81,80 @@ contains
       call die( 870112487 )
     end select
 
-    call my_updater%update( mid_point_values = (/ 1.0_dk, 12.3_dk, 32.4_dk /),&
-                         edge_values = (/ 0.5_dk, 9.8_dk, 15.4_dk, 45.0_dk /),&
-                         layer_densities = (/ 94.3_dk, 0.52_dk, -12.3_dk /) )
-    call assert( 792121290, my_profile%mid_val_(1) ==  1.0_dk )
-    call assert( 339489137, my_profile%mid_val_(2) == 12.3_dk )
-    call assert( 786856983, my_profile%mid_val_(3) == 32.4_dk )
-    call assert( 399233230, my_profile%edge_val_(1) ==  0.5_dk )
-    call assert( 846601076, my_profile%edge_val_(2) ==  9.8_dk )
-    call assert( 393968923, my_profile%edge_val_(3) == 15.4_dk )
-    call assert( 841336769, my_profile%edge_val_(4) == 45.0_dk )
-    call assert( 106229367,                                                   &
-                 almost_equal( my_profile%delta_val_(1),  9.8_dk -  0.5_dk ) )
-    call assert( 901080862,                                                   &
-                 almost_equal( my_profile%delta_val_(2), 15.4_dk -  9.8_dk ) )
-    call assert( 448448709,                                                   &
-                 almost_equal( my_profile%delta_val_(3), 45.0_dk - 15.4_dk ) )
-    call assert( 613341306, my_profile%layer_dens_(1) == 94.3_dk )
-    call assert( 725659651, my_profile%layer_dens_(2) == 0.52_dk )
-    call assert( 338035898, my_profile%layer_dens_(3) == -12.3_dk )
+    ! specify edges only
+    edges  = (/ 1.0_dk, 2.0_dk, 4.0_dk, 10.0_dk /)
+    ! calculated
+    mids   = (/ 1.5_dk, 3.0_dk, 7.0_dk /)
+    deltas = (/ 1.0_dk, 2.0_dk, 6.0_dk /)
+    dens   = (/ 0.0_dk, 0.0_dk, 0.0_dk /)
+    exos   = (/ 0.0_dk, 0.0_dk, 0.0_dk, 0.0_dk /)
+    burden = (/ 0.0_dk, 0.0_dk, 0.0_dk /)
+    call my_updater%update( edge_values = edges )
+    call check_values( 275069338, my_profile%mid_val_,          mids, tol )
+    call check_values( 169920834, my_profile%edge_val_,        edges, tol )
+    call check_values( 617288680, my_profile%delta_val_,      deltas, tol )
+    call check_values( 447131776, my_profile%layer_dens_,       dens, tol )
+    call check_values( 612024373, my_profile%exo_layer_dens_,   exos, tol )
+    call check_values( 159392220, my_profile%burden_dens_,    burden, tol )
+
+    ! specify edges, mids, dens
+    edges  = (/ 0.5_dk, 9.8_dk, 15.4_dk, 45.0_dk /)
+    mids   = (/ 1.0_dk, 12.3_dk, 32.4_dk /)
+    dens   = (/ 94.3_dk, 0.52_dk, 12.3_dk /)
+    ! calculated
+    deltas = (/ 9.8_dk - 0.5_dk, 15.4_dk - 9.8_dk, 45.0_dk - 15.4_dk /)
+    exos   = (/ 94.3_dk, 0.52_dk, 12.3_dk, 0.0_dk /)
+    burden = (/ 94.3_dk + 0.52_dk + 12.3_dk, 0.52_dk + 12.3_dk, 12.3_dk /)
+    call my_updater%update( mid_point_values = mids,                          &
+                            edge_values      = edges,                         &
+                            layer_densities  = dens )
+    call check_values( 792121290, my_profile%mid_val_,          mids, tol )
+    call check_values( 399233230, my_profile%edge_val_,        edges, tol )
+    call check_values( 106229367, my_profile%delta_val_,      deltas, tol )
+    call check_values( 613341306, my_profile%layer_dens_,       dens, tol )
+    call check_values( 466544996, my_profile%exo_layer_dens_,   exos, tol )
+    call check_values( 796782485, my_profile%burden_dens_,    burden, tol )
+
+    ! specify edges, dens, scale height
+    edges  = (/ 1.0_dk, 2.0_dk, 4.0_dk, 10.0_dk /)
+    dens   = (/ 10.0_dk, 2.5_dk, 5.0_dk /)
+    ! calculated
+    mids   = (/ 1.5_dk, 3.0_dk, 7.0_dk /)
+    deltas = (/ 1.0_dk, 2.0_dk, 6.0_dk /)
+    exos   = (/ 10.0_dk, 2.5_dk, 5.0_dk, 10.0_dk * 2.0_dk * 1.0e5_dk /)
+    burden = (/ 10.0_dk + 2.5_dk + 5.0_dk, 2.5_dk + 5.0_dk, 5.0_dk /)
+    call my_updater%update( edge_values = edges,                             &
+                            layer_densities = dens,                          &
+                            scale_height = 2.0_dk )
+    dens(3) = 5.0_dk + 10.0_dk * 2.0_dk * 1.0e5_dk
+    burden(:) = burden(:) + 10.0_dk * 2.0_dk * 1.0e5_dk
+    call check_values( 420261592, my_profile%mid_val_,          mids, tol )
+    call check_values( 585154189, my_profile%edge_val_,        edges, tol )
+    call check_values( 132522036, my_profile%delta_val_,      deltas, tol )
+    call check_values( 927373531, my_profile%layer_dens_,       dens, tol )
+    call check_values( 192266129, my_profile%exo_layer_dens_,   exos, tol )
+    call check_values( 639633975, my_profile%burden_dens_,    burden, tol )
+
+    ! specify edges, mids, dens, exo density
+    edges  = (/ 0.5_dk, 9.8_dk, 15.4_dk, 45.0_dk /)
+    mids   = (/ 1.0_dk, 12.3_dk, 32.4_dk /)
+    dens   = (/ 94.3_dk, 0.52_dk, 12.3_dk /)
+    ! calculated
+    deltas = (/ 9.8_dk - 0.5_dk, 15.4_dk - 9.8_dk, 45.0_dk - 15.4_dk /)
+    exos   = (/ 94.3_dk, 0.52_dk, 12.3_dk, 12.0_dk /)
+    burden = (/ 94.3_dk + 0.52_dk + 12.3_dk, 0.52_dk + 12.3_dk, 12.3_dk /)
+    call my_updater%update( mid_point_values = mids,                          &
+                            edge_values      = edges,                         &
+                            layer_densities  = dens,                          &
+                            exo_density      = 12.0_dk )
+    dens(3) = dens(3) + 12.0_dk
+    burden(:) = burden(:) + 12.0_dk
+    call check_values( 234764062, my_profile%mid_val_,          mids, tol )
+    call check_values( 747140308, my_profile%edge_val_,        edges, tol )
+    call check_values( 294508155, my_profile%delta_val_,      deltas, tol )
+    call check_values( 124351251, my_profile%layer_dens_,       dens, tol )
+    call check_values( 571719097, my_profile%exo_layer_dens_,   exos, tol )
+    call check_values( 184095344, my_profile%burden_dens_,    burden, tol )
 
     deallocate( my_profile )
 

@@ -122,7 +122,8 @@ contains
 
     integer                   :: i_sza, i_thread, i_photo, i_level, i_dose
     class(grid_t),    pointer :: height
-    class(profile_t), pointer :: sza
+    class(profile_t), pointer :: sza                ! [degrees]
+    class(profile_t), pointer :: earth_sun_distance ! [AU]
     real(dk), allocatable     :: photo_rates(:,:,:) ! (time, vertical level, reaction) [s-1]
     real(dk), allocatable     :: dose_rates(:,:,:)  ! (time, vertical level, dose rate) [?]
     real(dk), allocatable     :: thread_photo_rates(:,:,:) ! (vertical level, reaction, thread) [s-1]
@@ -132,6 +133,11 @@ contains
 
     height => core%get_grid( "height", "km" )
     sza => core%get_profile( "solar zenith angle", "degrees" )
+    earth_sun_distance => core%get_profile( "Earth-Sun distance", "AU" )
+
+    call assert_msg( 891821582, sza%ncells_ == earth_sun_distance%ncells_,    &
+                     "Solar zenith angle and Earth-Sun distance must be on "//&
+                     "the same grid." )
 
     allocate( photo_rates( sza%ncells_ + 1,                                   &
                            height%ncells_ + 1,                                &
@@ -143,6 +149,7 @@ contains
     do i_sza = 1, sza%ncells_ + 1
       write(diagnostic_label,'(i2.2)') i_sza
       call core%run( sza%edge_val_( i_sza ),                                  &
+                     earth_sun_distance%edge_val_( i_sza ),                   &
                      photolysis_rate_constants = photo_rates( i_sza, :, : ),  &
                      dose_rates = dose_rates( i_sza, :, : ),                  &
                      diagnostic_label = diagnostic_label )
@@ -158,8 +165,9 @@ contains
       call output_dose_rates( core, dose_rates, file_path )
     end if
 
-    deallocate( height )
-    deallocate( sza    )
+    deallocate( height             )
+    deallocate( sza                )
+    deallocate( earth_sun_distance )
 
 #if MUSICA_USE_OPENMP
     ! Compare results from threads for fixed solar zenith angle
@@ -175,6 +183,7 @@ contains
                photos => thread_photo_rates(:,:, omp_get_thread_num( ) + 1 ), &
                doses  => thread_dose_rates( :,:, omp_get_thread_num( ) + 1 ) )
       call thread%core_%run( 40.0_dk,                                         &
+                             1.0_dk,                                          &
                              photolysis_rate_constants = photos,              &
                              dose_rates = doses )
     end associate

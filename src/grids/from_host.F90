@@ -102,43 +102,49 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine update( this, mid_points, edges )
+  subroutine update( this, edges, mid_points )
     ! Updates the target grid
 
-    use musica_assert,                 only : assert_msg
+    use musica_assert,                 only : assert_msg, die_msg
     use musica_string,                 only : to_char
 
     class(grid_updater_t),   intent(inout) :: this          ! grid updater
-    real(kind=dk), optional, intent(in)    :: mid_points(:) ! new mid-point values
     real(kind=dk), optional, intent(in)    :: edges(:)      ! new edge values
+    real(kind=dk), optional, intent(in)    :: mid_points(:) ! new mid-point values
 
     integer :: size_grid, size_host
 
     call assert_msg( 689055048, associated( this%grid_ ),                     &
                      "Cannot update an unspecified grid." )
+    call assert_msg( 379490048, present( edges ),                             &
+                     "Edges must be provided for grid update." )
+    size_grid = size( this%grid_%edge_ )
+    size_host = size( edges )
+    if( size_grid .ne. size_host ) then
+      call die_msg( 625263958,                                                &
+                    "Size mismatch for grid edges for grid '"//               &
+                    this%grid_%handle_//"'. Expected "//                      &
+                    trim( to_char( size_grid ) )//", got "//                  &
+                    trim( to_char( size_host ) ) )
+    end if
+    this%grid_%edge_(:) = edges(:)
+    this%grid_%delta_(:) = this%grid_%edge_( 2 : this%grid_%ncells_ + 1 ) -   &
+                           this%grid_%edge_( 1 : this%grid_%ncells_ )
     if( present( mid_points ) ) then
       size_grid = size( this%grid_%mid_ )
       size_host = size( mid_points )
-      call assert_msg( 742081595,                                             &
-                       size_grid == size_host,                                &
-                       "Size mismatch for grid mid-points for grid '"//       &
-                       this%grid_%handle_//"'. Expected "//                   &
-                       trim( to_char( size_grid ) )//", got "//               &
-                       trim( to_char( size_host ) ) )
+      if( size_grid .ne. size_host ) then
+        call die_msg( 742081595,                                              &
+                      "Size mismatch for grid mid-points for grid '"//        &
+                      this%grid_%handle_//"'. Expected "//                    &
+                      trim( to_char( size_grid ) )//", got "//                &
+                      trim( to_char( size_host ) ) )
+      end if
       this%grid_%mid_(:) = mid_points(:)
-    end if
-    if( present( edges ) ) then
-      size_grid = size( this%grid_%edge_ )
-      size_host = size( edges )
-      call assert_msg( 625263958,                                             &
-                       size_grid == size_host,                                &
-                       "Size mismatch for grid edges for grid'"//             &
-                       this%grid_%handle_//"'. Expected "//                   &
-                       trim( to_char( size_grid ) )//", got "//               &
-                       trim( to_char( size_host ) ) )
-      this%grid_%edge_(:) = edges(:)
-      this%grid_%delta_(:) = this%grid_%edge_( 2 : this%grid_%ncells_ + 1 ) - &
-                             this%grid_%edge_( 1 : this%grid_%ncells_ )
+    else
+      this%grid_%mid_( 1 : this%grid_%ncells_ ) =                             &
+        ( this%grid_%edge_( 1 : this%grid_%ncells_ ) +                        &
+          this%grid_%edge_( 2 : this%grid_%ncells_ + 1 ) ) * 0.5_dk
     end if
 
   end subroutine update

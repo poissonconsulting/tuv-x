@@ -39,6 +39,11 @@ module tuvx_core
     procedure :: get_grid
     ! Returns a profile from the warehouse
     procedure :: get_profile
+    ! Returns an updater for use TUV-x data
+    procedure, private :: get_grid_updater, get_profile_updater,              &
+                          get_radiator_updater
+    generic :: get_updater => get_grid_updater, get_profile_updater,          &
+                              get_radiator_updater
     ! Returns the number of photolysis reactions
     procedure :: number_of_photolysis_reactions
     ! Returns the number of dose rates
@@ -64,18 +69,20 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function constructor( config, grids, profiles ) result( new_core )
+  function constructor( config, grids, profiles, radiators ) result( new_core )
     ! Constructor of TUV-x core objects
 
     use musica_assert,                 only : assert_msg
     use musica_string,                 only : string_t
     use tuvx_diagnostic_util,          only : diagout
     use tuvx_profile,                  only : profile_t
+    use tuvx_radiator_warehouse,       only : radiator_warehouse_t
 
-    type(string_t),                       intent(in) :: config   ! Full TUV-x configuration data
-    class(grid_warehouse_t),    optional, intent(in) :: grids    ! Set of grids to include in the configuration
-    class(profile_warehouse_t), optional, intent(in) :: profiles ! Set of profiles to include in the configuration
-    class(core_t),                        pointer    :: new_core
+    type(string_t),                        intent(in) :: config    ! Full TUV-x configuration data
+    class(grid_warehouse_t),     optional, intent(in) :: grids     ! Set of grids to include in the configuration
+    class(profile_warehouse_t),  optional, intent(in) :: profiles  ! Set of profiles to include in the configuration
+    class(radiator_warehouse_t), optional, intent(in) :: radiators ! Set of radiators to include in the configuration
+    class(core_t),                         pointer    :: new_core
 
     ! Local variables
     character(len=*), parameter :: Iam = 'Photolysis core constructor: '
@@ -138,8 +145,9 @@ contains
     call core_config%get( "radiative transfer", child_config, Iam )
     new_core%radiative_transfer_ => &
         radiative_transfer_t( child_config,                                   &
-                                  new_core%grid_warehouse_,                   &
-                                  new_core%profile_warehouse_ )
+                              new_core%grid_warehouse_,                       &
+                              new_core%profile_warehouse_,                    &
+                              radiators )
 
     ! photolysis rate constants
     call core_config%get( "photolysis", child_config, Iam,          &
@@ -174,8 +182,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine run( this, solar_zenith_angle, photolysis_rate_constants,        &
-      dose_rates, diagnostic_label )
+  subroutine run( this, solar_zenith_angle, earth_sun_distance,               &
+      photolysis_rate_constants, dose_rates, diagnostic_label )
     ! Performs calculations for specified photolysis and dose rates for a
     ! given set of conditions
 
@@ -187,6 +195,7 @@ contains
 
     class(core_t),              intent(inout) :: this ! TUV-x core
     real(dk),                   intent(in)    :: solar_zenith_angle             ! [degrees]
+    real(dk),                   intent(in)    :: earth_sun_distance             ! [AU]
     real(dk),         optional, intent(out)   :: photolysis_rate_constants(:,:) ! (vertical level, reaction) [s-1]
     real(dk),         optional, intent(out)   :: dose_rates(:,:)                ! (vertical level, reaction) [s-1]
     character(len=*), optional, intent(in)    :: diagnostic_label               ! label used in diagnostic file names
@@ -218,6 +227,8 @@ contains
                     radiation_field%fdr_ + radiation_field%fup_ +             &
                     radiation_field%fdn_, this%enable_diagnostics_  )
     end if
+    ! scale the radiation field by the Earth-Sun distance
+    call radiation_field%apply_scale_factor( earth_sun_distance )
     if( associated( this%photolysis_rates_ ) .and.                            &
         present( photolysis_rate_constants ) ) then
       call this%photolysis_rates_%get( this%la_sr_bands_,                     &
@@ -288,6 +299,81 @@ contains
     profile => this%profile_warehouse_%get_profile( profile_name, units )
 
   end function get_profile
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_grid_updater( this, grid, found ) result( updater )
+    ! Returns an updater for a grid that a host application can use to update
+    ! TUV-x state data at runtime
+    !
+    ! If the optional `found` flag is omitted, an error is returned if the
+    ! grid does not exist in the TUV-x
+
+    use musica_assert,                 only : assert_msg
+    use tuvx_grid,                     only : grid_t
+    use tuvx_grid_from_host,           only : grid_updater_t
+
+    class(core_t),     intent(in)  :: this  ! TUV-x core
+    class(grid_t),     intent(in)  :: grid  ! The grid to get an updater for
+    logical, optional, intent(out) :: found ! Flag indicating whether the grid
+                                            ! was found
+    type(grid_updater_t)           :: updater
+
+    call assert_msg( 938167254, associated( this%grid_warehouse_ ),           &
+                     "Grids not available" )
+    updater = this%grid_warehouse_%get_updater( grid, found )
+
+  end function get_grid_updater
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_profile_updater( this, profile, found ) result( updater )
+    ! Returns an updater for a profile that a host application can use to
+    ! update TUV-x state data at runtime
+    !
+    ! If the optional `found` flag is omitted, an error is returned if the
+    ! profile does not exist in TUV-x
+
+    use musica_assert,                 only : assert_msg
+    use tuvx_profile,                  only : profile_t
+    use tuvx_profile_from_host,        only : profile_updater_t
+
+    class(core_t),     intent(in)  :: this    ! TUV-x core
+    class(profile_t),  intent(in)  :: profile ! The profile to get an updater for
+    logical, optional, intent(out) :: found   ! Flag indicating whether the
+                                              ! profile was found
+    type(profile_updater_t)        :: updater
+
+    call assert_msg( 804243032, associated( this%profile_warehouse_ ),        &
+                     "Profiles not available" )
+    updater = this%profile_warehouse_%get_updater( profile, found )
+
+  end function get_profile_updater
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_radiator_updater( this, radiator, found ) result( updater )
+    ! Returns an updater for a radiator that a host application can use to
+    ! update TUV-x state data at runtime
+    !
+    ! If the optional `found` flag is omitted, an error is returned if the
+    ! radiator does not exist in TUV-x
+
+    use musica_assert,                 only : assert_msg
+    use tuvx_radiator,                 only : radiator_t
+    use tuvx_radiator_from_host,       only : radiator_updater_t
+
+    class(core_t),     intent(in)  :: this     ! TUV-x core
+    class(radiator_t), intent(in)  :: radiator ! The radiator to get an updater for
+    logical, optional, intent(out) :: found    ! Flag indicating whether the
+                                               ! radiator was found
+    type(radiator_updater_t)       :: updater
+
+    call assert_msg( 676440920, associated( this%radiative_transfer_ ),       &
+                     "Radiators not available" )
+    updater = this%radiative_transfer_%get_radiator_updater( radiator, found )
+
+  end function get_radiator_updater
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

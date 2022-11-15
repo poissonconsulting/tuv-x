@@ -326,11 +326,12 @@ contains
     ! grid does not exist in the warehouse.
 
     use musica_assert,                 only : assert_msg, die_msg
+    use tuvx_grid,                     only : grid_t
     use tuvx_grid_from_host,           only : grid_from_host_t, grid_updater_t
 
-    class(grid_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
-    type(grid_from_host_t),  intent(in)    :: grid ! The grid to find in the warehouse
-    logical, optional,       intent(out)   :: found ! Flag indicating whether the grid was found
+    class(grid_warehouse_t), intent(in)  :: this ! This :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    class(grid_t),           intent(in)  :: grid ! The grid to find in the warehouse
+    logical, optional,       intent(out) :: found ! Flag indicating whether the grid was found
 
     integer :: i_grid
     logical :: l_found

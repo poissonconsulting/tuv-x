@@ -76,7 +76,7 @@ contains
     call assert( 830637735, calculator%nid_(0) == nid(0) )
     call assert( 992171559, calculator%nid_(1) == nid(1) )
     call assert( 539539406, calculator%nid_(2) == nid(2) )
-    call check_values( calculator%dsdh_, dsdh, 1.0e-6_dk )
+    call check_values( 473236945, calculator%dsdh_, dsdh, 1.0e-6_dk )
 
     deallocate( calculator )
 

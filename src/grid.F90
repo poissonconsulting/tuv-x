@@ -20,6 +20,8 @@ module tuvx_grid
     real(musica_dk), allocatable :: edge_(:) ! cell edges
     real(musica_dk), allocatable :: delta_(:) ! cell deltas
   contains
+    ! Returns the number of grid cells
+    procedure :: size => number_of_cells
     ! Returns the units for the grid
     procedure :: units
     ! Returns the number of bytes needed to pack the grid onto a buffer
@@ -36,6 +38,17 @@ module tuvx_grid
   end type grid_ptr
 
 contains
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function number_of_cells( this )
+    ! Returns the number of grid cells
+
+    class(grid_t), intent(in) :: this ! grid
+
+    number_of_cells = this%ncells_
+
+  end function number_of_cells
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

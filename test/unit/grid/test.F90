@@ -34,6 +34,7 @@ contains
     call assert( 412238776, all( aGrid%delta_ > 0._dk ) )
 
     call assert( 412238777, aGrid%ncells_ .eq. num_cells )
+    call assert( 551632826, aGrid%size( ) .eq. num_cells )
 
     ! plus 1 here because there are always 2 more edges than cells
     call assert( 412238778, size( aGrid%edge_ ) .eq. num_cells + 1 )

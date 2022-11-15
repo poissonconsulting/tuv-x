@@ -330,12 +330,13 @@ contains
     ! profile does not exist in the warehouse.
 
     use musica_assert,                 only : assert, assert_msg, die_msg
+    use tuvx_profile,                  only : profile_t
     use tuvx_profile_from_host,        only : profile_from_host_t,            &
                                               profile_updater_t
 
-    class(profile_warehouse_t), intent(inout) :: this    ! profile warehouse
-    type(profile_from_host_t),  intent(in)    :: profile ! the profile to find in the warehouse
-    logical, optional,          intent(out)   :: found   ! flag indicating whether the profile was found
+    class(profile_warehouse_t), intent(in)  :: this    ! profile warehouse
+    class(profile_t),           intent(in)  :: profile ! the profile to find in the warehouse
+    logical, optional,          intent(out) :: found   ! flag indicating whether the profile was found
 
     integer :: i_profile
     logical :: l_found

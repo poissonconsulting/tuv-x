@@ -34,6 +34,11 @@ module tuvx_radiator_warehouse
     !> Returns whether a radiator exists in the warehouse
     procedure, private :: exists_char, exists_string
     generic :: exists => exists_char, exists_string
+    !> Adds a radiator or set of radiators to the warehouse
+    procedure, private :: add_radiator, add_radiators
+    generic :: add => add_radiator, add_radiators
+    !> Returns an updater for a `radiator_from_host_t` radiator
+    procedure :: get_updater
     !> Returns the name for a radiator from an iterator
     procedure :: name => get_name
     !> Gets an iterator for the warehouse
@@ -63,6 +68,8 @@ module tuvx_radiator_warehouse
   end type warehouse_iterator_t
 
   interface radiator_warehouse_t
+    ! constructor of an empty radiator_warehouse_t
+    module procedure :: constructor_empty
     ! radiator_warehouse_t constructor
     module procedure :: constructor
   end interface
@@ -81,6 +88,19 @@ module tuvx_radiator_warehouse
   end type radiator_warehouse_ptr
 
 contains
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function constructor_empty( ) result( radiator_warehouse )
+    ! Constructs an empty radiator warehouse
+
+    class(radiator_warehouse_t), pointer :: radiator_warehouse
+
+    allocate( radiator_warehouse )
+    allocate( radiator_warehouse%radiators_(0) )
+    allocate( radiator_warehouse%handle_(0) )
+
+  end function constructor_empty
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -150,9 +170,9 @@ contains
 
     use tuvx_radiator,                 only : radiator_t
 
-    class(radiator_warehouse_t), intent(inout) :: this ! This :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
-    character(len=*),            intent(in)    :: name ! Name associated with requested radiator
-    class(radiator_t),           pointer       :: radiator ! Pointer to the requested radiator of type :f:type:`~tuvx_radiator/radiator_t`
+    class(radiator_warehouse_t), intent(in) :: this ! This :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`
+    character(len=*),            intent(in) :: name ! Name associated with requested radiator
+    class(radiator_t),           pointer    :: radiator ! Pointer to the requested radiator of type :f:type:`~tuvx_radiator/radiator_t`
 
     type(radiator_warehouse_ptr) :: ptr
 
@@ -169,9 +189,9 @@ contains
     use musica_string,                 only : string_t
     use tuvx_radiator,                 only : radiator_t
 
-    class(radiator_warehouse_t), intent(inout) :: this ! this radiator warehouse
-    type(string_t),              intent(in)    :: name ! name of the radiator
-    class(radiator_t),           pointer       :: radiator
+    class(radiator_warehouse_t), intent(in) :: this ! this radiator warehouse
+    type(string_t),              intent(in) :: name ! name of the radiator
+    class(radiator_t),           pointer    :: radiator
 
     radiator => this%get_radiator_char( name%to_char( ) )
 
@@ -185,9 +205,9 @@ contains
     use musica_assert,                 only : assert_msg
     use tuvx_radiator,                 only : radiator_t
 
-    class(radiator_warehouse_t),  intent(inout) :: this     ! this radiator warehouse
-    type(radiator_warehouse_ptr), intent(in)    :: ptr      ! pointer to the raditor in the warehouse
-    class(radiator_t),            pointer       :: radiator ! pointer to the radiator
+    class(radiator_warehouse_t),  intent(in) :: this     ! this radiator warehouse
+    type(radiator_warehouse_ptr), intent(in) :: ptr      ! pointer to the raditor in the warehouse
+    class(radiator_t),            pointer    :: radiator ! pointer to the radiator
 
     call assert_msg( 432301788, ptr%index_ > 0, "Invalid radiator pointer" )
     radiator => this%radiators_( ptr%index_ )%val_
@@ -291,6 +311,97 @@ contains
     exists_string = this%exists_char( name%to_char( ) )
 
   end function exists_string
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine add_radiator( this, radiator )
+    ! adds a radiator to the warehouse
+
+    use musica_assert,                 only : assert, assert_msg
+    use tuvx_radiator,                 only : radiator_t
+
+    class(radiator_warehouse_t), intent(inout) :: this
+    class(radiator_t),           intent(in)    :: radiator
+
+    type(radiator_ptr) :: ptr
+
+    call assert( 439108556, allocated( this%radiators_ ) )
+    call assert_msg( 781327898,                                               &
+                     .not. this%exists( radiator%handle_ ),                   &
+                     "Radiator '"//radiator%handle_//"' already exists." )
+    allocate( ptr%val_, source = radiator )
+    this%radiators_ = [ this%radiators_, ptr ]
+    this%handle_    = [ this%handle_, radiator%handle_ ]
+
+  end subroutine add_radiator
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine add_radiators( this, radiators )
+    ! adds a set of radiators to the warehouse
+
+    use musica_assert,                 only : assert
+
+    class(radiator_warehouse_t), intent(inout) :: this
+    class(radiator_warehouse_t), intent(in)    :: radiators
+
+    integer :: i_radiator
+
+    call assert( 330601279, allocated( this%radiators_ ) )
+    call assert( 777969125, allocated( radiators%radiators_ ) )
+    do i_radiator = 1, size( radiators%radiators_ )
+      call this%add_radiator( radiators%radiators_( i_radiator )%val_ )
+    end do
+
+  end subroutine add_radiators
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  type(radiator_updater_t) function get_updater( this, radiator, found )      &
+      result( updater )
+    ! returns an updater for a `radiator_from_host_t` radiator
+    !
+    ! If the optional `found` argument is omitted, an error is returned if the
+    ! radiator does not exist in the warehouse.
+
+    use musica_assert,                 only : assert, assert_msg, die_msg
+    use tuvx_radiator,                 only : radiator_t
+    use tuvx_radiator_from_host,       only : radiator_from_host_t,           &
+                                              radiator_updater_t
+
+    class(radiator_warehouse_t), intent(in)  :: this     ! radiator warehouse
+    class(radiator_t),           intent(in)  :: radiator ! the radiator to find in the warehouse
+    logical, optional,           intent(out) :: found    ! flag indicating whether the
+                                                         ! radiator was found
+
+    integer :: i_radiator
+    logical :: l_found
+
+    l_found = .false.
+    do i_radiator = 1, size( this%radiators_ )
+      if( radiator%handle_ == this%radiators_( i_radiator )%val_%handle_ ) then
+        l_found = .true.
+        exit
+      end if
+    end do
+
+    if( present( found ) ) then
+      found = l_found
+      if( .not. found ) return
+    end if
+
+    call assert_msg( 995888269, found,                                        &
+                     "Cannot find radiator '"//radiator%handle_//"'" )
+
+    select type( w_radiator => this%radiators_( i_radiator )%val_ )
+    class is( radiator_from_host_t )
+      updater = radiator_updater_t( w_radiator )
+    class default
+      call die_msg( 208206615, "Cannot update radiator '"//w_radiator%handle_ &
+                               //"' from a host application." )
+    end select
+
+  end function get_updater
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

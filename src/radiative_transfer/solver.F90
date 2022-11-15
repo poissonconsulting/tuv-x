@@ -19,6 +19,8 @@ module tuvx_solver
     real(dk), allocatable :: fup_(:,:) ! Contribution of the diffuse upwelling component to the total actinic flux (vertical interface, wavelength)
     real(dk), allocatable :: fdn_(:,:) ! Contribution of the diffuse downwelling component to the total actinic flux (vertical interface, wavelength)
   contains
+    ! Scale the radiation field values
+    procedure :: apply_scale_factor
     ! Returns the number of bytes needed to pack the object onto a buffer
     procedure :: pack_size => field_pack_size
     ! Packs the object onto a character buffer
@@ -144,6 +146,23 @@ contains
     allocate( field%fup_( n_vertical_interfaces, n_wavelength_bins ) )
 
   end function field_constructor
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine apply_scale_factor( this, scale_factor )
+    ! Applies a scaling factor to the radiation field data members
+
+    class(radiation_field_t), intent(inout) :: this
+    real(dk),                 intent(in)    :: scale_factor
+
+    this%edr_ = this%edr_ * scale_factor
+    this%edn_ = this%edn_ * scale_factor
+    this%eup_ = this%eup_ * scale_factor
+    this%fdr_ = this%fdr_ * scale_factor
+    this%fdn_ = this%fdn_ * scale_factor
+    this%fup_ = this%fup_ * scale_factor
+
+  end subroutine apply_scale_factor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

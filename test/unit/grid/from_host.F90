@@ -25,6 +25,7 @@ contains
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_from_host,           only : grid_from_host_t, grid_updater_t
     use tuvx_grid_factory,             only : grid_type_name, grid_allocate
+    use tuvx_test_utils,               only : check_values
 
     class(grid_t), pointer :: my_grid
     type(grid_updater_t) :: my_updater
@@ -32,6 +33,8 @@ contains
     integer :: pos, pack_size
     type(string_t) :: type_name
     integer, parameter :: comm = MPI_COMM_WORLD
+    real(kind=dk) :: mids(3), edges(4), deltas(3)
+    real(kind=dk) :: tol = 1.0e-10_dk
 
     if( musica_mpi_rank( comm ) == 0 ) then
       my_grid => grid_from_host_t( "foo", "bars", 3 )
@@ -70,21 +73,25 @@ contains
       call die( 945999391 )
     end select
 
-    call my_updater%update( mid_points = (/ 1.0_dk, 12.3_dk, 32.4_dk /),      &
-                            edges = (/ 0.5_dk, 9.8_dk, 15.4_dk, 45.0_dk /) )
-    call assert( 136711860, my_grid%mid_(1) ==  1.0_dk )
-    call assert( 584079706, my_grid%mid_(2) == 12.3_dk )
-    call assert( 748972303, my_grid%mid_(3) == 32.4_dk )
-    call assert( 296340150, my_grid%edge_(1) ==  0.5_dk )
-    call assert( 352725470, my_grid%edge_(2) ==  9.8_dk )
-    call assert( 800093316, my_grid%edge_(3) == 15.4_dk )
-    call assert( 412469563, my_grid%edge_(4) == 45.0_dk )
-    call assert( 859837409,                                                   &
-                 almost_equal( my_grid%delta_(1),  9.8_dk -  0.5_dk ) )
-    call assert( 124730007,                                                   &
-                 almost_equal( my_grid%delta_(2), 15.4_dk -  9.8_dk ) )
-    call assert( 289622604,                                                   &
-                 almost_equal( my_grid%delta_(3), 45.0_dk - 15.4_dk ) )
+    ! pass edges and mid points
+    edges(:) = (/ 0.5_dk,  9.8_dk, 15.4_dk, 45.0_dk /)
+    mids(:)  = (/ 1.0_dk, 12.3_dk, 32.4_dk /)
+    ! calculated
+    deltas(:) = (/ 9.8_dk - 0.5_dk, 15.4_dk - 9.8_dk, 45.0_dk - 15.4_dk /)
+    call my_updater%update( mid_points = mids, edges = edges )
+    call check_values( 238395985,   my_grid%mid_,   mids, tol )
+    call check_values( 575351020,  my_grid%edge_,  edges, tol )
+    call check_values( 793270164, my_grid%delta_, deltas, tol )
+
+    ! pass edges only
+    edges(:)  = (/ 12.0_dk, 20.0_dk, 30.0_dk, 60.0_dk /)
+    ! calculated
+    mids(:)   = (/ 16.0_dk, 25.0_dk, 45.0_dk /)
+    deltas(:) = (/  8.0_dk, 10.0_dk, 30.0_dk /)
+    call my_updater%update( edges = edges )
+    call check_values( 453607393,   my_grid%mid_,   mids, tol )
+    call check_values( 965983639,  my_grid%edge_,  edges, tol )
+    call check_values( 513351486, my_grid%delta_, deltas, tol )
 
     deallocate( my_grid )
 

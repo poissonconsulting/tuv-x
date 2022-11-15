@@ -125,12 +125,11 @@ contains
     layer_loop: do i = 0, nlayer
       rpsinz = ( re + zd( i ) ) * sinrad
       if ( zen > NINETY .and. rpsinz < re ) then
-        this%nid_( i ) = -1
+        id = -1
       else
         ! find index of layer in which the screening height lies
-        if( zen <= NINETY ) then
-          id = i
-        else
+        id = i
+        if( zen > NINETY ) then
           do j = 1, nlayer
             if( rpsinz < ( zd( j - 1 ) + re ) .and.                           &
                 rpsinz >= ( zd( j ) + re) ) id = j
@@ -155,8 +154,8 @@ contains
           end if
           this%dsdh_( i, j ) = dsj / dhj
         enddo
-        this%nid_( i ) = id
       end if
+      this%nid_( i ) = id
     enddo layer_loop
 
     this%solar_zenith_angle_ = zen

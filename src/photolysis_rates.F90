@@ -163,7 +163,6 @@ contains
       profile_warehouse, radiation_field, photolysis_rates, file_tag )
 
     use musica_assert,                 only : assert_msg, die_msg
-    use tuvx_constants,                only : hc
     use tuvx_diagnostic_util,          only : diagout
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_la_sr_bands,              only : la_sr_bands_t
@@ -192,7 +191,6 @@ contains
     character(len=*), parameter :: Iam = "photolysis rates calculator"
     integer               :: vertNdx, rateNdx, nRates
     real(dk), allocatable :: airVcol(:), airScol(:)
-    real(dk), allocatable :: bin_factor(:)
     real(dk), allocatable :: xsqyWrk(:)
     real(dk), allocatable :: cross_section(:,:)
     real(dk), allocatable :: quantum_yield(:,:)
@@ -215,12 +213,10 @@ contains
                      size( photolysis_rates, 2 ) == nRates,                   &
                      "Bad shape for photolysis rate constant array" )
 
-    bin_factor = ( etfl%mid_val_ * 1.e-13_dk * lambdaGrid%mid_ *              &
-                   lambdaGrid%delta_ ) / hc
     actinicFlux = transpose( radiation_field%fdr_ + radiation_field%fup_ +    &
                              radiation_field%fdn_ )
     do vertNdx = 1, zGrid%ncells_ + 1
-      actinicFlux( :, vertNdx ) = actinicFlux( :, vertNdx ) * bin_factor
+      actinicFlux( :, vertNdx ) = actinicFlux( :, vertNdx ) * etfl%mid_val_
     enddo
 
     if( this%enable_diagnostics_ ) then

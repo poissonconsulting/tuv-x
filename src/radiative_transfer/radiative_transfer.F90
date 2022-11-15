@@ -34,6 +34,8 @@ module tuvx_radiative_transfer
     procedure :: name => component_name
     procedure :: description
     procedure :: calculate
+    ! Returns an updater for a radiator in the warehouse
+    procedure :: get_radiator_updater
     ! Returns the number of bytes needed to pack the object onto a buffer
     procedure :: pack_size
     ! Packs the object onto a character buffer
@@ -52,7 +54,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function constructor( config, grid_warehouse, profile_warehouse )           &
+  function constructor( config, grid_warehouse, profile_warehouse, radiators )&
       result( this )
     ! Initializes the components necessary to solve radiative transfer
 
@@ -62,10 +64,11 @@ contains
     use tuvx_profile_warehouse,        only : profile_warehouse_t
     use tuvx_solver_factory,           only : solver_builder
 
-    type(radiative_transfer_t), pointer      :: this ! New :f:type:`~tuvx_radiative_transfer/radxfer_component_core_t`
-    type(config_t),            intent(inout) :: config                 ! radXfer configuration data
-    type(grid_warehouse_t),    intent(inout) :: grid_warehouse         ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
-    type(profile_warehouse_t), intent(inout) :: profile_warehouse      ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    type(radiative_transfer_t), pointer :: this ! New :f:type:`~tuvx_radiative_transfer/radxfer_component_core_t`
+    type(config_t),                        intent(inout) :: config            ! radXfer configuration data
+    type(grid_warehouse_t),                intent(inout) :: grid_warehouse    ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
+    type(profile_warehouse_t),             intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
+    class(radiator_warehouse_t), optional, intent(in)    :: radiators         ! Radiators to include in the configuration
 
     character(len=*), parameter :: Iam = 'radiative transfer constructor: '
     type(config_t) :: solver_config
@@ -94,6 +97,7 @@ contains
     this%radiator_warehouse_ =>                             &
         radiator_warehouse_t( child_config, grid_warehouse, profile_warehouse,&
                               this%cross_section_warehouse_ )
+    if( present( radiators ) ) call this%radiator_warehouse_%add( radiators )
 
     ! set up pointers to radiators and profiles
     this%O2_exists_ = this%radiator_warehouse_%exists( "O2" )
@@ -206,6 +210,31 @@ contains
     end associate
 
   end subroutine calculate
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_radiator_updater( this, radiator, found ) result( updater )
+    ! Returns an updater for a radiator that a host application can use to
+    ! update TUV-x state data at runtime
+    !
+    ! If the optional `found` flag is omitted, an error is returned if the
+    ! radiator does not exist in TUV-x
+
+    use musica_assert,                 only : assert_msg
+    use tuvx_radiator,                 only : radiator_t
+    use tuvx_radiator_from_host,       only : radiator_updater_t
+
+    class(radiative_transfer_t), intent(in)  :: this     ! Radiative transfer calculator
+    class(radiator_t),           intent(in)  :: radiator ! The radiator to get an updater for
+    logical, optional,           intent(out) :: found    ! Flag indicating whether the
+                                                         ! radiator was found
+    type(radiator_updater_t)       :: updater
+
+    call assert_msg( 101866398, associated( this%radiator_warehouse_ ),       &
+                     "Radiators not available" )
+    updater = this%radiator_warehouse_%get_updater( radiator, found )
+
+  end function get_radiator_updater
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

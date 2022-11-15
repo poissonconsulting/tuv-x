@@ -8,6 +8,6 @@ include(test_util)
 
 create_standard_test(NAME profile_warehouse SOURCES profile_warehouse.F90)
 create_standard_test(NAME profiles SOURCES profile.F90)
-create_standard_test(NAME profile_from_host SOURCES from_host.F90)
+create_standard_test(NAME profile_from_host SOURCES from_host.F90 ../test_utils.F90)
 
 ################################################################################

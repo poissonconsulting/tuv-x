@@ -15,7 +15,7 @@ module tuvx_profile
   type profile_t
     type(string_t) :: handle_ ! grid handle
     type(string_t) :: units_ ! units
-    integer(musica_ik)           :: ncells_ ! number of wavelength grid cells
+    integer(musica_ik)           :: ncells_ ! number of grid cells
     real(musica_dk)              :: hscale_ ! scale heigth
     real(musica_dk), allocatable :: mid_val_(:) ! cell centers
     real(musica_dk), allocatable :: edge_val_(:) ! cell edges
@@ -25,14 +25,16 @@ module tuvx_profile
     real(musica_dk), allocatable :: burden_dens_(:) ! overhead column burden
     logical                      :: enable_diagnostics ! determins if diagnostic output is written or not
   contains
+    ! returns the units of a profile
+    procedure :: units
+    ! returns the number of grid cells for the profile
+    procedure :: size => number_of_cells
     ! returns the number of bytes needed to pack the profile onto a buffer
     procedure :: pack_size
     ! packs the profile onto a character buffer
     procedure :: mpi_pack
     ! unpacks a profile from a character buffer into the object
     procedure :: mpi_unpack
-    ! returns the units for the profile
-    procedure :: units
   end type profile_t
 
   type profile_ptr
@@ -41,6 +43,28 @@ module tuvx_profile
   end type profile_ptr
 
 contains
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  type(string_t) function units( this )
+    ! Returns the units for the profile
+
+    class(profile_t), intent(in) :: this
+
+    units = this%units_
+
+  end function units
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function number_of_cells( this )
+    ! Returns the number of grid cells for the profile
+
+    class(profile_t), intent(in) :: this
+
+    number_of_cells = this%ncells_
+
+  end function number_of_cells
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -132,17 +156,6 @@ contains
 #endif
 
   end subroutine mpi_unpack
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  type(string_t) function units( this )
-    ! Returns the units for the profile
-
-    class(profile_t), intent(in) :: this
-
-    units = this%units_
-
-  end function units
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

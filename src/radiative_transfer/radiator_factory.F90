@@ -3,10 +3,11 @@
 
 module tuvx_radiator_factory
 ! Builds :f:type:`~tuvx_radiator/radiator_t` s for
-! :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`. 
+! :f:type:`~tuvx_radiator_warehouse/radiator_warehouse_t`.
 
   use tuvx_radiator,                   only : radiator_t
   use tuvx_radiator_aerosol,           only : radiator_aerosol_t
+  use tuvx_radiator_from_host,         only : radiator_from_host_t
 
   implicit none
 
@@ -70,6 +71,8 @@ contains
         name = "radiator_t"
       type is( radiator_aerosol_t )
         name = "radiator_aerosol_t"
+      type is( radiator_from_host_t )
+        name = "radiator_from_host_t"
       class default
         call die( 365718517 )
     end select
@@ -94,6 +97,8 @@ contains
         allocate( radiator_t :: radiator )
       case( 'radiator_aerosol_t' )
         allocate( radiator_aerosol_t :: radiator )
+      case( 'radiator_from_host_t' )
+        allocate( radiator_from_host_t :: radiator )
       case default
         call die_msg( 670539061, "Invalid radiator type: '"//                 &
                                  type_name//"'" )

@@ -103,7 +103,7 @@ contains
     call assert( 429189037, found )
     grid_mids = (/ 12.5_dk, 20.0_dk, 30.0_dk /)
     grid_edges = (/ 10.0_dk, 15.0_dk, 25.0_dk, 35.0_dk /)
-    call grid_updater%update( grid_mids, grid_edges )
+    call grid_updater%update( edges = grid_edges, mid_points = grid_mids )
     grid => grids%get_grid( grid_name, units )
     call assert( 522094162, allocated( grid%mid_   ) )
     call assert( 351937258, allocated( grid%edge_  ) )

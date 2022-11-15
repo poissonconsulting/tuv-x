@@ -102,6 +102,7 @@ contains
                          edge_values = (/ 0.5_dk, 9.8_dk, 15.4_dk, 45.0_dk /),&
                          layer_densities = (/ 94.3_dk, 0.52_dk, -12.3_dk /) )
     profile_ptr => profile_warehouse%get_profile( profile_name, units )
+    call assert( 637694837, profile_ptr%size( ) == 3 )
     call assert( 233174517, profile_ptr%mid_val_(1) ==  1.0_dk )
     call assert( 345492862, profile_ptr%mid_val_(2) == 12.3_dk )
     call assert( 510385459, profile_ptr%mid_val_(3) == 32.4_dk )

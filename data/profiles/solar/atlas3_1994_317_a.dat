@@ -1,5 +1,5 @@
 #ATLAS3-SUSIM  13 Nov 1994.
-#Wavelength in nm and Irradiance in mW/m2/nm
+#Wavelength in nm and Irradiance in W/m2/nm
 #0.15 nm resolution (FWHM)
 #Wavelength Irradiance
 1.500100e+02 1.015700e-04

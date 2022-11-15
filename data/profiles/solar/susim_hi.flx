@@ -1,8 +1,8 @@
 #    SUSIM SL2 high resolution (0.15nm) Solar Irridance data.
-#    Irradiance values are given in milliwatts/m^2/nanomenters
+#    Irradiance values are given in watts/m^2/nanomenters
 #    and are listed at 0.05nm intervals.  The wavelength given is
 #    the center wavelength of the 0.15nm triangular bandpass.
-#    nm      photons/cm^2/s
+#    nm      W m-2 nm-1
 1.205000e+02 6.525000e-05
 1.205500e+02 2.662000e-04
 1.206000e+02 5.396000e-04

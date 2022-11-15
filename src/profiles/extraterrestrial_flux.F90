@@ -261,11 +261,11 @@ contains
 
     enddo file_loop
 
-    ! test diagnostics (in original units of mW m-2 nm-1)
+    ! test diagnostics (in original units of W m-2 nm-1)
     call diagout( 'etfl.new', this%mid_val_, this%enable_diagnostics )
 
-    ! convert ET flux values from units of mW m-2 nm-1 to photons cm-2 s-1
-    this%mid_val_(:) = 1.0e-16 * this%mid_val_ * lambdaGrid%mid_ *            &
+    ! convert ET flux values from units of W m-2 nm-1 to photons cm-2 s-1
+    this%mid_val_(:) = 1.0e-13 * this%mid_val_ * lambdaGrid%mid_ *            &
                        lambdaGrid%delta_ / hc
 
     deallocate( lambdaGrid )

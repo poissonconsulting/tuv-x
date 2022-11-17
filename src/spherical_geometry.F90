@@ -130,6 +130,7 @@ contains
         ! find index of layer in which the screening height lies
         id = i
         if( zen > NINETY ) then
+          id = -1
           do j = 1, nlayer
             if( rpsinz < ( zd( j - 1 ) + re ) .and.                           &
                 rpsinz >= ( zd( j ) + re) ) id = j

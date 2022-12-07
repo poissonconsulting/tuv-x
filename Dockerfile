@@ -1,4 +1,4 @@
-FROM fedora:34
+FROM fedora:35
 
 RUN dnf -y update \
     && dnf -y install \
@@ -34,7 +34,8 @@ RUN git clone https://github.com/NCAR/musica-core.git \
     && cd build \
     && export JSON_FORTRAN_HOME="/usr/local/jsonfortran-gnu-8.2.0" \
     && cmake -D ENABLE_UTIL_ONLY:BOOL=TRUE .. \
-    && make
+    && make -j 4 \
+    && make install
 
 # build the tuv-x tool
 COPY . /tuv-x/

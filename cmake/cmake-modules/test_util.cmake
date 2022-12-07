@@ -45,6 +45,11 @@ function(add_tuvx_test test_name test_binary test_args working_dir)
     add_test(NAME memcheck_${test_name}
       COMMAND mpirun -v -np 2 ${memcheck} ${CMAKE_BINARY_DIR}/${test_binary} ${test_args}
              WORKING_DIRECTORY ${working_dir})
+    
+    # add dependency between memcheck and previous test
+    # https://stackoverflow.com/a/66931930/5217293
+    set_tests_properties(${test_name} PROPERTIES FIXTURES_SETUP f_${test_name})
+    set_tests_properties(memcheck_${test_name} PROPERTIES FIXTURES_REQUIRED f_${test_name})
   elseif(MEMORYCHECK_COMMAND AND ENABLE_MEMCHECK)
     add_test(NAME memcheck_${test_name}
              COMMAND ${memcheck} ${CMAKE_BINARY_DIR}/${test_binary} ${test_args}

@@ -1,4 +1,4 @@
-FROM fedora:34
+FROM fedora:35
 
 RUN dnf -y update \
     && dnf install -y sudo \
@@ -49,7 +49,8 @@ RUN git clone https://github.com/NCAR/musica-core.git \
              -D CMAKE_Fortran_COMPILER=/usr/lib64/openmpi/bin/mpif90 \
              -D ENABLE_MPI:BOOL=TRUE \
              .. \
-    && make
+    && make -j 4 \
+    && sudo make install
 
 
 # build the tuv-x tool
@@ -64,6 +65,6 @@ RUN mkdir build \
                -D ENABLE_MPI:BOOL=TRUE \
                -D ENABLE_MEMCHECK:BOOL=FALSE \
                ../tuv-x \
-      && make
+      && make 
 
 WORKDIR /home/test_user/build

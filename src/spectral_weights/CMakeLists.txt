@@ -1,7 +1,7 @@
 ################################################################################
 # Spectral weight source
 
-target_sources(tuvxlib
+target_sources(tuvx_object
   PRIVATE
     notch_filter.F90
     gaussian.F90

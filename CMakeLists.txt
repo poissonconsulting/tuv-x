@@ -32,7 +32,7 @@ set(TUVX_LIB_DIR "${PROJECT_BINARY_DIR}/lib")
 include(GNUInstallDirs)
 set(
   INSTALL_PREFIX 
-  "${CMAKE_INSTALL_PREFIX}/ncar/tuvx-${PROJECT_VERSION}-${CMAKE_Fortran_COMPILER_ID}"
+  "${CMAKE_INSTALL_PREFIX}/ncar/tuvx-${PROJECT_VERSION}"
 )
 set(INSTALL_MOD_DIR "${INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}")
 
@@ -74,37 +74,44 @@ include(cmake/dependencies.cmake)
 ################################################################################
 # TUV-x targets
 
-# add alias so that this project can be included with add_subdirectory or 
-# be used with find_pacakge
-add_library(tuvxlib)
-add_library(tuvx::tuvx ALIAS tuvxlib)
-
-set_target_properties(tuvxlib PROPERTIES 
-  OUTPUT_NAME tuvx
-  VERSION ${PROJECT_VERSION}
-  SOVERSION ${PROJECT_VERSION_MAJOR}
-  ARCHIVE_OUTPUT_DIRECTORY ${TUVX_LIB_DIR}
+# object library
+add_library(tuvx_object)
+set_target_properties(tuvx_object PROPERTIES
   Fortran_MODULE_DIRECTORY ${TUVX_MOD_DIR}
 )
 
-add_executable(tuv-x src/tuvx.F90)
-
-add_subdirectory(src)
-
-target_link_libraries(tuvxlib 
+target_link_libraries(tuvx_object 
   PUBLIC
-    musicacore::musicacore
-    ${NETCDF_LIBS} 
+    musica::musicacore
+    PkgConfig::netcdff
     ${JSON_LIB}
 )
 
-target_include_directories(tuvxlib 
+# tuvx library and executable
+add_library(tuvx $<TARGET_OBJECTS:tuvx_object>)
+add_library(musica::tuvx ALIAS tuvx)
+
+set_target_properties(tuvx PROPERTIES 
+  ARCHIVE_OUTPUT_DIRECTORY ${TUVX_LIB_DIR}
+  VERSION ${PROJECT_VERSION}
+  SOVERSION ${PROJECT_VERSION_MAJOR}
+)
+
+add_subdirectory(src)
+
+add_executable(tuv-x src/tuvx.F90)
+
+target_include_directories(tuvx 
   PUBLIC  
     $<BUILD_INTERFACE:${TUVX_MOD_DIR}>
     $<INSTALL_INTERFACE:${INSTALL_MOD_DIR}>
 )
 
-target_link_libraries(tuv-x PUBLIC tuvxlib)
+target_link_libraries(tuv-x 
+  PUBLIC 
+    tuvx
+    musica::musicacore
+)
 if(ENABLE_OPENMP)
   target_link_libraries(tuv-x PUBLIC OpenMP::OpenMP_Fortran)
 endif()

@@ -59,5 +59,5 @@ pkg_check_modules(netcdff IMPORTED_TARGET REQUIRED netcdf-fortran)
 # musica-core library
 
 find_package(
-  musicacore-${CMAKE_Fortran_COMPILER_ID} REQUIRED
+  musicacore REQUIRED
 )

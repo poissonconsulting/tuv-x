@@ -1,7 +1,7 @@
 ################################################################################
 # Photo-decomp tool source
 
-target_sources(tuvxlib
+target_sources(tuvx_object
   PRIVATE
     constants.F90
     core.F90
@@ -26,7 +26,6 @@ target_sources(tuvxlib
     spectral_weight.F90
     spectral_weight_factory.F90
     spherical_geometry.F90
-    tuvx.F90
     util.F90
 )
 

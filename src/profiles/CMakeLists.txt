@@ -1,7 +1,7 @@
 ################################################################################
 # Profile source
 
-target_sources(tuvxlib
+target_sources(tuvx_object
   PRIVATE
     air.F90
     earth_sun_distance.F90

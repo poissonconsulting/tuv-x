@@ -1,7 +1,7 @@
 ################################################################################
 # Radiative transfer solver source
 
-target_sources(tuvxlib
+target_sources(tuvx_object
   PRIVATE
     delta_eddington.F90
     discrete_ordinant.F90

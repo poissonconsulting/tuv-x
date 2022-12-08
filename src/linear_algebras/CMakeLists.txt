@@ -1,7 +1,7 @@
 ################################################################################
 # Linear algebra source
 
-target_sources(tuvxlib
+target_sources(tuvx_object
   PRIVATE
     linpack.F90
 )

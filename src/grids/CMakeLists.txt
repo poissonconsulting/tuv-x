@@ -1,7 +1,7 @@
 ################################################################################
 # One dimensional grid source
 
-target_sources(tuvxlib
+target_sources(tuvx_object
   PRIVATE
     equal_delta.F90
     from_csv_file.F90

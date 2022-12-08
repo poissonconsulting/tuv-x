@@ -1,7 +1,7 @@
 ################################################################################
 # Cross section source
 
-target_sources(tuvxlib
+target_sources(tuvx_object
   PRIVATE
     acetone-ch3co_ch3.F90
     bro-br_o.F90

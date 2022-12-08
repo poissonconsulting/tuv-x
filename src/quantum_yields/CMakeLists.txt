@@ -1,7 +1,7 @@
 ################################################################################
 # Quantum yield source
 
-target_sources(tuvxlib
+target_sources(tuvx_object
   PRIVATE
     acetone-ch3co_ch3.F90
     c2h5cho.F90

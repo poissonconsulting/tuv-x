@@ -1,36 +1,64 @@
+include(CMakePackageConfigHelpers)
+
 install(
-  TARGETS tuvxlib
-  EXPORT tuvxlibTargets
+  TARGETS 
+    tuvx tuv-x
+  EXPORT 
+    tuvx_Exports
   LIBRARY DESTINATION ${INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
-  INCLUDES DESTINATION ${INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}
+  RUNTIME DESTINATION ${INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}
 )
-
 
 install(
-  CODE "file(GLOB_RECURSE MODULE_FILES \"${TUVX_MOD_DIR}/*.mod\")"
-  CODE "file(GLOB_RECURSE SUBMOD_FILES \"${TUVX_MOD_DIR}/*.smod\")"
-  CODE "file(INSTALL \${MODULE_FILES} DESTINATION ${INSTALL_MOD_DIR})"
-  CODE "file(INSTALL \${SUBMOD_FILES} DESTINATION ${INSTALL_MOD_DIR})"
-  )
-
-install(EXPORT tuvxlibTargets
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/tuvx-${CMAKE_Fortran_COMPILER_ID}
-  NAMESPACE musica::
-  FILE tuvx-${CMAKE_Fortran_COMPILER_ID}-config.cmake
+  DIRECTORY 
+    ${TUVX_MOD_DIR}/
+  DESTINATION 
+    ${INSTALL_MOD_DIR}
+  FILES_MATCHING PATTERN "*.mod"
 )
 
-install(EXPORT tuvxlibTargets
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/tuvx-${CMAKE_Fortran_COMPILER_ID}
-  NAMESPACE musica::
-  FILE tuvx-${CMAKE_Fortran_COMPILER_ID}Config.cmake 
+install(
+  DIRECTORY 
+    ${PROJECT_SOURCE_DIR}/data/
+  DESTINATION 
+    ${INSTALL_PREFIX}/data
 )
 
-string(TOLOWER ${CMAKE_Fortran_COMPILER_ID} compiler_id)
-install(EXPORT tuvxlibTargets
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/tuvx-${CMAKE_Fortran_COMPILER_ID}
+install(
+  DIRECTORY 
+    ${PROJECT_SOURCE_DIR}/examples/
+  DESTINATION 
+    ${INSTALL_PREFIX}/examples
+)
+
+install(
+  EXPORT 
+    tuvx_Exports
+  DESTINATION 
+    ${CMAKE_INSTALL_LIBDIR}/cmake/tuvx-${PROJECT_VERSION}
   NAMESPACE musica::
-  FILE tuvx-${compiler_id}-config.cmake
+)
+
+configure_package_config_file(
+  "${PROJECT_SOURCE_DIR}/cmake/tuvxConfig.cmake.in"
+  "${PROJECT_BINARY_DIR}/tuvxConfig.cmake"
+  INSTALL_DESTINATION
+    ${CMAKE_INSTALL_LIBDIR}/cmake/tuvx-${PROJECT_VERSION}
+)
+
+write_basic_package_version_file(
+  "${PROJECT_BINARY_DIR}/tuvxConfigVersion.cmake"
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion
+)
+
+install(
+  FILES
+    ${PROJECT_BINARY_DIR}/tuvxConfig.cmake
+    ${PROJECT_BINARY_DIR}/tuvxConfigVersion.cmake
+  DESTINATION
+    ${CMAKE_INSTALL_LIBDIR}/cmake/tuvx-${PROJECT_VERSION}
 )
 
 ######################################################################
@@ -40,7 +68,7 @@ install(EXPORT tuvxlibTargets
 if(NOT TARGET uninstall)
   configure_file(
     "${PROJECT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
     IMMEDIATE @ONLY)
 
   add_custom_target(uninstall

@@ -32,11 +32,13 @@ install(
     ${INSTALL_PREFIX}/examples
 )
 
+set(cmake_config_install_location ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/tuvx-${PROJECT_VERSION})
+
 install(
   EXPORT 
     tuvx_Exports
   DESTINATION 
-    ${CMAKE_INSTALL_LIBDIR}/cmake/tuvx-${PROJECT_VERSION}
+    ${cmake_config_install_location}
   NAMESPACE musica::
 )
 
@@ -44,7 +46,7 @@ configure_package_config_file(
   "${PROJECT_SOURCE_DIR}/cmake/tuvxConfig.cmake.in"
   "${PROJECT_BINARY_DIR}/tuvxConfig.cmake"
   INSTALL_DESTINATION
-    ${CMAKE_INSTALL_LIBDIR}/cmake/tuvx-${PROJECT_VERSION}
+    ${cmake_config_install_location}
 )
 
 write_basic_package_version_file(

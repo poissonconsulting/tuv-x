@@ -6,7 +6,6 @@ module tuvx_cross_section_factory
 ! :f:type:`~tuvx_cross_section_warehouse/cross_section_warehouse_t`.
 
   use tuvx_cross_section,              only : cross_section_t
-  use tuvx_cross_section_bro_br_o,     only : cross_section_bro_br_o_t
   use tuvx_cross_section_ccl4,         only : cross_section_ccl4_t
   use tuvx_cross_section_cfc11,        only : cross_section_cfc11_t
   use tuvx_cross_section_ch3coch3_ch3co_ch3,                                  &
@@ -74,9 +73,6 @@ contains
                                                            profile_warehouse )
       case( 'base' )
         new_cross_section => cross_section_t( config, grid_warehouse,         &
-                                                           profile_warehouse )
-      case( 'BrO+hv->Br+O' )
-        new_cross_section => cross_section_bro_br_o_t( config, grid_warehouse,&
                                                            profile_warehouse )
       case( 'CCl4+hv->Products' )
         new_cross_section => cross_section_ccl4_t( config, grid_warehouse,    &
@@ -173,8 +169,6 @@ contains
         name = "cross_section_t"
       type is( cross_section_rayliegh_t )
         name = "cross_section_rayliegh_t"
-      type is( cross_section_bro_br_o_t )
-        name = "cross_section_bro_br_o_t"
       type is( cross_section_ccl4_t )
         name = "cross_section_ccl4_t"
       type is( cross_section_cfc11_t )
@@ -243,8 +237,6 @@ contains
         allocate( cross_section_t :: cross_section )
       case( 'cross_section_rayliegh_t' )
         allocate( cross_section_rayliegh_t :: cross_section )
-      case( 'cross_section_bro_br_o_t' )
-        allocate( cross_section_bro_br_o_t :: cross_section )
       case( 'cross_section_ccl4_t' )
         allocate( cross_section_ccl4_t :: cross_section )
       case( 'cross_section_cfc11_t' )

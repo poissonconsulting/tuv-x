@@ -84,14 +84,23 @@
          },
          {
             "name": "O3",
-            "netcdf files": ["data/cross_sections/O3_1.nc","data/cross_sections/O3_2.nc","data/cross_sections/O3_3.nc","data/cross_sections/O3_4.nc"],
+            "netcdf files": [
+              { "file path": "data/cross_sections/O3_1.nc" },
+              { "file path": "data/cross_sections/O3_2.nc" },
+              { "file path": "data/cross_sections/O3_3.nc" },
+              { "file path": "data/cross_sections/O3_4.nc" }
+            ],
             "type": "O3"
          },
          {
             "name": "O2",
-            "netcdf files": ["data/cross_sections/O2_1.nc"],
-            "type": "base",
-            "lower extrapolation": { "type": "boundary" }
+            "netcdf files": [
+              {
+                "file path": "data/cross_sections/O2_1.nc",
+                "lower extrapolation": { "type": "boundary" }
+              }
+            ],
+            "type": "base"
          }
       ],
       "radiators": [

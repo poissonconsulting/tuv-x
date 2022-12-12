@@ -390,7 +390,7 @@ contains
       if( .not. found ) return
     end if
 
-    call assert_msg( 995888269, found,                                        &
+    call assert_msg( 995888269, l_found,                                      &
                      "Cannot find radiator '"//radiator%handle_//"'" )
 
     select type( w_radiator => this%radiators_( i_radiator )%val_ )

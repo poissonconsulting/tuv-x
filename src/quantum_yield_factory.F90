@@ -5,7 +5,7 @@ module tuvx_quantum_yield_factory
   ! The quantum_yield_factory module
   ! Builder of quantum yield calculators
 
-  use tuvx_quantum_yield,              only : quantum_yield_t, base_constructor
+  use tuvx_quantum_yield,              only : quantum_yield_t
   use tuvx_quantum_yield_tint,         only : quantum_yield_tint_t
   use tuvx_quantum_yield_no2_tint,     only : quantum_yield_no2_tint_t
   use tuvx_quantum_yield_o3_o2_o1d,    only : quantum_yield_o3_o2_o1d_t
@@ -63,9 +63,8 @@ contains
 
     select case( quantum_yield_type%to_char() )
       case( 'base' )
-        allocate( quantum_yield )
-        call base_constructor( quantum_yield, config, grid_warehouse,         &
-                               profile_warehouse )
+        quantum_yield => quantum_yield_t( config, grid_warehouse,             &
+                                          profile_warehouse )
       case( 'tint' )
         quantum_yield => quantum_yield_tint_t( config, grid_warehouse,        &
                                                profile_warehouse )

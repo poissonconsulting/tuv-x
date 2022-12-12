@@ -52,6 +52,8 @@ module tuvx_cross_section
     procedure :: mpi_pack
     ! Unpacks the cross section from a character buffer into the object
     procedure :: mpi_unpack
+    ! Processes a NetCDF input file
+    procedure :: process_file
   end type cross_section_t
 
   interface cross_section_t
@@ -71,7 +73,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   function constructor( config, grid_warehouse, profile_warehouse )           &
-      result( new_obj )
+      result( this )
     ! Create an instance of the base cross section type
 
     use musica_assert,                 only : assert_msg
@@ -80,119 +82,195 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    class(cross_section_t),    pointer       :: new_obj ! Base :f:type:`~tuvx_cross_section/cross_section_t` type
+    class(cross_section_t),    pointer       :: this ! Base :f:type:`~tuvx_cross_section/cross_section_t` type
     type(config_t),            intent(inout) :: config ! Cross section configuration object
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
-    type(string_t) :: required_keys(1), optional_keys(4)
+    type(string_t) :: required_keys(1), optional_keys(3)
 
     required_keys(1) = "type"
     optional_keys(1) = "netcdf files"
-    optional_keys(2) = "lower extrapolation"
-    optional_keys(3) = "upper extrapolation"
-    optional_keys(4) = "name"
+    optional_keys(2) = "name"
+    optional_keys(3) = "merge data"
     call assert_msg( 124969900,                                               &
                      config%validate( required_keys, optional_keys ),         &
                      "Bad configuration data format for "//                   &
                      "base cross section." )
-    allocate( new_obj )
-    call base_constructor( new_obj, config, grid_warehouse, profile_warehouse )
+    allocate( this )
+    call base_constructor( this, config, grid_warehouse, profile_warehouse )
 
   end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine base_constructor( new_obj, config, grid_warehouse,               &
+  subroutine base_constructor( this, config, grid_warehouse,               &
       profile_warehouse )
     ! Initialize cross_section_t objects
 
-    use musica_assert,                 only : die_msg
+    use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
+    use musica_iterator,               only : iterator_t
     use musica_string,                 only : string_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_grid,                     only : grid_t
-    use tuvx_interpolate,              only : interpolator_conserving_t
-    use tuvx_netcdf,                   only : netcdf_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
-    class(cross_section_t),    pointer       :: new_obj ! A :f:type:`~tuvx_cross_section/cross_section_t`
+    class(cross_section_t),    pointer       :: this ! A :f:type:`~tuvx_cross_section/cross_section_t`
     type(config_t),            intent(inout) :: config ! Cross section configuration object
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
     !   local variables
     character(len=*), parameter   :: Iam = 'base cross section initialize'
-    character(len=*), parameter   :: Hdr = 'cross_section_'
-
-    integer :: parmNdx, fileNdx
-    integer :: nParms
-    real(dk), allocatable :: data_lambda(:)
-    real(dk), allocatable :: data_parameter(:)
+    integer :: i_param, i_file
     logical :: found
-    character(len=:), allocatable :: msg
-    type(netcdf_t), allocatable :: netcdf_obj
-    type(string_t), allocatable :: netcdfFiles(:)
-    class(grid_t), pointer :: lambdaGrid
-    type(interpolator_conserving_t) :: interpolator
+    type(config_t) :: netcdf_files, netcdf_file
+    class(iterator_t), pointer :: iter
+    logical :: merge_data
 
     ! Get grid and profile pointers
-    new_obj%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
-    new_obj%height_grid_ = grid_warehouse%get_ptr( "height", "km" )
-    new_obj%temperature_profile_ =                                            &
-        profile_warehouse%get_ptr( "temperature", "K" )
-    lambdaGrid => grid_warehouse%get_grid( new_obj%wavelength_grid_ )
+    this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
+    this%height_grid_ = grid_warehouse%get_ptr( "height", "km" )
+    this%temperature_profile_ = profile_warehouse%get_ptr( "temperature", "K" )
 
-    !> get cross section netcdf filespec
-    call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
+    ! get cross section netcdf filespec
+    call config%get( 'netcdf files', netcdf_files, Iam, found = found )
+    if( .not. found ) return
+    iter => netcdf_files%get_iterator( )
 
-has_netcdf_file: &
-    if( found ) then
-      allocate( new_obj%cross_section_parms( size( netcdfFiles ) ) )
-file_loop: &
-      do fileNdx = 1, size( new_obj%cross_section_parms )
-        allocate( netcdf_obj )
-        ! read netcdf cross section parameters
-        call netcdf_obj%read_netcdf_file(                                     &
-                          file_path = netcdfFiles( fileNdx )%to_char( ),      &
-                          variable_name = Hdr )
-        nParms = size( netcdf_obj%parameters, dim = 2 )
-        if( nParms < 1 ) then
-          msg = Iam//'File: '//trim( netcdfFiles( fileNdx )%to_char( ) )//    &
-                       '  parameters array has < 1 column'
-          call die_msg( 520647236, msg )
-        endif
+    call config%get( 'merge data', merge_data, Iam, default = .false. )
 
-        ! interpolate from data to model wavelength grid
-        if( allocated( netcdf_obj%wavelength ) ) then
-          if( .not. allocated( new_obj%cross_section_parms( fileNdx )%array) )&
-              then
-            allocate( new_obj%cross_section_parms( fileNdx )%array(           &
-                                                lambdaGrid%ncells_, nParms ) )
-          endif
-          do parmNdx = 1, nParms
-            data_lambda    = netcdf_obj%wavelength
-            data_parameter = netcdf_obj%parameters( :, parmNdx )
-            call new_obj%add_points( config, data_lambda, data_parameter )
-            new_obj%cross_section_parms( fileNdx )%array( :, parmNdx ) =      &
-                interpolator%interpolate( x_target = lambdaGrid%edge_,        &
-                                          x_source = data_lambda,             &
-                                          y_source = data_parameter )
-          enddo
-        else
-          new_obj%cross_section_parms( fileNdx )%array = netcdf_obj%parameters
-        endif
-        if( allocated( netcdf_obj%temperature ) ) then
-          new_obj%cross_section_parms( fileNdx )%temperature =                &
-              netcdf_obj%temperature
-        endif
-        deallocate( netcdf_obj )
-      enddo file_loop
-    endif has_netcdf_file
+    allocate( this%cross_section_parms( netcdf_files%number_of_children( ) ) )
 
-    deallocate( lambdaGrid )
+    i_file = 0
+    do while( iter%next( ) )
+      call netcdf_files%get( iter, netcdf_file, Iam )
+      i_file = i_file + 1
+      if( merge_data ) i_file = 1
+      call this%process_file( netcdf_file, grid_warehouse,                    &
+                              this%cross_section_parms( i_file ) )
+    enddo
+
+    deallocate( iter )
 
   end subroutine base_constructor
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine process_file( this, config, grid_warehouse, parameters )
+    ! Processes a NetCDF input file for the cross section
+
+    use musica_assert,                 only : assert_msg
+    use musica_config,                 only : config_t
+    use musica_string,                 only : string_t
+    use tuvx_grid,                     only : grid_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_interpolate,              only : interpolator_t
+    use tuvx_netcdf,                   only : netcdf_t
+
+    class(cross_section_t),      intent(inout) :: this
+    type(config_t),              intent(inout) :: config
+    type(grid_warehouse_t),      intent(inout) :: grid_warehouse
+    type(cross_section_parms_t), intent(inout) :: parameters
+
+    character(len=*), parameter :: Iam = 'base cross section file reader'
+    character(len=*), parameter :: hdr = 'cross_section_'
+    class(grid_t), pointer :: wavelength_grid
+    type(string_t) :: file_path
+    type(netcdf_t), allocatable :: netcdf_obj
+    type(config_t) :: interpolator_config
+    class(interpolator_t), pointer :: interpolator
+    integer :: n_params, i_param
+    real(dk), allocatable :: data_lambda(:)
+    real(dk), allocatable :: data_parameter(:)
+    real(dk), allocatable :: work_parameter(:)
+    logical :: found
+    type(string_t) :: required_keys(1), optional_keys(5)
+    real(dk) :: bound
+    integer :: i_low, i_high
+
+    required_keys(1) = "file path"
+    optional_keys(1) = "interpolator"
+    optional_keys(2) = "lower extrapolation"
+    optional_keys(3) = "upper extrapolation"
+    optional_keys(4) = "zero below"
+    optional_keys(5) = "zero above"
+    call assert_msg( 538565562,                                               &
+                     config%validate( required_keys, optional_keys ),         &
+                     "Bad configuration data format for "//                   &
+                     "base cross section NetCDF file." )
+
+    wavelength_grid => grid_warehouse%get_grid( this%wavelength_grid_ )
+
+    ! read netcdf cross section parameters
+    allocate( netcdf_obj )
+    call config%get( "file path", file_path, Iam )
+    call netcdf_obj%read_netcdf_file( file_path = file_path%to_char( ),       &
+                                      variable_name = hdr )
+    n_params = size( netcdf_obj%parameters, dim = 2 )
+    call assert_msg( 681779091, n_params >= 1,                                &
+                     'File: '//file_path//' contains no parameters' )
+
+    call config%get( "interpolator", interpolator_config, Iam, found = found )
+    if( .not. found ) then
+      call interpolator_config%empty( )
+      call interpolator_config%add( "type", "conserving", Iam )
+    end if
+    interpolator => interpolator_t( interpolator_config )
+
+    ! trim data if specified
+    i_low = 1
+    i_high = wavelength_grid%ncells_
+    call config%get( "zero below", bound, Iam, found = found )
+    if( found ) then
+      do while( wavelength_grid%edge_( i_low ) < bound )
+        i_low = i_low + 1
+        call assert_msg( 395014916, i_low < i_high,                           &
+                         "Invalid lower bound specified for file "//file_path )
+      end do
+    end if
+    call config%get( "zero above", bound, Iam, found = found )
+    if( found ) then
+      do while( wavelength_grid%edge_( i_high ) > bound )
+        i_high = i_high - 1
+        call assert_msg( 434154076, i_high > i_low,                           &
+                         "Invalid upper bound specified for file "//file_path )
+      end do
+    end if
+
+    ! interpolate from data to model wavelength grid
+    if( allocated( netcdf_obj%wavelength ) ) then
+      if( .not. allocated( parameters%array ) )  then
+        allocate( parameters%array( wavelength_grid%ncells_, n_params ) )
+        parameters%array(:,:) = 0.0_dk
+      endif
+      call assert_msg( 622609278, size( parameters%array, 2 ) == n_params,    &
+                       "Cannot merge data with different shapes" )
+      allocate( work_parameter( wavelength_grid%ncells_ ) )
+      do i_param = 1, n_params
+        data_lambda    = netcdf_obj%wavelength
+        data_parameter = netcdf_obj%parameters( :, i_param )
+        call this%add_points( config, data_lambda, data_parameter )
+        work_parameter(:) =                                                   &
+            interpolator%interpolate( x_target = wavelength_grid%edge_,       &
+                                      x_source = data_lambda,                 &
+                                      y_source = data_parameter )
+        parameters%array( i_low:i_high, i_param ) =                           &
+                                  parameters%array( i_low:i_high, i_param ) + &
+                                  work_parameter( i_low:i_high )
+      enddo
+    else
+      parameters%array = netcdf_obj%parameters
+    endif
+    if( allocated( netcdf_obj%temperature ) ) then
+      parameters%temperature = netcdf_obj%temperature
+    endif
+
+    deallocate( interpolator    )
+    deallocate( netcdf_obj      )
+    deallocate( wavelength_grid )
+
+  end subroutine process_file
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

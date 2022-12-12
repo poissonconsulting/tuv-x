@@ -45,10 +45,11 @@ contains
 
     use musica_assert,                 only : assert_msg, die_msg
     use musica_config,                 only : config_t
+    use musica_iterator,               only : iterator_t
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_interpolate,              only : interpolator_conserving_t
+    use tuvx_interpolate,              only : interpolator_t
     use tuvx_netcdf,                   only : netcdf_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
@@ -77,9 +78,12 @@ contains
     logical :: found, monopos
     character(len=:), allocatable :: msg
     type(netcdf_t),   allocatable :: netcdf_obj
-    type(string_t),   allocatable :: netcdfFiles(:)
+    type(config_t) :: netcdf_files, netcdf_file
+    class(iterator_t), pointer :: iter
+    type(string_t) :: file_path
     class(grid_t),    pointer     :: lambdaGrid
-    type(interpolator_conserving_t) :: interpolator
+    type(config_t) :: interpolator_config
+    class(interpolator_t), pointer :: interpolator
     type(string_t) :: required_keys(2), optional_keys(3)
 
     required_keys(1) = "type"
@@ -102,38 +106,38 @@ contains
     lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     ! get cross section netcdf filespec
-    call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
+    call config%get( 'netcdf files', netcdf_files, Iam )
+    iter => netcdf_files%get_iterator( )
 
-    ! ensure NetCDF Files are present
-    call assert_msg( 436730636, found,                                        &
-                     Iam//'must have netcdf input files' )
-    call assert_msg( 430013090, size( netcdfFiles ) .ge. 2,                   &
+    ! ensure the correct number of NetCDF Files are present
+    call assert_msg( 430013090, netcdf_files%number_of_children( ) .ge. 2,    &
                      Iam//' must have at least two netcdf input files' )
-    allocate( this%cross_section_parms( size( netcdfFiles ) ) )
+    allocate( this%cross_section_parms( netcdf_files%number_of_children( ) ) )
     allocate( refracNdx(0) )
-file_loop: &
-    do fileNdx = 1, size( this%cross_section_parms )
+
+    fileNdx = 0
+    do while( iter%next( ) )
+      call netcdf_files%get( iter, netcdf_file, Iam )
+      fileNdx = fileNdx + 1
+
       allocate( netcdf_obj )
       ! read netcdf cross section parameters
-      call netcdf_obj%read_netcdf_file(                                       &
-                   file_path = netcdfFiles( fileNdx )%to_char( ),             &
-                   variable_name = Hdr )
+      call netcdf_file%get( "file path", file_path, Iam )
+      call netcdf_obj%read_netcdf_file( file_path = file_path%to_char( ),     &
+                                        variable_name = Hdr )
       nParms = size( netcdf_obj%parameters, dim = 2 )
       ! must have at least one parameter
       call assert_msg( 469152250, nParms >= 1,                                &
-                       Iam//'File: '//                                        &
-                       trim( netcdfFiles( fileNdx )%to_char( ) )//            &
+                       Iam//'File: '//file_path//                             &
                        '  array must have 1 or more parameters' )
       call assert_msg( 744909953, nParms >= 4 .or. fileNdx .ne. 2,            &
-                       Iam//'File: '//                                        &
-                       trim( netcdfFiles( fileNdx )%to_char( ) )//            &
+                       Iam//'File: '//file_path//                             &
                        '  array must have 4 or more parameters' )
 
       ! refraction index
       call assert_msg( 218168625, allocated( netcdf_obj%wavelength ),         &
                        "Missing wavelengths in O3 temperature integrated "//  &
-                       "cross section data file '"//                          &
-                       netcdfFiles( fileNdx )//"'" )
+                       "cross section data file '"//file_path//"'" )
       refracNdx = this%refraction( netcdf_obj%wavelength, refracDensity )
       netcdf_obj%wavelength = refracNdx * netcdf_obj%wavelength
 
@@ -141,8 +145,7 @@ file_loop: &
 
       ! interpolation temperatures must be in netcdf file
       call assert_msg( 724757315, allocated( netcdf_obj%temperature ),        &
-                       Iam//'File: '//                                        &
-                       trim( netcdfFiles( fileNdx )%to_char( ) )//            &
+                       Iam//'File: '//file_path//                             &
                        ' must have interpolation temperatures' )
       Xsection%temperature = netcdf_obj%temperature
       nTemps = size( Xsection%temperature )
@@ -152,8 +155,7 @@ file_loop: &
         monopos = all( Xsection%deltaT > rZERO )
         if( .not. monopos ) then
           if( any( Xsection%deltaT > rZERO ) ) then
-            write(msg,*) Iam//'File: ',                                       &
-                         trim( netcdfFiles( fileNdx )%to_char( ) ),           &
+            write(msg,*) Iam//'File: '//file_path//                           &
                          '  temperature array not monotonic'
             call die_msg( 175583000, msg )
           endif
@@ -177,6 +179,13 @@ file_loop: &
         if( .not. allocated( Xsection%array ) ) then
           allocate( Xsection%array( lambdaGrid%ncells_, nParms ) )
         endif
+        call netcdf_file%get( "interpolator", interpolator_config, Iam,       &
+                              found = found )
+        if( .not. found ) then
+          call interpolator_config%empty( )
+          call interpolator_config%add( "type", "conserving", Iam )
+        end if
+        interpolator => interpolator_t( interpolator_config )
         do parmNdx = 1, nParms
           data_lambda    = netcdf_obj%wavelength
           data_parameter = netcdf_obj%parameters( :, parmNdx )
@@ -186,18 +195,20 @@ file_loop: &
                                           x_source = data_lambda,             &
                                           y_source = data_parameter )
         enddo
+        deallocate( interpolator )
       else
         Xsection%array = netcdf_obj%parameters
       endif
       end associate
       deallocate( netcdf_obj )
-    enddo file_loop
+    enddo
     this%v185 = this%refraction( (/ w185 /), refracDensity ) * w185
     this%v195 = this%refraction( (/ w195 /), refracDensity ) * w195
     this%v345 = this%refraction( (/ w345 /), refracDensity ) * w345
     this%cross_section_parms(2)%array(:,4) =                                  &
         this%cross_section_parms(1)%array(:,1)
 
+    deallocate( iter       )
     deallocate( lambdaGrid )
 
   end function constructor

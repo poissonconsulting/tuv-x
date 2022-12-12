@@ -38,8 +38,7 @@ contains
     use musica_config,                 only : config_t
     use tuvx_constants,                only : nzero, pzero
     use tuvx_diagnostic_util,          only : diagout
-    use tuvx_interpolate,              only : interpolator_t,                 &
-                                              interpolator_fractional_source_t
+    use tuvx_interpolate,              only : interpolator_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
@@ -50,19 +49,20 @@ contains
     type(profile_warehouse_t), intent(inout) :: profile_warehouse ! profile warehouse
 
     ! Local variables
-    character(len=*), parameter   :: Iam = "Aerosol radiator constructor"
-    real(dk), parameter           :: scaling_factor = 550._dk/340._dk
+    character(len=*), parameter    :: Iam = "Aerosol radiator constructor"
+    real(dk), parameter            :: scaling_factor = 550._dk/340._dk
 
-    integer                       :: k, nInputBins, binNdx
-    real(dk)                      :: tau550, alpha, wscaling, ODscaling
-    real(dk)                      :: coldens
-    real(dk), allocatable         :: input_OD(:), rad_OD(:)
-    real(dk)                      :: input_SSA
-    real(dk)                      :: input_G
-    real(dk), allocatable         :: input_zgrid(:)
-    real(dk), allocatable         :: winput_SSA(:), winput_G(:)
-    type(string_t)                :: required_keys(5), optional_keys(2)
-    class(grid_t),             pointer :: zGrid, lambdaGrid
+    integer                        :: k, nInputBins, binNdx
+    real(dk)                       :: tau550, alpha, wscaling, ODscaling
+    real(dk)                       :: coldens
+    real(dk), allocatable          :: input_OD(:), rad_OD(:)
+    real(dk)                       :: input_SSA
+    real(dk)                       :: input_G
+    real(dk), allocatable          :: input_zgrid(:)
+    real(dk), allocatable          :: winput_SSA(:), winput_G(:)
+    type(string_t)                 :: required_keys(5), optional_keys(2)
+    class(grid_t),         pointer :: zGrid, lambdaGrid
+    type(config_t)                 :: interpolator_config
     class(interpolator_t), pointer :: theInterpolator
 
     required_keys(1) = "type"
@@ -95,7 +95,10 @@ contains
     allocate( this%state_%layer_G_(   zGrid%ncells_, lambdaGrid%ncells_, 1 ) )
 
     ! set up the interpolator
-    allocate( interpolator_fractional_source_t :: theInterpolator )
+    call interpolator_config%empty( )
+    call interpolator_config%add( "type", "fractional source", Iam )
+    call interpolator_config%add( "fold in", .true., Iam )
+    theInterpolator => interpolator_t( interpolator_config )
 
     ! read json config
     call config%get( "optical depths", input_OD, Iam )
@@ -111,7 +114,7 @@ contains
 
       input_zgrid = (/ (real( k, dk ), k = 0, nInputBins - 1 ) /)
       rad_OD =                                                                &
-          theInterpolator%interpolate( zGrid%edge_, input_zgrid, input_OD, 1 )
+          theInterpolator%interpolate( zGrid%edge_, input_zgrid, input_OD )
       call diagout( 'cz.aer.new', rad_OD, enable )
       do binNdx = 1, lambdaGrid%ncells_
         this%state_%layer_OD_( :, binNdx ) = rad_OD
@@ -125,7 +128,7 @@ contains
     call config%get( "single scattering albedo", input_SSA, Iam )
     winput_SSA = input_OD( : nInputBins - 1 ) * input_SSA
     this%state_%layer_SSA_( :, 1 ) =                                          &
-        theInterpolator%interpolate( zGrid%edge_, input_zgrid,winput_SSA, 1 )
+        theInterpolator%interpolate( zGrid%edge_, input_zgrid,winput_SSA )
     call diagout( 'omz.aer.new', this%state_%layer_SSA_( :, 1 ),              &
       this%enable_diagnostics_ )
     do binNdx = 2, lambdaGrid%ncells_
@@ -136,7 +139,7 @@ contains
     call config%get( "asymmetry factor", input_G, Iam )
     winput_G = input_OD( : nInputBins - 1 ) * input_G
     this%state_%layer_G_( :, 1, 1 ) =                                         &
-        theInterpolator%interpolate( zGrid%edge_, input_zgrid, winput_G, 1 )
+        theInterpolator%interpolate( zGrid%edge_, input_zgrid, winput_G )
     call diagout( 'gz.aer.new', this%state_%layer_G_( :, 1, 1 ),              &
                   this%enable_diagnostics_ )
     do binNdx = 2, lambdaGrid%ncells_

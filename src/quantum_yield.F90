@@ -48,12 +48,49 @@ module tuvx_quantum_yield
     procedure :: mpi_unpack
   end type quantum_yield_t
 
+  interface quantum_yield_t
+    module procedure :: constructor
+  end interface quantum_yield_t
+
   type quantum_yield_ptr
     ! Pointer type for building sets of quantum yields
     class(quantum_yield_t), pointer :: val_ => null( )
   end type quantum_yield_ptr
 
 contains
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function constructor( config, grid_warehouse, profile_warehouse )           &
+      result( this )
+    ! Constructor of the base quantum yield type
+
+    use musica_assert,                 only : assert_msg
+    use musica_config,                 only : config_t
+    use musica_string,                 only : string_t
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
+
+    class(quantum_yield_t),    pointer       :: this
+    type(config_t),            intent(inout) :: config            ! Quantum yield configuration data
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse
+
+    type(string_t) :: required_keys(1), optional_keys(5)
+
+    required_keys(1) = "type"
+    optional_keys(1) = "netcdf files"
+    optional_keys(2) = "lower extrapolation"
+    optional_keys(3) = "upper extrapolation"
+    optional_keys(4) = "name"
+    optional_keys(5) = "constant value"
+    call assert_msg( 860224341,                                               &
+                     config%validate( required_keys, optional_keys ),         &
+                     "Bad configration data format for base quantum yield." )
+    allocate( this )
+    call base_constructor( this, config, grid_warehouse, profile_warehouse )
+
+  end function constructor
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

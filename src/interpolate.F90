@@ -18,10 +18,19 @@ module tuvx_interpolate
   type, abstract :: interpolator_t
     ! General interpolator interface
     character(len=10) :: handle_
+    !  fold_in - Switch for folding option of "overhang" data
+    !            fold_in = true ->  No folding of "overhang" data
+    !            fold_in = false -> Integerate "overhang" data and fold back into
+    !                               last target bin
+    ! (Only available for fractional-type interpolators
+    logical :: fold_in_ = .false.
   contains
     procedure(interpolate), deferred :: interpolate
   end type interpolator_t
 
+  interface interpolator_t
+    module procedure :: constructor
+  end interface interpolator_t
 
   type, extends(interpolator_t) :: interpolator_linear_t
     ! Standard linear interpolator
@@ -53,8 +62,7 @@ interface
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function interpolate( this, x_target, x_source, y_source, fold_in )         &
-      result( y_target )
+  function interpolate( this, x_target, x_source, y_source ) result( y_target )
     ! Interpolates data in y_source on the x_source axis, to y_target on the
     ! x_target axis
 
@@ -66,7 +74,6 @@ interface
     real(dk),              intent(in)    :: x_target(:) ! Target axis
     real(dk),              intent(in)    :: x_source(:) ! Source axis
     real(dk),              intent(in)    :: y_source(:) ! Source data
-    integer, optional,     intent(in)    :: fold_in     ! Switch for folding option of "overhang" data
 
     real(dk), allocatable :: y_target(:) ! Target data
 
@@ -80,7 +87,52 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function interpolate_linear( this, x_target, x_source, y_source, fold_in )  &
+  !> General constructor for interpolators
+  function constructor( config ) result( this )
+
+    use musica_assert,                 only : assert_msg, die_msg
+    use musica_config,                 only : config_t
+    use musica_string,                 only : string_t
+
+    class(interpolator_t), pointer       :: this
+    type(config_t),        intent(inout) :: config
+
+    character(len=*), parameter :: Iam = "interpolator builder"
+    type(string_t) :: type_name
+    type(string_t) :: required_keys(1), optional_keys(1)
+    logical :: fold_in
+
+    required_keys(1) = "type"
+    optional_keys(1) = "fold in"
+    call assert_msg( 664183024,                                               &
+                     config%validate( required_keys, optional_keys ),         &
+                     "Bad configuration data format for interpolator." )
+
+    call config%get( "type", type_name, Iam )
+    call config%get( "fold in", fold_in, Iam, default = .false. )
+    select case( type_name%to_char( ) )
+    case( "linear" )
+      call assert_msg( 308267064, .not. fold_in,                              &
+                       "Fold-in not available for linear interpolator." )
+      allocate( interpolator_linear_t :: this )
+    case( "conserving" )
+      call assert_msg( 247069732, .not. fold_in,                              &
+                       "Fold-in not available for conserving interpolator." )
+      allocate( interpolator_conserving_t :: this )
+    case( "fractional source" )
+      allocate( interpolator_fractional_source_t :: this )
+    case( "fractional target" )
+      allocate( interpolator_fractional_target_t :: this )
+    case default
+      call die_msg( 899635451, "Invalid interpolator: '"//type_name//"'" )
+    end select
+    this%fold_in_ = fold_in
+
+  end function constructor
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function interpolate_linear( this, x_target, x_source, y_source )           &
       result( y_target )
     !  Standard linear interpolation
     !
@@ -103,7 +155,6 @@ contains
     real(dk),                     intent(in)    :: x_target(:) ! Target axis
     real(dk),                     intent(in)    :: x_source(:) ! Source axis
     real(dk),                     intent(in)    :: y_source(:) ! Source data
-    integer, optional,            intent(in)    :: fold_in     ! Not used
 
     real(dk), allocatable :: y_target(:)
 
@@ -140,8 +191,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function interpolate_conserving( this, x_target, x_source, y_source,        &
-      fold_in ) result( y_target )
+  function interpolate_conserving( this, x_target, x_source, y_source )       &
+      result( y_target )
     !  Area-conserving linear interpolation
     !
     !  Map input data given on single, discrete points onto a set of target
@@ -169,7 +220,6 @@ contains
     real(dk),                         intent(in)    :: x_target(:) ! Target axis
     real(dk),                         intent(in)    :: x_source(:) ! Source axis
     real(dk),                         intent(in)    :: y_source(:) ! Source data
-    integer, optional,                intent(in)    :: fold_in     ! Not used
 
     real(dk), allocatable   :: y_target(:)
 
@@ -261,8 +311,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function interpolate_fractional_source( this, x_target, x_source, y_source, &
-      fold_in ) result( y_target )
+  function interpolate_fractional_source( this, x_target, x_source, y_source )&
+      result( y_target )
     !  Interpolation based on fractional overlap of grid sections relative
     !  to the source grid section width.
     !
@@ -287,10 +337,6 @@ contains
     !  vertical profiles that directly affect the total optical depth of the
     !  model atmosphere.
     !
-    !  fold_in - Switch for folding option of "overhang" data
-    !            fold_in = 0 -> No folding of "overhang" data
-    !            fold_in = 1 -> Integerate "overhang" data and fold back into
-    !                           last target bin
 
     use musica_assert, only : die_msg
 
@@ -298,7 +344,6 @@ contains
     real(dk),                                intent(in)    :: x_target(:) ! Target axis
     real(dk),                                intent(in)    :: x_source(:) ! Source axis
     real(dk),                                intent(in)    :: y_source(:) ! Source data
-    integer, optional,                       intent(in)    :: fold_in     ! Switch for folding option of "overhang" data
 
     real(dk), allocatable   :: y_target(:)
 
@@ -306,17 +351,6 @@ contains
     integer :: jstart, i, j, k, ntobins
     real(dk)    :: a1, a2, sum
     real(dk)    :: tail
-    logical :: do_fold_in
-
-    ! check whether flag given is legal
-    if( present( fold_in ) ) then
-      if( fold_in /= 0 .and. fold_in /= 1 ) then
-        call die_msg( 433268466, 'fold_in must be 0 or 1' )
-      endif
-      do_fold_in = fold_in == 1
-    else
-      call die_msg( 828062060, 'fold_in argument not present' )
-    endif
 
     allocate( y_target( size( x_target ) - 1 ) )
 
@@ -359,7 +393,7 @@ contains
     enddo
 
     ! integrate data "overhang" and fold back into last target bin
-    if ( do_fold_in ) then
+    if ( this%fold_in_ ) then
        j = j - 1
        a1 = xto( nto )           ! upper limit of last interpolated bin
        a2 = xfrom( j + 1 )    ! upper limit of last input bin considered
@@ -379,8 +413,8 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function interpolate_fractional_target( this, x_target, x_source, y_source, &
-      fold_in ) result( y_target )
+  function interpolate_fractional_target( this, x_target, x_source, y_source )&
+      result( y_target )
     !  Interpolation based on fractional overlap of grid sections relative
     !  to the target grid section width.
     !
@@ -404,11 +438,6 @@ contains
     !  last target bin.  Using this option is recommended when re-gridding
     !  vertical profiles that directly affect the total optical depth of the
     !  model atmosphere.
-    !
-    !  fold_in - Switch for folding option of "overhang" data
-    !            fold_in = 0 -> No folding of "overhang" data
-    !            fold_in = 1 -> Integerate "overhang" data and fold back into
-    !                           last target bin
 
     use musica_assert, only : die_msg
 
@@ -416,7 +445,6 @@ contains
     real(dk),                                intent(in)    :: x_target(:) ! Target axis
     real(dk),                                intent(in)    :: x_source(:) ! Source axis
     real(dk),                                intent(in)    :: y_source(:) ! Source data
-    integer, optional,                       intent(in)    :: fold_in     ! Switch for folding option of "overhang" data
 
     real(dk), allocatable :: y_target(:)
 
@@ -424,17 +452,6 @@ contains
     integer :: jstart, i, j, k
     real(dk)    :: a1, a2, sum
     real(dk)    :: tail
-    logical :: do_fold_in
-
-    ! check whether flag given is legal
-    if( present( fold_in ) ) then
-      if( fold_in /= 0 .and. fold_in /= 1 ) then
-        call die_msg( 322855655, 'fold_in must be 0 or 1' )
-      endif
-      do_fold_in = fold_in == 1
-    else
-      call die_msg( 152698751, 'fold_in argument not present' )
-    endif
 
     n  = size( x_source )
     ng = size( x_target )
@@ -467,8 +484,9 @@ contains
          y_target( i ) = sum / ( x_target( i + 1 ) - x_target( i ) )
       endif
     enddo
+
     ! integrate data "overhang" and fold back into last bin
-    if( do_fold_in ) then
+    if( this%fold_in_ ) then
        j = j - 1
        a1 = x_target( ng )       ! upper limit of last interpolated bin
        a2 = x_source( j + 1 ) ! upper limit of last input bin considered

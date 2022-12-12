@@ -37,6 +37,16 @@
    fun:MAIN__
    fun:main
 }
+{
+   <thread_unknown_inline_function>
+   Memcheck:Param
+   writev(vector[...])
+   ...
+   fun:UnknownInlinedFun
+   ...
+   fun:start_thread
+   fun:thread_start
+}
 ###############################################################
 #
 # MPI suppressions
@@ -79,6 +89,13 @@
    fun:*alloc
    ...
    fun:orte_daemon
+   ...
+}
+{
+   <unknown_inlined_function_user>
+   Memcheck:User
+   ...
+   fun:UnknownInlinedFun
    ...
 }
 ###############################################################

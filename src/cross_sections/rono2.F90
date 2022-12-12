@@ -34,10 +34,11 @@ contains
     use musica_assert,                 only : assert_msg, die_msg
     use musica_config,                 only : config_t
     use musica_constants,              only : dk => musica_dk
+    use musica_iterator,               only : iterator_t
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
-    use tuvx_interpolate,              only : interpolator_conserving_t
+    use tuvx_interpolate,              only : interpolator_t
     use tuvx_netcdf,                   only : netcdf_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
@@ -59,10 +60,13 @@ contains
     character(len=:), allocatable :: msg
     character(len=:), allocatable :: addpntKey
     type(netcdf_t),   allocatable :: netcdf_obj
-    type(string_t),   allocatable :: netcdfFiles(:)
+    type(config_t) :: netcdf_files, netcdf_file
+    class(iterator_t), pointer :: iter
+    type(string_t) :: file_path
     type(config_t)                :: tmp_config, extrap_config
     class(grid_t),    pointer     :: lambdaGrid
-    type(interpolator_conserving_t) :: interpolator
+    type(config_t) :: interpolator_config
+    class(interpolator_t), pointer :: interpolator
     type(string_t) :: required_keys(2), optional_keys(3)
 
     required_keys(1) = "type"
@@ -85,64 +89,72 @@ contains
     lambdaGrid => grid_warehouse%get_grid( this%wavelength_grid_ )
 
     ! get cross section netcdf filespec
-    call config%get( 'netcdf files', netcdfFiles, Iam, found = found )
+    call config%get( 'netcdf files', netcdf_files, Iam )
+    iter => netcdf_files%get_iterator( )
 
-has_netcdf_file:                                                              &
-    if( found ) then
-      allocate( this%cross_section_parms( size( netcdfFiles ) ) )
-file_loop:                                                                    &
-      do fileNdx = 1, size( this%cross_section_parms )
-        allocate( netcdf_obj )
-        ! read netcdf cross section parameters
-        call netcdf_obj%read_netcdf_file(                                     &
-                     file_path = netcdfFiles( fileNdx )%to_char( ),           &
-                     variable_name  = Hdr )
-        nParms = size( netcdf_obj%parameters, dim = 2 )
-        if( nParms < 1 ) then
-          write(msg,*) Iam//'File: ',                                         &
-                       trim(netcdfFiles( fileNdx )%to_char( ) ),              &
-                       '  parameters array has < 1 column'
-          call die_msg( 817384176, msg )
+    allocate( this%cross_section_parms( netcdf_files%number_of_children( ) ) )
+
+    fileNdx = 0
+    do while( iter%next( ) )
+      call netcdf_files%get( iter, netcdf_file, Iam )
+      fileNdx = fileNdx + 1
+
+      allocate( netcdf_obj )
+      ! read netcdf cross section parameters
+      call netcdf_file%get( "file path", file_path, Iam )
+      call netcdf_obj%read_netcdf_file( file_path = file_path%to_char( ),     &
+                                        variable_name  = Hdr )
+      nParms = size( netcdf_obj%parameters, dim = 2 )
+      call assert_msg( 236151624, nParms >= 1,                                &
+                       'File: '//file_path//' contains no parameters.' )
+
+      call netcdf_file%get( "interpolator", interpolator_config, Iam,         &
+                            found = found )
+      if( .not. found ) then
+        call interpolator_config%empty( )
+        call interpolator_config%add( "type", "conserving", Iam )
+      end if
+      interpolator => interpolator_t( interpolator_config )
+
+      ! interpolate from data to model wavelength grid
+      if( allocated( netcdf_obj%wavelength ) ) then
+        if( .not. allocated( this%cross_section_parms( fileNdx )%array ) )    &
+            then
+          allocate( this%cross_section_parms(                                 &
+                             fileNdx )%array( lambdaGrid%ncells_, nParms ) )
         endif
-
-        ! interpolate from data to model wavelength grid
-        if( allocated( netcdf_obj%wavelength ) ) then
-          if( .not. allocated( this%cross_section_parms( fileNdx )%array ) )  &
-              then
-            allocate( this%cross_section_parms(                               &
-                               fileNdx )%array( lambdaGrid%ncells_, nParms ) )
+        do parmNdx = 1, nParms
+          data_lambda    = netcdf_obj%wavelength
+          data_parameter = netcdf_obj%parameters( :, parmNdx )
+          if( parmNdx == 1 ) then
+            call this%add_points( config, data_lambda, data_parameter )
+          elseif( parmNdx == 2 ) then
+            tmp_config = config
+            addpntKey = 'lower extrapolation'
+            call extrap_config%empty( )
+            call extrap_config%add( 'type', 'boundary', Iam )
+            call tmp_config%add( addpntKey, extrap_config, Iam )
+            addpntKey = 'upper extrapolation'
+            call tmp_config%add( addpntKey, extrap_config, Iam )
+            call this%add_points( tmp_config, data_lambda, data_parameter )
           endif
-          do parmNdx = 1, nParms
-            data_lambda    = netcdf_obj%wavelength
-            data_parameter = netcdf_obj%parameters( :, parmNdx )
-            if( parmNdx == 1 ) then
-              call this%add_points( config, data_lambda, data_parameter )
-            elseif( parmNdx == 2 ) then
-              tmp_config = config
-              addpntKey = 'lower extrapolation'
-              call extrap_config%empty( )
-              call extrap_config%add( 'type', 'boundary', Iam )
-              call tmp_config%add( addpntKey, extrap_config, Iam )
-              addpntKey = 'upper extrapolation'
-              call tmp_config%add( addpntKey, extrap_config, Iam )
-              call this%add_points( tmp_config, data_lambda, data_parameter )
-            endif
-            this%cross_section_parms( fileNdx )%array( :, parmNdx ) =         &
-                interpolator%interpolate( x_target = lambdaGrid%edge_,        &
-                                          x_source = data_lambda,             &
-                                          y_source = data_parameter )
-          enddo
-        else
-          this%cross_section_parms( fileNdx )%array = netcdf_obj%parameters
-        endif
-        if( allocated( netcdf_obj%temperature ) ) then
-          this%cross_section_parms( fileNdx )%temperature =                   &
-              netcdf_obj%temperature
-        endif
-        deallocate( netcdf_obj )
-      enddo file_loop
-    endif has_netcdf_file
+          this%cross_section_parms( fileNdx )%array( :, parmNdx ) =           &
+              interpolator%interpolate( x_target = lambdaGrid%edge_,          &
+                                        x_source = data_lambda,               &
+                                        y_source = data_parameter )
+        enddo
+      else
+        this%cross_section_parms( fileNdx )%array = netcdf_obj%parameters
+      endif
+      if( allocated( netcdf_obj%temperature ) ) then
+        this%cross_section_parms( fileNdx )%temperature =                     &
+            netcdf_obj%temperature
+      endif
+      deallocate( interpolator )
+      deallocate( netcdf_obj   )
+    enddo
 
+    deallocate( iter       )
     deallocate( lambdaGrid )
 
   end function constructor

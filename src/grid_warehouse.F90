@@ -354,7 +354,7 @@ contains
       if( .not. found ) return
     end if
 
-    call assert_msg( 311845931, found,                                        &
+    call assert_msg( 311845931, l_found,                                      &
                      "Cannot find grid '"//grid%handle_//"'" )
 
     select type( w_grid => this%grids_( i_grid )%val_ )

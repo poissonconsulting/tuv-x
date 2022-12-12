@@ -360,7 +360,7 @@ contains
       if( .not. found ) return
     end if
 
-    call assert_msg( 348928409, found,                                        &
+    call assert_msg( 348928409, l_found,                                      &
                      "Cannot find profile '"//profile%handle_//"'" )
 
     select type( w_profile => this%profiles_( i_profile )%val_ )

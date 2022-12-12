@@ -726,7 +726,20 @@ follows:
 
    {
      "type": "base",
-     "netcdf files": [ "path/to/my/netcdf/file.nc" ]
+     "netcdf files": [
+       {
+         "file path": "path/to/my/netcdf/file.nc",
+         "lower extrapolation": {
+           "type": "boundary"
+         },
+         "upper extrapotion": {
+           "type": "constant",
+           "value": 0.0
+         },
+         "zero below": 215.4,
+         "zero above": 768.4
+       }
+     ]
    }
 
 
@@ -748,7 +761,22 @@ The ``cross_section_parameters`` array should hold the value
 of the cross section at each wavelength.
 TUV-x will interpolate the cross section
 data onto the TUV-x wavelength grid, as specified by the
-"wavelength" grid..
+"wavelength" grid.
+
+For objects in the ``netcdf files`` array, the ``file path``
+is required. The remaining keys are optional.
+
+The ``lower extrapolation`` and ``upper extrapolation``
+keys will append data beyond the lower and upper limits
+of the input data set, respectively. When the ``type``
+is ``boundary``, the last data point in the data set is
+used for all points beyond the last point. When the
+``type`` is ``constant`` a user-specified ``value`` is
+used for all points beyond the last point.
+
+The ``zero above`` and ``zero below`` keys are used to
+zero all points from the file above or below the
+specified wavelength values AFTER INTERPOLATION.
 
 A number of custom cross section types have been developed
 when more complex algorithms are needed to calculate

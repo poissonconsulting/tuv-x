@@ -13,6 +13,7 @@ add_subdirectory(quantum_yield)
 add_subdirectory(radiative_transfer)
 add_subdirectory(radiator)
 add_subdirectory(spectral_weight)
+add_subdirectory(tuv_doug)
 
 ################################################################################
 # TUV-x tests

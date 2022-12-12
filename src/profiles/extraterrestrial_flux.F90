@@ -218,8 +218,7 @@ contains
 
       ! interpolate from source to model wavelength grid
       interpolatedEtfl = theInterpolator%interpolate( &
-        lambdaGrid%edge_, inputGrid, inputData, fold_in=0 &
-      )
+        lambdaGrid%edge_, inputGrid, inputData )
       if( .not. allocated( this%mid_val_ ) ) then
         allocate( this%mid_val_,mold=interpolatedEtfl )
         this%mid_val_ = 0.0_dk

@@ -51,7 +51,7 @@ contains
     if( xnew < x(1) ) then
       insertNdx = 1
     else if( xnew > x( n ) ) then
-      insertNdx = n
+      insertNdx = n + 1
     else
       found = .false.
       do insertNdx = 2, n
@@ -70,7 +70,7 @@ contains
     if( insertNdx == 1 ) then
       x = [ xnew, x ]
       y = [ ynew, y ]
-    elseif( insertNdx == n ) then
+    elseif( insertNdx == n + 1 ) then
       x = [ x, xnew ]
       y = [ y, ynew ]
     else

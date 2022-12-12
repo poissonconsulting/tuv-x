@@ -1,9 +1,0 @@
-{
-  "cross sections" : [
-    {
-      "name": "base",
-      "netcdf files": [ "test/data/cross_sections/cross_section.BrO.nc" ],
-      "type": "BrO+hv->Br+O"
-    }
-  ]
-}

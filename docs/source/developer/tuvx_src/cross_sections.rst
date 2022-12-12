@@ -50,10 +50,6 @@ Cross Section Factory
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. f:automodule:: tuvx_cross_section_ch3coch3_ch3co_ch3
 
-:math:`BrO+hv \rightarrow Br + O`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. f:automodule:: tuvx_cross_section_bro_br_o
-
 :math:`CCl_4 \rightarrow` Products
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. f:automodule:: tuvx_cross_section_ccl4

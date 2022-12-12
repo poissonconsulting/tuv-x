@@ -55,7 +55,7 @@ contains
     call assert( code, &
       size( results, dim = 2 ) == size( expected_results, dim = 2) )
     do i_wavelength = 1, size( results, dim = 2 )
-      do i_level = 2, size( results, dim = 1 )
+      do i_level = 1, size( results, dim = 1 )
         call assert( code, almost_equal(                                      &
           results( i_level, i_wavelength ),                                   &
           expected_results( i_level, i_wavelength ),                          &
@@ -108,7 +108,7 @@ contains
     call assert( 963555019, &
       size( results, dim = 2 ) == size( expected_results, dim = 2) )
     do i_wavelength = 1, size( results, dim = 2 )
-      do i_level = 2, size( results, dim = 1 )
+      do i_level = 1, size( results, dim = 1 )
         call assert( 228447617, almost_equal(                                 &
           results( i_level, i_wavelength ),                                   &
           expected_results( i_level, i_wavelength ),                          &

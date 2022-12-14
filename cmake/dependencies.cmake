@@ -58,6 +58,12 @@ pkg_check_modules(netcdff IMPORTED_TARGET REQUIRED netcdf-fortran)
 ################################################################################
 # musica-core library
 
-find_package(
-  musicacore REQUIRED
+include(FetchContent)
+
+FetchContent_Declare(musicacore
+  GIT_REPOSITORY https://github.com/NCAR/musica-core.git
+  GIT_TAG 6a628d4f368c9a6b2aa01e5138660d961819c77c 
+  FIND_PACKAGE_ARGS NAMES musicacore
 )
+
+FetchContent_MakeAvailable(musicacore)

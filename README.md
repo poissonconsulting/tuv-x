@@ -2,8 +2,7 @@
 <img src="docs/source/_static/logo.svg" width="300">
 </h1><br>
 
-
-TUV-x: A photolysis rate constant calculator.
+Tropospheric ultraviolet-extended (TUV-x): A photolysis rate calculator
 
 [![License](https://img.shields.io/github/license/NCAR/tuv-x.svg)](https://github.com/NCAR/tuv-x/blob/main/LICENSE)
 [![CI Status](https://github.com/NCAR/tuv-x/actions/workflows/test_push.yml/badge.svg)](https://github.com/NCAR/tuv-x/actions/workflows/test_push.yml)
@@ -12,10 +11,19 @@ TUV-x: A photolysis rate constant calculator.
 
 Copyright (C) 2020 National Center for Atmospheric Research
 
-Please see the [TUV-x documentation](https://ncar.github.io/tuv-x/) for detailed
-installation and usage instructions.
+# Building and installing
+To build and install TUV-x locally, you must have the following libraries installed:
 
-# Build and run (Docker version)
+- [json-fortran](https://github.com/jacobwilliams/json-fortran)
+- [NetCDF](https://www.unidata.ucar.edu/software/netcdf/) (both C and Fortran libraries)
+
+You must also have CMake installed on your machine. 
+
+To install TUV-x locally,
+open a terminal window, navigate to a folder where you would like the TUV-x files to exist,
+and run the following commands:
+
+## Build and run (Docker version)
 
 To build and run the stand-alone version of TUV-x, you must have [Docker Desktop](https://www.docker.com/get-started) installed and running. With Docker Desktop running, open a terminal window and run the following command to start the TUV-x container:
 
@@ -27,42 +35,50 @@ Inside the container, you can run the TUV-x tests from the `/build/` folder:
 
 ```
 cd build/
+# to run the tests
 make test
+# to use the standalone tool
+./tuv-x examples/full_config.json
 ```
 
-# Build and run (local build version)
-
-To build and run TUV-x locally, you must have the following libraries available:
-
-- [json-fortran](https://github.com/jacobwilliams/json-fortran)
-- [NetCDF](https://www.unidata.ucar.edu/software/netcdf/) (both C and Fortran libraries)
-- [nc4fortran](https://github.com/geospace-code/nc4fortran)
-- [musica-core](https://github.com/NCAR/musica-core)
-
-You must also have CMake installed on your machine. To build and run TUV-x locally,
-open a terminal window, navigate to a folder where you would like the TUV-x files to exist,
-and run the following commands:
+## Build and run (local build version)
 
 ```
-git clone --recurse-submodules https://github.com/NCAR/tuv-x.git
+git clone https://github.com/NCAR/tuv-x.git
 cd tuv-x
 mkdir build
 cd build
 ccmake ..
-make
-./tuv-x
+make -j 8
 ```
+
+You will now have a runnable exectubable for `tuv-x` and the tests in the build directory.
+
+`./tuv-x examples/full_config.json`.
+
+Inspect the output file `photolysis_rate_constants.nc` to see the results!
+
+## Install
+
+After completing the previous step run `sudo make install`.
+This wll install the tuvx static library, the tuv-x configuration
+and runtime data, as well as the standalone `tuv-x` exectuable, which can be
+added to your system path to make the executable useable from any directory.
+
+If you would later lake to uninstall tuv-x, you can run
+`sudo make uninstall` from the build directory. 
+
 
 # Citation
 
-The following bibtex can be used to cite the work that originally developed
+The following bibtex can be used to cite the work which originally developed
 this tool.
 
 A recommended citation is 
 
 > Madronich, Sasha, and Siri Flocke (1999), The role of solar radiation in atmospheric chemistry, in Handbook of Environmental Chemistry, edited by P. Boule, pp. 1-26, Springer-Verlag, Heidelberg.
 
-However, you are encouraged to use the format that best matches the style
+However, you are encouraged to use the format matching whichever style
 you prefer.
 
 ```
@@ -104,3 +120,33 @@ The TUV-x software can be cited with
 and the specific verstion of TUV-x that you are using can be found by
 clicking on the zenodo banner above. Choose the appropraite version there
 and use the citation provided by Zenodo.
+
+# Community and contributions
+We welcome contributions and feedback from anyone, everything from updating
+the content or appearance of the documentation to new and
+cutting edge science.
+
+- [Contact](https://github.com/NCAR/tuv-x/discussions)
+  - If you'd like to get in touch with us, feel free to start a conversation
+on our [discussion board](https://github.com/NCAR/tuv-x/discussions) 
+or email us at musica-info@ucar.edu. 
+
+- [Collaboration](https://github.com/NCAR/musica/blob/main/docs/Software%20Development%20Plan.pdf)
+  - Anyone interested in scientific collaboration
+which would add new software functionality should read the [MUSICA software development plan](https://github.com/NCAR/musica/blob/main/docs/Software%20Development%20Plan.pdf).
+
+- [Code of conduct](https://ncar.github.io/tuv-x/contributing/code_of_conduct.html)
+  - Please read this through to you understand the expectations with how to interact with this project.
+
+- [Contributor's guide](https://ncar.github.io/tuv-x/contributing/contributors_guide.html)
+  - Before submiitting a PR, please thouroughly read this to you understand our expectations. We reserve the right to reject any PR not meeting our guidelines.
+
+
+# Documentation
+Please see the [TUV-x documentation](https://ncar.github.io/tuv-x/) for detailed
+installation and usage instructions.
+
+# License
+
+- [GPL 2.0](/LICENSE)
+- Copyright (C) 2022 National Center for Atmospheric Research

@@ -63,6 +63,10 @@ Profile From CSV File
 ^^^^^^^^^^^^^^^^^^^^^
 .. f:automodule:: tuvx_profile_from_csv_file
 
+Profile From Host
+^^^^^^^^^^^^^^^^^^^^^
+.. f:automodule:: tuvx_profile_from_host
+
 O2 Profile
 ^^^^^^^^^^
 .. f:automodule:: tuvx_profile_o2

@@ -22,7 +22,7 @@ include(CMakeDependentOption)
 option(ENABLE_MPI "Enable MPI parallel support" OFF)
 cmake_dependent_option(ENABLE_OPENMP "Enable OpenMP support" OFF "ENABLE_MPI" OFF)
 option(ENABLE_TESTS "Build tests" ON)
-option(ENABLE_COVERAGE "Enable code coverage output" ON)
+option(ENABLE_COVERAGE "Enable code coverage output" OFF)
 option(ENABLE_MEMCHECK "Enable memory checking in tests" ON)
 option(ENABLE_NC_CONFIG "Use nc-config to determine NetCDF libraries" OFF)
 
@@ -44,18 +44,6 @@ endif()
 # MPI
 if(ENABLE_MPI)
   add_definitions(-DMUSICA_USE_MPI)
-endif()
-
-# Test code coverage
-if(ENABLE_COVERAGE)
-  include(CodeCoverage)
-  if(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
-    setup_target_for_coverage_lcov(
-        NAME coverage
-        EXECUTABLE "ctest"
-        EXCLUDE "${PROJECT_SOURCE_DIR}/test/*"
-        BASE_DIRECTORY "${PROJECT_SOURCE_DIR}/src")
-  endif()
 endif()
 
 # copy data
@@ -97,9 +85,11 @@ set_target_properties(tuvx PROPERTIES
   SOVERSION ${PROJECT_VERSION_MAJOR}
 )
 
+configure_file(src/version.F90.in version.F90 @ONLY)
+
 add_subdirectory(src)
 
-add_executable(tuv-x src/tuvx.F90)
+add_executable(tuv-x src/tuvx.F90 version.F90)
 
 target_include_directories(tuvx 
   PUBLIC  
@@ -120,8 +110,20 @@ endif()
 ################################################################################
 # TUV-x tests
 
-enable_testing()
-if(ENABLE_TESTS)
+if(PROJECT_IS_TOP_LEVEL AND ENABLE_TESTS)
+  # Test code coverage
+  if(ENABLE_COVERAGE)
+    include(CodeCoverage)
+    if(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
+      setup_target_for_coverage_lcov(
+          NAME coverage
+          EXECUTABLE "ctest"
+          EXCLUDE "${PROJECT_SOURCE_DIR}/test/*"
+          BASE_DIRECTORY "${PROJECT_SOURCE_DIR}/src")
+    endif()
+  endif()
+
+  enable_testing()
   add_subdirectory(test)
 endif()
 

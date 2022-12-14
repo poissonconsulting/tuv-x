@@ -864,10 +864,9 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine calc_params( this, X, A, B )
-    ! Calculates coefficients (A,B), used in calculating the
-    !	effective cross section, for 17 wavelength intervals
-    ! as a function of log O2 column density (X)
-    ! Wavelength intervals are defined in WMO1985
+    ! Calculates coefficients (A,B), used in calculating the effective 
+    ! cross section, for 17 wavelength intervals as a function of log O2 
+    ! column density (X), Wavelength intervals are defined in WMO1985
 
     class(la_sr_bands_t), intent(inout)  :: this
     real(dk), intent(in)  :: X

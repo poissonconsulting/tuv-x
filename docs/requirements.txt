@@ -1,6 +1,6 @@
 sphinx
 sphinx-book-theme
-myst-parser
+sphinx-design
 six
 numpy
 matplotlib

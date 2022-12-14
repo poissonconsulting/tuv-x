@@ -1,6 +1,18 @@
 ################################################################################
 # Test utilities
 
+add_library(tuvx_test_utils unit/test_utils.F90)
+target_link_libraries(tuvx_test_utils musica::musicacore)
+
+set_target_properties(tuvx_test_utils PROPERTIES
+  Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/test_include
+)
+
+target_include_directories(tuvx_test_utils 
+  PUBLIC  
+    ${PROJECT_BINARY_DIR}/test_include
+)
+
 include(test_util)
 
 ################################################################################

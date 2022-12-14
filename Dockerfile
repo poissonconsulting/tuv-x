@@ -28,24 +28,14 @@ RUN curl -LO https://github.com/jacobwilliams/json-fortran/archive/8.2.0.tar.gz 
     && cmake -D SKIP_DOC_GEN:BOOL=TRUE .. \
     && sudo make install
 
-RUN git clone https://github.com/NCAR/musica-core.git \
-    && cd musica-core \
-    && mkdir build \
-    && cd build \
-    && export JSON_FORTRAN_HOME="/usr/local/jsonfortran-gnu-8.2.0" \
-    && cmake -D ENABLE_UTIL_ONLY:BOOL=TRUE .. \
-    && make -j 4 \
-    && make install
-
 # build the tuv-x tool
 COPY . /tuv-x/
 RUN mkdir /build \
       && cd /build \
       && export JSON_FORTRAN_HOME="/usr/local/jsonfortran-gnu-8.2.0" \
-      && export MUSICA_CORE_HOME="/musica-core/build" \
       && cmake -D CMAKE_BUILD_TYPE=release \
                -D ENABLE_MEMCHECK=OFF \
                /tuv-x \
-      && make
+      && make -j 8
 
 WORKDIR /build

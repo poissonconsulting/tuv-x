@@ -1,6 +1,6 @@
 .. Instructions for TUV-x developers
 
-Science Contributions
+General Contributions
 =====================
 
 To submit a new feature or bug-fix, first create an issue on the
@@ -11,12 +11,16 @@ the pull request description.
 
 Software contributions must apply the
 `MUSICA FORTRAN Style Guide <https://ncar.github.io/musica-core/html/coding_style.html>`_.
-See also the `MUSICA Recommendations for Contributors <https://ncar.github.io/musica-core/html/contributors.html>`_.
+See also the `MUSICA Recommendations for Contributors <https://ncar.github.io/musica-core/html/contributors.html>`_
+and the `MUSICA software development plan <https://github.com/NCAR/musica/blob/main/docs/Software%20Development%20Plan.pdf>`_.
 
 Developers must ensure that new features have complete unit test
 coverage. Pull requests that decrease the test coverage of the
 TUV-x code base will not be accepted. Developers must also ensure that
 new features are fully run-time configurable.
+
+Science Contributions
+=====================
 
 Cross Sections
 --------------

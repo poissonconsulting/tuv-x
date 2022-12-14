@@ -17,6 +17,7 @@ program tuvx
   use omp_lib
 #endif
   use tuvx_core,                       only : core_t
+  use tuvx_version,                    only: get_tuvx_version
 
   implicit none
 
@@ -40,10 +41,10 @@ program tuvx
   call musica_mpi_init( )
 
 #ifdef MUSICA_USE_OPENMP
-  write(*,*) "Running TUV-x on ", omp_get_max_threads( ), " threads"
+  write(*,*) "Running TUV-x(" // get_tuvx_version() // ") on ", omp_get_max_threads( ), " threads"
   allocate( threads( omp_get_max_threads( ) ) )
 #else
-  write(*,*) "Running TUV-x without OpenMP support"
+  write(*,*) "Running TUV-x(" // get_tuvx_version() // ") without OpenMP support"
 #endif
 
   ! Get the model configuration file and options from the command line
@@ -365,7 +366,7 @@ contains
   subroutine fail_run( )
     ! Fail run and print usage info
 
-    write(*,*) "Usage: ./photolysis configuration_file.json"
+    write(*,*) "Usage: ./tuv-x configuration_file.json"
     stop 3
 
   end subroutine fail_run

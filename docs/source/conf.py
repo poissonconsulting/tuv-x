@@ -12,6 +12,7 @@
 #
 import os
 import sys
+import datetime
 sys.path.insert(0, os.path.abspath('.'))
 
 from generate_logo import make_logo
@@ -19,7 +20,7 @@ from generate_logo import make_logo
 # -- Project information -----------------------------------------------------
 
 project = 'TUV-x'
-copyright = '2022, NCAR/UCAR'
+copyright = f"2022-{datetime.datetime.now().year}, NCAR/UCAR"
 author = 'NCAR/UCAR'
 
 # The full version, including alpha/beta/rc tags
@@ -32,15 +33,14 @@ release = 'v0.2'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'myst_parser',
     'sphinxfortran.fortran_domain',
     'sphinxfortran.fortran_autodoc',
+    'sphinx_design',
 ]
 
 source_suffix = {
     '.rst': 'restructuredtext',
     '.txt': 'restructuredtext',
-    '.md': 'markdown',
 }
 
 # Add any paths that contain templates here, relative to this directory.
@@ -76,10 +76,11 @@ html_static_path = ['_static']
 
 make_logo(tuvx_static_path=html_static_path[0])
 
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-html_css_files
 # Custom styling
-html_context = {
-        'css_files': ['_static/custom.css'],
-}
+html_css_files = [
+    'custom.css'
+]
 
 html_favicon = '_static/favicon.ico'
 

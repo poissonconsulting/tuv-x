@@ -1,4 +1,40 @@
-.. Configuration format descriptions for TUV-x
+.. Usage information for TUV-x
+
+###################################
+User Guide
+###################################
+
+General
+=======
+
+Stand-alone TUV-x can be run from the command-line as:
+
+.. code-block:: bash
+
+   ./tuv-x configuration_file.json
+
+The ``configuration_file.json`` contains the TUV-x configuration information described in
+:ref:`configuration <configuration>`.
+
+If photolysis rate constants are included in the configuration,
+TUV-x will output a file named ``photolysis_rate_constants.nc`` in the working directory. This
+file will contain the photolysis rate constants for each reaction at each vertical level
+for every time specified in the configuration file.
+
+If dose rates are included in the configuration,
+TUV-x will output a file named ``dose_rates.nc`` in the working directory.
+This file will contain the calculated dose rates at
+each vertical level for every time specified in the configuration.
+
+Some example configurations are available in the ``examples/`` folder.
+These will be copied to the build folder during the CMake build step.
+To run an example, from the build folder run:
+
+.. code-block:: bash
+
+   ./tuv-x examples/full_config.json
+
+.. _configuration:
 
 Configuration
 =============
@@ -349,6 +385,12 @@ The second option specifies values at each grid point in an array:
      }
    }
 
+.. _configuration-profiles-from-host:
+
+From Host
+^^^^^^^^^
+
+//TODO
 
 Solar Zenith Angle
 ^^^^^^^^^^^^^^^^^^
@@ -465,7 +507,7 @@ to the root ``tuv-x/`` folder):
       }
 
 Air Keys
-""""""""
+~~~~~~~~
 =========================  ==============
 keys                       Required/Optional
 =========================  ==============
@@ -476,7 +518,7 @@ keys                       Required/Optional
 =========================  ==============
 
 Extraterrestrial Flux Keys
-""""""""""""""""""""""""""
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 =========================  ==============
 keys                       Required/Optional
 =========================  ==============
@@ -494,7 +536,7 @@ ouptut to be disabled. If this is enabled, a folder named `output` will be
 created in the same directory TUV-x is run from.
 
 O2 Keys
-"""""""
+~~~~~~~
 =========================  ==============
 keys                       Required/Optional
 =========================  ==============
@@ -507,7 +549,7 @@ keys                       Required/Optional
 =========================  ==============
 
 O3 Keys
-"""""""
+~~~~~~~
 =========================  ==============
 keys                       Required/Optional
 =========================  ==============
@@ -525,9 +567,11 @@ keys                       Required/Optional
 Radiative Transfer
 ------------------
 
+Solvers
+^^^^^^^
+
 Radiative transfer specifies how the radiation field is calculated.
 The general format for radiative transfer is:
-
 
 .. code-block:: JSON
 
@@ -571,7 +615,7 @@ use for radiative transfer.
 There are currently two options, described below.
 
 Delta Eddington
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~
 
 This is a fast 2-stream solver based on:
 Toon et al., J.Geophys.Res., v94 (D13), Nov 20, 1989.
@@ -586,7 +630,7 @@ The configuration format for the delta-Eddington solver is:
 There are no configuration options for this solver.
 
 Discrete Ordinant
-^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~
 
 This is an ``n``-stream solver, where ``n`` is an
 even number between 2 and 32.
@@ -603,6 +647,120 @@ The ``number of streams`` is required and specifies the number
 of streams to solve for.
 The value must be an even number between 2 and 32.
 
+.. _configuration-radiators:
+
+Radiators
+^^^^^^^^^
+
+Radiators represent atmospheric constituents that attenuate
+solar radiation and will be considered in calculations of the
+radiation field.
+
+Base
+~~~~
+
+The generic configuration data format for standard radiators is as
+follows:
+
+.. code-block:: JSON
+
+   {
+     "type": "base",
+     "name": "foo",
+     "treat as air": true,
+     "cross section": "foo",
+     "vertical profile": "foo",
+     "vertical profile units": "molecule cm-3",
+     "enable diagnostics": false
+   }
+  
+
+===========================  ==============
+keys                         Required/Optional
+===========================  ==============
+``name``                     optional
+``type``                     required
+``treat as air``             optional
+``cross section``            required 
+``vertical profile``         required
+``vertical profile units``   required
+``enable diagnostics``       optional
+===========================  ==============
+
+The regression tests compare the new version of TUV-x to the old version. One
+way is by directly comparing output. The ``enable diagnostics`` allows for this
+ouptut to be disabled. If this is enabled, a folder named ``output`` will be 
+created in the same directory TUV-x is run from.
+
+The ``treat as air`` flag can be used to indicate that the radiator
+should be treated in a unique way specific to air in the calculation
+of optical properties.
+The default value is false.
+
+The ``cross section`` must be the name of a cross
+section in the list of ``cross sections`` in the
+:ref:`configuration-radiation` object.
+The vertical profile must be the name of a profile with
+the provided units that is present in the list of
+:ref:`configuration-profiles`.
+These profiles should describe the concentration of
+the constituent on the ``height`` grid.
+
+Aerosols
+~~~~~~~~
+A special radiator type exists for aerosols, which
+provides fixed optical depths at each wavelength.
+An example of the aerosol configuration is provided
+below.
+
+
+.. code-block:: JSON
+
+   {
+     "name": "aerosols",
+     "type": "aerosol",
+     "optical depths": [2.40e-01, 1.06e-01, 4.56e-02, 1.91e-02, 1.01e-02, 7.63e-03,
+                        5.38e-03, 5.00e-03, 5.15e-03, 4.94e-03, 4.82e-03, 4.51e-03,
+                        4.74e-03, 4.37e-03, 4.28e-03, 4.03e-03, 3.83e-03, 3.78e-03,
+                        3.88e-03, 3.08e-03, 2.26e-03, 1.64e-03, 1.23e-03, 9.45e-04,
+                        7.49e-04, 6.30e-04, 5.50e-04, 4.21e-04, 3.22e-04, 2.48e-04,
+                        1.90e-04, 1.45e-04, 1.11e-04, 8.51e-05, 6.52e-05, 5.00e-05,
+                        3.83e-05, 2.93e-05, 2.25e-05, 1.72e-05, 1.32e-05, 1.01e-05,
+                        7.72e-06, 5.91e-06, 4.53e-06, 3.46e-06, 2.66e-06, 2.04e-06,
+                        1.56e-06, 1.19e-06, 9.14e-07],
+     "single scattering albedo": 0.99,
+     "asymmetry factor": 0.61,
+     "550 nm optical depth": 0.235,
+     "enable diagnostics": false
+   }
+
+
+============================    ==============
+keys                            Required/Optional
+============================    ==============
+``name``                        optional
+``type``                        required
+``optical depths``              required 
+``single scattering albdeo``    required
+``asymmetry factor``            required
+``550 nm optical depth``        optional
+``enable diagnostics``          optional
+============================    ==============
+
+The regressoin tests compare the new version of TUV-x to the old version. One
+way is by directly comparing output. The `enable diagnostics` allows for this
+ouptut to be disabled. If this is enabled, a folder named `output` will be 
+created in the same directory TUV-x is run from.
+
+The optical depths are expected to be on the ``wavelength``
+grid.
+
+.. _configuration-radiators-from-host:
+
+From Host
+~~~~~~~~~
+
+//TODO
 
 .. _configuration-photolysis:
 
@@ -843,109 +1001,6 @@ Their configuration data formats are demonstrated
 in ``data/photolysis_rate_constants.json``.
 
 
-.. _configuration-radiators:
-
-Radiators
-^^^^^^^^^
-
-Radiators represent atmospheric constituents that attenuate
-solar radiation and will be considered in calculations of the
-radiation field.
-The generic configuration data format for standard radiators is as
-follows:
-
-.. code-block:: JSON
-
-   {
-     "type": "base",
-     "name": "foo",
-     "treat as air": true,
-     "cross section": "foo",
-     "vertical profile": "foo",
-     "vertical profile units": "molecule cm-3",
-     "enable diagnostics": false
-   }
-  
-
-===========================  ==============
-keys                         Required/Optional
-===========================  ==============
-``name``                     optional
-``type``                     required
-``treat as air``             optional
-``cross section``            required 
-``vertical profile``         required
-``vertical profile units``   required
-``enable diagnostics``       optional
-===========================  ==============
-
-The regression tests compare the new version of TUV-x to the old version. One
-way is by directly comparing output. The ``enable diagnostics`` allows for this
-ouptut to be disabled. If this is enabled, a folder named ``output`` will be 
-created in the same directory TUV-x is run from.
-
-The ``treat as air`` flag can be used to indicate that the radiator
-should be treated in a unique way specific to air in the calculation
-of optical properties.
-The default value is false.
-
-The ``cross section`` must be the name of a cross
-section in the list of ``cross sections`` in the
-:ref:`configuration-radiation` object.
-The vertical profile must be the name of a profile with
-the provided units that is present in the list of
-:ref:`configuration-profiles`.
-These profiles should describe the concentration of
-the constituent on the ``height`` grid.
-
-A special radiator type exists for aerosols, which
-provides fixed optical depths at each wavelength.
-An example of the aerosol configuration is provided
-below.
-
-
-.. code-block:: JSON
-
-   {
-     "name": "aerosols",
-     "type": "aerosol",
-     "optical depths": [2.40e-01, 1.06e-01, 4.56e-02, 1.91e-02, 1.01e-02, 7.63e-03,
-                        5.38e-03, 5.00e-03, 5.15e-03, 4.94e-03, 4.82e-03, 4.51e-03,
-                        4.74e-03, 4.37e-03, 4.28e-03, 4.03e-03, 3.83e-03, 3.78e-03,
-                        3.88e-03, 3.08e-03, 2.26e-03, 1.64e-03, 1.23e-03, 9.45e-04,
-                        7.49e-04, 6.30e-04, 5.50e-04, 4.21e-04, 3.22e-04, 2.48e-04,
-                        1.90e-04, 1.45e-04, 1.11e-04, 8.51e-05, 6.52e-05, 5.00e-05,
-                        3.83e-05, 2.93e-05, 2.25e-05, 1.72e-05, 1.32e-05, 1.01e-05,
-                        7.72e-06, 5.91e-06, 4.53e-06, 3.46e-06, 2.66e-06, 2.04e-06,
-                        1.56e-06, 1.19e-06, 9.14e-07],
-     "single scattering albedo": 0.99,
-     "asymmetry factor": 0.61,
-     "550 nm optical depth": 0.235,
-     "enable diagnostics": false
-   }
-
-
-============================    ==============
-keys                            Required/Optional
-============================    ==============
-``name``                        optional
-``type``                        required
-``optical depths``              required 
-``single scattering albdeo``    required
-``asymmetry factor``            required
-``550 nm optical depth``        optional
-``enable diagnostics``          optional
-============================    ==============
-
-The regressoin tests compare the new version of TUV-x to the old version. One
-way is by directly comparing output. The `enable diagnostics` allows for this
-ouptut to be disabled. If this is enabled, a folder named `output` will be 
-created in the same directory TUV-x is run from.
-
-The optical depths are expected to be on the ``wavelength``
-grid.
-
-
 .. _configuration-spectral-weights:
 
 Spectral Weights
@@ -1023,4 +1078,3 @@ when more complex algorithms are needed to calculate
 spectral weights.
 Their configuration data formats are demonstrated
 in ``data/dose_rates.json``.
-

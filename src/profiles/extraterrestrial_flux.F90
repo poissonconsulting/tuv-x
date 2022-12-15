@@ -64,14 +64,14 @@ contains
     type(string_t)                 :: defaultInterpolator
     type(string_t), allocatable    :: Filespec(:), Interpolator(:)
     class(interpolator_t), pointer :: theInterpolator
-    type(string_t) :: required_keys(4), optional_keys(2)
+    type(string_t) :: required_keys(5), optional_keys(1)
 
     required_keys(1) = "type"
     required_keys(2) = "units"
     required_keys(3) = "file path"
     required_keys(4) = "interpolator"
-    optional_keys(1) = "name"
-    optional_keys(2) = "enable diagnostics"
+    required_keys(5) = "name"
+    optional_keys(1) = "enable diagnostics"
 
     call assert_msg( 389428513,                                               &
                      config%validate( required_keys, optional_keys ),         &
@@ -87,7 +87,7 @@ contains
 
     ! Get the configuration settings
     call config%get( 'file path', Filespec, Iam )
-    call config%get( 'name', this%handle_, Iam, default = 'None' )
+    call config%get( 'name', this%handle_, Iam )
     call config%get( 'units', this%units_, Iam )
     call config%get( 'interpolator', Interpolator, Iam, found=found )
     nFiles = size(Filespec)

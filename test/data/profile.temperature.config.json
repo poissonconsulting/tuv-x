@@ -1,5 +1,6 @@
-{
-   "temperature": {
+[
+   {
+      "name": "temperature",
       "type": "from csv file",
       "units": "K",
       "file path": "data/profiles/atmosphere/ussa.temp",
@@ -8,4 +9,4 @@
         "units": "km"
       }
    }
-}
+]

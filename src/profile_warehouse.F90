@@ -94,39 +94,35 @@ contains
     ! local variables
     type(config_t)                 :: profile_config
     class(iterator_t), pointer     :: iter
-    type(profile_ptr), allocatable :: temp_profiles(:)
     type(profile_ptr)              :: profile_obj
     character(len=32)              :: keychar
     type(string_t)                 :: aswkey
     character(len=*), parameter    :: Iam = "profile warehouse constructor: "
+    integer                        :: profile_idx
 
     allocate( profile_warehouse )
-    allocate( profile_warehouse%profiles_(0) )
+    allocate( profile_warehouse%profiles_(config%number_of_children()) )
 
     ! iterate over profiles
+    profile_idx = 1
     iter => config%get_iterator( )
     do while( iter%next( ) )
-      keychar = config%key( iter )
-      aswkey  = keychar
       call config%get( iter, profile_config, Iam )
-      call profile_config%add( 'name', aswkey, Iam )
 
       ! Build profile objects
       profile_obj%val_ => profile_builder( profile_config, grid_warehouse )
+
       call assert_msg( 178168062,                                         &
                       .not. profile_warehouse%exists(                     &
                                              profile_obj%val_%handle_,    &
                                              profile_obj%val_%units( ) ), &
                       "Profile '"//profile_obj%val_%handle_//             &
                       "' duplicated in profile warehouse." )
-      temp_profiles = profile_warehouse%profiles_
-      deallocate( profile_warehouse%profiles_ )
-      allocate( profile_warehouse%profiles_( size( temp_profiles ) + 1 ) )
-      profile_warehouse%profiles_( 1 : size( temp_profiles ) ) =              &
-          temp_profiles(:)
-      profile_warehouse%profiles_( size( temp_profiles ) + 1 ) = profile_obj
-      deallocate( temp_profiles )
+
+      profile_warehouse%profiles_( profile_idx ) = profile_obj
       nullify( profile_obj%val_ )
+
+      profile_idx = profile_idx + 1
     end do
 
     deallocate( iter )
@@ -251,6 +247,8 @@ contains
 
     exists = .false.
     do ndx = 1, size( this%profiles_ )
+      if ( .not. associated(this%profiles_(ndx)%val_)) cycle
+
       if( name .eq. this%profiles_( ndx )%val_%handle_ ) then
         call assert_msg( 496262126,                                           &
                          this%profiles_( ndx )%val_%units( ) == units,        &

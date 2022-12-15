@@ -26,9 +26,12 @@ TUV-x will output a file named ``dose_rates.nc`` in the working directory.
 This file will contain the calculated dose rates at
 each vertical level for every time specified in the configuration.
 
-Some example configurations are available in the ``examples/`` folder.
+Some example configurations are available in the |examples|_ folder.
 These will be copied to the build folder during the CMake build step.
 To run an example, from the build folder run:
+
+.. |examples| replace:: ``examples`` 
+.. _examples: https://github.com/NCAR/tuv-x/tree/main/examples
 
 .. code-block:: bash
 
@@ -88,8 +91,8 @@ The TUV-x configuration JSON file has six objects:
 
    {
      "O2 absorption": { ... },
-     "grids": { ... },
-     "profiles": { ... },
+     "grids": [ ... ],
+     "profiles": [ ... ],
      "radiative transfer": { ... },
      "photolysis": { ... },
      "dose rates": { ... }
@@ -160,8 +163,8 @@ For stand-alone TUV-x, you will also need to provide a ``time`` grid
 (units: ``hours``) that provides the time of day for which to calculate
 the photolysis and/or dose rates.
 
-There are two key-value pairs that are required for every grid, ``type``
-and ``units``.
+There are three key-value pairs that are required for every grid, ``type``
+, ``units``, and ``name``.
 The ``type`` is a string that describes how the grid data is specified,
 and must be one of ``equal interval``,
 ``from csv file``, and ``from config file``.
@@ -178,7 +181,8 @@ This grid type is defined by start and end points, and a cell width:
 
 .. code-block:: JSON
 
-   "my grid": {
+   {
+     "name": "my grid"
      "type": "equal interval",
      "units": "foos",
      "begins at": 12.0,
@@ -199,7 +203,8 @@ Values should be monotonic and increasing.
 
 .. code-block:: JSON
 
-   "my grid": {
+   {
+     "name": "my grid"
      "type": "from csv file",
      "units": "bars",
      "file path": "path/to/file"
@@ -216,7 +221,8 @@ Values should be monotonically increasing.
 
 .. code-block:: JSON
 
-   "my grid": {
+   {
+     "name": "my grid"
      "type": "from config file",
      "units": "foos",
      "values": [ 1.0, 7.0, 12.5 ]
@@ -255,7 +261,7 @@ scattering light should be included when these exist as
 :ref:`radiative transfer <configuration-radiation>` object.
 
 As with grids, there are two key-value pairs required for every
-profile, ``type`` and ``units``.
+profile, ``type``, ``units``, and ``name``.
 The ``units`` are the units for the profile data and are used to ensure
 consistency throughout the configuration data and
 with expectations in the code.
@@ -286,7 +292,7 @@ keys                       Required/Optional
 ``type``                   required
 ``units``                  required 
 ``file path``              required
-``name``                   optional
+``name``                   required
 ``interpolator``           optional
 ``scale height``           optional
 =========================  ==============
@@ -295,7 +301,8 @@ The format for the profile is:
 
 .. code-block:: JSON
 
-   "my profile": {
+   {
+     "name": "my profile"
      "type": "from csv file",
      "units": "foos",
      "file path": "path/to/file",
@@ -350,7 +357,7 @@ keys                       Required/Optional
 ``type``                   required
 ``units``                  required 
 ``grid``                   required
-``name``                   optional
+``name``                   required
 ``values``                 optional
 ``uniform value``          optional
 =========================  ==============
@@ -359,7 +366,8 @@ The first option specifies a single uniform value at every grid point:
 
 .. code-block:: JSON
 
-   "my profile": {
+   {
+     "name": "my profile"
      "type": "from config file",
      "units": "bars",
      "uniform value": 12.3,
@@ -375,14 +383,15 @@ The second option specifies values at each grid point in an array:
 
 .. code-block:: JSON
 
-   "my profile": {
-     "type": "from config file",
-     "units": "bars",
-     "values": [ 12.3, 32.4, 103.2 ],
-     "grid": {
-       "name": "foo",
-       "units": "bazes"
-     }
+     {
+       "name": "my profile"
+       "type": "from config file",
+       "units": "bars",
+       "values": [ 12.3, 32.4, 103.2 ],
+       "grid": {
+         "name": "foo",
+         "units": "bazes"
+       }
    }
 
 .. _configuration-profiles-from-host:
@@ -390,7 +399,7 @@ The second option specifies values at each grid point in an array:
 From Host
 ^^^^^^^^^
 
-//TODO
+.. todo:: fill this out
 
 Solar Zenith Angle
 ^^^^^^^^^^^^^^^^^^
@@ -408,7 +417,7 @@ keys                       Required/Optional
 ``day``                    required
 ``longitude``              required
 ``latitude``               required
-``name``                   optional
+``name``                   required
 ``time zone``              optional
 =========================  ==============
 
@@ -416,7 +425,8 @@ Its configuration takes the form:
 
 .. code-block:: JSON
 
-   "solar zenith angle": {
+   {
+     "name": "solar zenith angle",
      "type": "solar zenith angle",
      "units": "degrees",
      "year" : 2002,
@@ -447,7 +457,7 @@ keys                       Required/Optional
 ``year``                   required
 ``month``                  required
 ``day``                    required
-``name``                   optional
+``name``                   required
 ``time zone``              optional
 =========================  ==============
 
@@ -455,7 +465,8 @@ Its configuration takes the form:
 
 .. code-block:: JSON
 
-     "Earth-Sun distance": {
+     {
+       "name": "Earth-Sun distance",
        "type": "Earth-Sun distance",
        "units": "AU",
        "year" : 2002,
@@ -481,22 +492,26 @@ to the root ``tuv-x/`` folder):
 
 .. code-block:: JSON
 
-      "O3": {
+      {
+         "name": "O3",
          "type": "O3",
          "units": "molecule cm-3",
          "file path": "data/profiles/atmosphere/ussa.ozone"
       },
-      "air": {
+      {
+         "name": "air",
          "type": "air",
          "units": "molecule cm-3",
          "file path": "data/profiles/atmosphere/ussa.dens"
       },
-      "O2": {
+      {
+         "name": "O2",
          "type": "O2",
          "units": "molecule cm-3",
          "file path": "data/profiles/atmosphere/ussa.dens"
       },
-      "extraterrestrial flux": {
+      {
+         "name": "extraterrestrial flux",
          "type": "extraterrestrial flux",
          "units": "photon cm-2 s-1",
          "file path": ["data/profiles/solar/susim_hi.flx",
@@ -514,7 +529,7 @@ keys                       Required/Optional
 ``type``                   required
 ``units``                  required 
 ``file path``              required
-``name``                   optional
+``name``                   required
 =========================  ==============
 
 Extraterrestrial Flux Keys
@@ -526,7 +541,7 @@ keys                       Required/Optional
 ``units``                  required 
 ``file path``              required
 ``interpolator``           required
-``name``                   optional
+``name``                   required
 ``enable diagnostics``     optional
 =========================  ==============
 
@@ -543,7 +558,7 @@ keys                       Required/Optional
 ``type``                   required
 ``units``                  required 
 ``file path``              required
-``name``                   optional
+``name``                   required
 ``interpolator``           optional
 ``scale height``           optional
 =========================  ==============
@@ -556,7 +571,7 @@ keys                       Required/Optional
 ``type``                   required
 ``units``                  required 
 ``file path``              required
-``name``                   optional
+``name``                   required
 ``interpolator``           optional
 ``scale height``           optional
 ``reference column``       optional
@@ -760,7 +775,7 @@ grid.
 From Host
 ~~~~~~~~~
 
-//TODO
+.. todo:: fill this out
 
 .. _configuration-photolysis:
 

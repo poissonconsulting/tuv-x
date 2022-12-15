@@ -57,15 +57,15 @@ contains
     real(dk), allocatable :: profile(:)
     class(grid_t), pointer :: zGrid
     class(interpolator_t), pointer :: theInterpolator
-    type(string_t) :: required_keys(3), optional_keys(4)
+    type(string_t) :: required_keys(4), optional_keys(3)
 
     required_keys(1) = "type"
     required_keys(2) = "units"
     required_keys(3) = "file path"
-    optional_keys(1) = "name"
-    optional_keys(2) = "interpolator"
-    optional_keys(3) = "scale height"
-    optional_keys(4) = "reference column"
+    required_keys(4) = "name"
+    optional_keys(1) = "interpolator"
+    optional_keys(2) = "scale height"
+    optional_keys(3) = "reference column"
 
     call assert_msg( 495794327,                                               &
                      config%validate( required_keys, optional_keys ),         &
@@ -76,7 +76,7 @@ contains
 
     ! Get the configuration settings
     call config%get( 'file path', Filespec, Iam )
-    call config%get( 'name', this%handle_, Iam, default = 'none' )
+    call config%get( 'name', this%handle_, Iam )
     call config%get( 'units', this%units_, Iam )
     call config%get( 'interpolator', Interpolator, Iam, default = 'linear' )
     call config%get( 'scale heigth', this%hscale_, Iam, default = 4.5_dk )

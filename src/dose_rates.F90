@@ -62,6 +62,7 @@ contains
       result( dose_rates )
     ! Constructor of dose_rates_t objects
 
+    use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
@@ -84,6 +85,20 @@ contains
     type(spectral_weight_ptr)   :: spectral_weight
     character(len=64)           :: keychar
     type(string_t)              :: wght_key
+    type(string_t) :: required_keys(1), optional_keys(1)
+    type(string_t) :: rate_required_keys(2), rate_optional_keys(0)
+    type(config_t) :: rate_config
+
+    required_keys(1) = "rates"
+    optional_keys(1) = "enable diagnostics"
+
+    rate_required_keys(1) = "name"
+    rate_required_keys(2) = "weights"
+
+    call assert_msg( 100983245,                                               &
+                     config%validate( required_keys, optional_keys ),         &
+                     "Bad configuration data format for "//                   &
+                     "dose rates." )
 
     allocate( dose_rates )
 
@@ -101,17 +116,24 @@ contains
                                                      "photon cm-2 s-1" )
 
     ! iterate over dose rates
-    iter => config%get_iterator( )
-    do while( iter%next( ) )
-      keychar  = config%key( iter )
-      if( keychar .eq. "enable diagnostics" ) cycle
+    call config%get( "rates", rate_config, Iam )
 
-      wght_key = keychar
-      rates%handles_ = [ rates%handles_, wght_key ]
-      call config%get( iter, wght_config, Iam )
+
+    iter => rate_config%get_iterator( )
+    do while( iter%next( ) )
+      call rate_config%get( iter, wght_config, Iam )
+
+      call assert_msg( 200983245,                                               &
+        wght_config%validate( rate_required_keys, rate_optional_keys ),         &
+        "Bad configuration data format for dose rates")
 
       ! get spectral wght
       call wght_config%get( "weights", spectral_weight_config, Iam )
+      call wght_config%get( "name", wght_key, Iam )
+
+      rates%handles_ = [ rates%handles_, wght_key ]
+      call config%get( iter, wght_config, Iam )
+
       spectral_weight%val_ => &
          spectral_weight_builder( spectral_weight_config, grid_warehouse,     &
                                   profile_warehouse )

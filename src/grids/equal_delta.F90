@@ -39,14 +39,14 @@ contains
     real(dk) :: Lower_val, Upper_val, Delta_val
     character(len=*), parameter :: Iam = 'EqualDelta grid initialize: '
     type(grid_equal_delta_t), pointer  :: this
-    type(string_t) :: required_keys(5), optional_keys(1)
+    type(string_t) :: required_keys(6), optional_keys(0)
 
     required_keys(1) = "type"
     required_keys(2) = "units"
     required_keys(3) = "begins at"
     required_keys(4) = "ends at"
     required_keys(5) = "cell delta"
-    optional_keys(1) = "name"
+    required_keys(6) = "name"
 
     call assert_msg( 127910504,                                               &
                      config%validate( required_keys, optional_keys ),         &
@@ -58,7 +58,7 @@ contains
     call config%get( 'begins at', Lower_val, Iam )
     call config%get( 'ends at', Upper_val, Iam )
     call config%get( 'cell delta', Delta_val, Iam )
-    call config%get( 'name', this%handle_, Iam, default = "none" )
+    call config%get( 'name', this%handle_, Iam )
     call config%get( 'units', this%units_, Iam )
 
     this%ncells_ = ( Upper_val - Lower_val ) / Delta_val

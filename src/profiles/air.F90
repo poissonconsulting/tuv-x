@@ -57,12 +57,12 @@ contains
     type(string_t)     :: Filespec, Interpolator
     class(interpolator_t), pointer :: theInterpolator
     class(grid_t), pointer :: zGrid
-    type(string_t) :: required_keys(3), optional_keys(1)
+    type(string_t) :: required_keys(4), optional_keys(0)
 
     required_keys(1) = "type"
     required_keys(2) = "units"
     required_keys(3) = "file path"
-    optional_keys(1) = "name"
+    required_keys(4) = "name"
 
     call assert_msg( 912594899,                                               &
                      config%validate( required_keys, optional_keys ),         &
@@ -73,7 +73,7 @@ contains
 
     ! Get the configuration settings
     call config%get( 'file path', Filespec, Iam )
-    call config%get( 'name', this%handle_, Iam, default = 'none' )
+    call config%get( 'name', this%handle_, Iam )
     call config%get( 'units', this%units_, Iam )
     call config%get( &
       'interpolator', Interpolator, Iam, default = 'linear' )

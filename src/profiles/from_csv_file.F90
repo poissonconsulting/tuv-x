@@ -57,15 +57,15 @@ contains
     real(dk), allocatable :: zdata(:)
     real(dk), allocatable :: profile(:)
     class(interpolator_t), pointer :: theInterpolator
-    type(string_t) :: required_keys(4), optional_keys(3)
+    type(string_t) :: required_keys(5), optional_keys(2)
 
     required_keys(1) = "type"
     required_keys(2) = "units"
     required_keys(3) = "file path"
     required_keys(4) = "grid"
-    optional_keys(1) = "name"
-    optional_keys(2) = "interpolator"
-    optional_keys(3) = "scale height"
+    required_keys(5) = "name"
+    optional_keys(1) = "interpolator"
+    optional_keys(2) = "scale height"
 
     call assert_msg( 789059716,                                               &
                      config%validate( required_keys, optional_keys ),         &
@@ -76,7 +76,7 @@ contains
 
     ! Get the configuration settings
     call config%get( 'file path', Filespec, Iam )
-    call config%get( 'name', this%handle_, Iam, default = 'none' )
+    call config%get( 'name', this%handle_, Iam )
     call config%get( 'units', this%units_, Iam )
     call config%get( 'interpolator', Interpolator, Iam, default = 'linear' )
     call config%get( 'scale heigth', this%hscale_, Iam, default = 0._dk )

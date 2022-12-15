@@ -102,10 +102,7 @@ contains
     ! iterate over grids
     iter => config%get_iterator()
     do while( iter%next() )
-      keychar = config%key(iter)
-      aswkey  = keychar
       call config%get( iter, grid_config, Iam )
-      call grid_config%add( 'name', aswkey, Iam )
 
       ! Build grid objects
       grid_obj%val_ => grid_builder( grid_config )

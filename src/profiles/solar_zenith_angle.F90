@@ -51,7 +51,7 @@ contains
     real(dk)    :: Lon, Lat
     character(len=*), parameter :: Iam = 'sza from time initialize: '
     class(grid_t), pointer :: timeGrid
-    type(string_t) :: required_keys(7), optional_keys(2)
+    type(string_t) :: required_keys(8), optional_keys(1)
 
     required_keys(1) = "type"
     required_keys(2) = "units"
@@ -60,8 +60,8 @@ contains
     required_keys(5) = "day"
     required_keys(6) = "longitude"
     required_keys(7) = "latitude"
-    optional_keys(1) = "name"
-    optional_keys(2) = "time zone"
+    required_keys(8) = "name"
+    optional_keys(1) = "time zone"
 
     call assert_msg( 482373225,                                               &
                      config%validate( required_keys, optional_keys ),         &
@@ -72,12 +72,12 @@ contains
     timeGrid => grid_warehouse%get_grid( "time", "hours" )
     this%ncells_ = timeGrid%ncells_
 
-    call config%get( 'name', this%handle_, Iam, default='none' )
-    call config%get( 'units', this%units_, Iam )
 
     allocate( this%edge_val_(0) )
 
     ! Map solar zenith angle as function of time
+    call config%get( 'name', this%handle_, Iam )
+    call config%get( 'units', this%units_, Iam )
     call config%get( 'year', Year, Iam )
     call config%get( 'month', Month, Iam )
     call config%get( 'day', Day, Iam )

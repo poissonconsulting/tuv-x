@@ -46,14 +46,14 @@ contains
     type(config_t)         :: grid_config
     type(string_t)         :: grid_name, grid_units
     class(grid_t), pointer :: theGrid
-    type(string_t) :: required_keys(3), optional_keys(3)
+    type(string_t) :: required_keys(4), optional_keys(2)
 
     required_keys(1) = "type"
     required_keys(2) = "units"
     required_keys(3) = "grid"
-    optional_keys(1) = "name"
-    optional_keys(2) = "values"
-    optional_keys(3) = "uniform value"
+    required_keys(4) = "name"
+    optional_keys(1) = "values"
+    optional_keys(2) = "uniform value"
 
     call assert_msg( 530095878,                                               &
                      config%validate( required_keys, optional_keys ),         &
@@ -63,7 +63,7 @@ contains
     allocate( this )
 
     ! Get the handle
-    call config%get( 'name', this%handle_, Iam, default = 'none' )
+    call config%get( 'name', this%handle_, Iam )
     call config%get( 'units', this%units_, Iam )
 
     call config%get( "grid", grid_config, Iam, found = found )

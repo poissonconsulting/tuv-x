@@ -45,12 +45,12 @@ contains
     logical  :: found
     character(len=132) :: InputLine
     type(string_t)     :: Filespec
-    type(string_t) :: required_keys(3), optional_keys(1)
+    type(string_t) :: required_keys(4), optional_keys(0)
 
     required_keys(1) = "type"
     required_keys(2) = "units"
     required_keys(3) = "file path"
-    optional_keys(1) = "name"
+    required_keys(4) = "name"
 
     call assert_msg( 606960546,                                               &
                      config%validate( required_keys, optional_keys ),         &
@@ -60,7 +60,7 @@ contains
     allocate( this )
 
     call config%get( 'file path', Filespec, Iam )
-    call config%get( 'name', this%handle_, Iam, default = 'none' )
+    call config%get( 'name', this%handle_, Iam )
     call config%get( 'units', this%units_, Iam )
 
     inquire( file = Filespec%to_char( ), exist = found )

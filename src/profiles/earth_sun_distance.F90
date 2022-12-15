@@ -52,15 +52,15 @@ contains
     real(dk)    :: tmzone, ut, soldst
     character(len=*), parameter :: Iam = 'earth sun distance initialize: '
     class(grid_t), pointer :: timeGrid
-    type(string_t) :: required_keys(5), optional_keys(2)
+    type(string_t) :: required_keys(6), optional_keys(1)
 
     required_keys(1) = "type"
     required_keys(2) = "units"
     required_keys(3) = "year"
     required_keys(4) = "month"
     required_keys(5) = "day"
-    optional_keys(1) = "name"
-    optional_keys(2) = "time zone"
+    required_keys(6) = "name"
+    optional_keys(1) = "time zone"
 
     call assert_msg( 236065474,                                               &
                      config%validate( required_keys, optional_keys ),         &
@@ -72,12 +72,12 @@ contains
     timeGrid => grid_warehouse%get_grid( "time", "hours" )
     this%ncells_ = timeGrid%ncells_
 
-    call config%get( 'name', this%handle_, Iam, default = 'none' )
-    call config%get( 'units', this%units_, Iam )
 
     allocate( this%edge_val_(0) )
 
     !> Map solar zenith angle as function of time
+    call config%get( 'name', this%handle_, Iam )
+    call config%get( 'units', this%units_, Iam )
     call config%get( 'year', Year, Iam )
     call config%get( 'month', Month, Iam )
     call config%get( 'day', Day, Iam )

@@ -54,7 +54,7 @@ First, clone the TUV-x repo:
 
 .. code-block:: bash
 
-   git clone --recurse-submodules https://github.com/NCAR/tuv-x.git
+   git clone https://github.com/NCAR/tuv-x.git
    cd tuv-x
 
 
@@ -69,7 +69,7 @@ To build TUV-x, from the root TUV-x folder run:
    cd build/
    export JSON_FORTRAN_HOME=/path/to/json-fortran/installation/
    cmake ..
-   make
+   make -j 8
    make test
 
 The ``JSON_FORTRAN_HOME`` environment variable should point to the root JSON-Fortran

@@ -1,35 +1,41 @@
 {
-   "grids": {
-      "height": {
+   "grids": [
+      {
+         "name": "height",
          "type": "equal interval",
          "units": "km",
          "begins at" : 0.0,
          "ends at" : 120.0,
          "cell delta" : 1.0
       },
-      "wavelength": {
+      {
+         "name": "wavelength",
          "type": "from csv file",
          "units": "nm",
          "file path": "data/grids/wavelength/combined.grid"
       }
-   },
-   "profiles": {
-      "O3": {
+   ],
+   "profiles": [
+      {
+         "name": "O3",
          "type": "O3",
          "units": "molecule cm-3",
          "file path": "data/profiles/atmosphere/ussa.ozone"
       },
-      "air": {
+      {
+         "name": "air",
          "type": "air",
          "units": "molecule cm-3",
          "file path": "data/profiles/atmosphere/ussa.dens"
       },
-      "O2": {
+      {
+         "name": "O2",
          "type": "O2",
          "units": "molecule cm-3",
          "file path": "data/profiles/atmosphere/ussa.dens"
       },
-      "CO2": {
+      {
+         "name": "CO2",
         "type": "from config file",
         "units": "molecule cm-3",
         "uniform value": 2.54e13,
@@ -38,7 +44,8 @@
           "units": "km"
         }
       },
-      "temperature": {
+      {
+         "name": "temperature",
          "type": "from csv file",
          "units": "K",
          "file path": "data/profiles/atmosphere/ussa.temp",
@@ -47,7 +54,8 @@
            "units": "km"
          }
       },
-      "UnitTest": {
+      {
+         "name": "UnitTest",
          "type": "from csv file",
          "units": "foos",
          "file path": "test/data/test.ozone",
@@ -56,7 +64,7 @@
            "units": "km"
          }
       }
-   },
+   ],
    "cross sections": [
       {
          "name": "air",

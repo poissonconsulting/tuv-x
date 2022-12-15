@@ -36,6 +36,7 @@ extensions = [
     'sphinxfortran.fortran_domain',
     'sphinxfortran.fortran_autodoc',
     'sphinx_design',
+    'sphinx.ext.todo',
 ]
 
 source_suffix = {
@@ -51,6 +52,7 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
+todo_include_todos = True
 
 # -- Options for HTML output -------------------------------------------------
 

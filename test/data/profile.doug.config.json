@@ -1,5 +1,6 @@
-{
-   "temperature": {
+[
+   {
+    "name": "temperature",
       "type": "from config file",
       "units": "K",
       "values": [
@@ -160,7 +161,8 @@
         "units": "km"
       }
    },
-   "air" : {
+   {
+    "name": "air" ,
      "type": "from config file",
      "units": "molecule cm-3",
      "values": [
@@ -321,5 +323,5 @@
        "units": "km"
      }
    }
-}
+]
 

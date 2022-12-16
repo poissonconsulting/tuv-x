@@ -47,6 +47,27 @@
    fun:start_thread
    fun:thread_start
 }
+{
+   <from_parallel_test_run>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   ...
+   fun:start_thread
+   fun:clone
+}
+{
+   <opnemp_init>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   ...
+   fun:PMPI_Init
+   fun:MPI_INIT
+   ...
+   fun:MAIN__
+   fun:main
+}
 ###############################################################
 #
 # MPI suppressions

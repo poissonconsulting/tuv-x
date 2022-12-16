@@ -6,10 +6,11 @@ include(test_util)
 ################################################################################
 # Dose rate regression tests
 
-add_test(NAME regression_dose_rates COMMAND test/regression/dose_rates/dose_rates.sh WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
-if(MEMORYCHECK_COMMAND AND ENABLE_MEMCHECK)
-  add_test(NAME memcheck_regression_dose_rates COMMAND test/regression/dose_rates/dose_rates_memcheck.sh WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-endif()
+add_regression_test(
+  regression_dose_rates
+  test/regression/dose_rates/dose_rates.sh
+  test/regression/dose_rates/dose_rates_memcheck.sh
+)
 
 ################################################################################

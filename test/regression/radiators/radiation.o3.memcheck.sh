@@ -5,14 +5,25 @@ set -e
 # turn on command echoing
 set -v
 
+tmpdir=$(mktemp -d)
+basedir=$(pwd)
+ln -s $tmpdir `basename $tmpdir`
+
+cp -r odat $tmpdir/odat
+cp oldtuv $tmpdir
+ln -s $basedir/data $tmpdir/data
+ln -s $basedir/test $tmpdir/test
+
+cd $tmpdir
+
 exec_oldtuv() {
-  ./oldtuv DO_O3 < test/regression/tuv_scenario_2.in
+  ./oldtuv DO_O3 < $basedir/test/regression/tuv_scenario_2.in
 }
 exec_newtuv() {
-  valgrind --error-exitcode=1 --trace-children=yes --leak-check=full --gen-suppressions=all --suppressions=test/valgrind.supp ./tuv-x test/data/radiators.o3.config.json
+  valgrind --error-exitcode=1 --trace-children=yes --leak-check=full --gen-suppressions=all --suppressions=test/valgrind.supp $basedir/tuv-x $basedir/test/data/radiators.o3.config.json
 }
 exec_analysis() {
-  python3 tool/diagnostics/var.compare.py test/regression/radiators/radiation.o3.compare.json
+  python3 $basedir/tool/diagnostics/var.compare.py $basedir/test/regression/radiators/radiation.o3.compare.json
 }
 
 if ! exec_oldtuv; then

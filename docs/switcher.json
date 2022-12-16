@@ -5,6 +5,11 @@
         "url": "https://ncar.github.io/tuv-x/versions/stable"
     },
     {
+        "name": "dev",
+        "version": "dev",
+        "url": "https://ncar.github.io/tuv-x/branch/main/"
+    },
+    {
         "name": "v0.1",
         "version": "0.1",
         "url": "https://ncar.github.io/tuv-x/versions/0.1"

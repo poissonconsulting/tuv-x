@@ -6,6 +6,16 @@ if(ENABLE_MEMCHECK)
 endif()
 
 ################################################################################
+# impose that one test runs after another so that we can safely test in parallel
+
+function(add_test_dependency run_second run_first)
+    # add dependency between two tests
+    # https://stackoverflow.com/a/66931930/5217293
+    set_tests_properties(${run_first}  PROPERTIES FIXTURES_SETUP    f_${run_first})
+    set_tests_properties(${run_second} PROPERTIES FIXTURES_REQUIRED f_${run_first})
+endfunction(add_test_dependency)
+
+################################################################################
 # build and add a standard test (one linked to the tuvx library)
 
 function(create_standard_test)
@@ -45,16 +55,27 @@ function(add_tuvx_test test_name test_binary test_args working_dir)
     add_test(NAME memcheck_${test_name}
       COMMAND mpirun -v -np 2 ${memcheck} ${CMAKE_BINARY_DIR}/${test_binary} ${test_args}
              WORKING_DIRECTORY ${working_dir})
-    
-    # add dependency between memcheck and previous test
-    # https://stackoverflow.com/a/66931930/5217293
-    set_tests_properties(${test_name} PROPERTIES FIXTURES_SETUP f_${test_name})
-    set_tests_properties(memcheck_${test_name} PROPERTIES FIXTURES_REQUIRED f_${test_name})
   elseif(MEMORYCHECK_COMMAND AND ENABLE_MEMCHECK)
     add_test(NAME memcheck_${test_name}
              COMMAND ${memcheck} ${CMAKE_BINARY_DIR}/${test_binary} ${test_args}
              WORKING_DIRECTORY ${working_dir})
   endif()
 endfunction(add_tuvx_test)
+
+################################################################################
+# Setup regression tests. Add dependencies between each regression test and its 
+# memcheck test. Also add a dependence with any previous tests. Becuase TUV-x
+# outputs to the same location, concurrent runs of the standalone tool that
+# depend on the output must run in serial
+
+function(add_regression_test test_name command memcheck_command)
+  add_test(NAME ${test_name} COMMAND ${command} WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+  if(MEMORYCHECK_COMMAND AND ENABLE_MEMCHECK)
+    add_test(NAME memcheck_${test_name} COMMAND ${memcheck_command} WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+  endif()
+
+endfunction(add_regression_test)
+
 
 ################################################################################

@@ -6,7 +6,7 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE "cmake/set_defaults.cmake")
 
 project(
   tuv-x
-  VERSION 0.2.0
+  VERSION 0.3.0
   LANGUAGES Fortran
 )
 
@@ -75,7 +75,9 @@ target_link_libraries(tuvx_object
     ${JSON_LIB}
 )
 
-# tuvx library and executable
+add_subdirectory(src)
+
+# tuvx library
 add_library(tuvx $<TARGET_OBJECTS:tuvx_object>)
 add_library(musica::tuvx ALIAS tuvx)
 
@@ -85,21 +87,21 @@ set_target_properties(tuvx PROPERTIES
   SOVERSION ${PROJECT_VERSION_MAJOR}
 )
 
-configure_file(src/version.F90.in version.F90 @ONLY)
-
-add_subdirectory(src)
-
-add_executable(tuv-x src/tuvx.F90 version.F90)
-
-target_include_directories(tuvx 
+target_include_directories(tuvx
   PUBLIC  
     $<BUILD_INTERFACE:${TUVX_MOD_DIR}>
     $<INSTALL_INTERFACE:${INSTALL_MOD_DIR}>
 )
 
+
+# add tuv-x standalone executable
+configure_file(src/version.F90.in version.F90 @ONLY)
+
+add_executable(tuv-x src/tuvx.F90 version.F90)
+
 target_link_libraries(tuv-x 
   PUBLIC 
-    tuvx
+    musica::tuvx
     musica::musicacore
 )
 if(ENABLE_OPENMP)

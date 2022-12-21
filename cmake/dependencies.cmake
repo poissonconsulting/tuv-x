@@ -60,6 +60,8 @@ pkg_check_modules(netcdff IMPORTED_TARGET REQUIRED netcdf-fortran)
 
 include(FetchContent)
 
+set(ENABLE_UTIL_ONLY ON)
+
 FetchContent_Declare(musicacore
   GIT_REPOSITORY https://github.com/NCAR/musica-core.git
   GIT_TAG 6a628d4f368c9a6b2aa01e5138660d961819c77c 

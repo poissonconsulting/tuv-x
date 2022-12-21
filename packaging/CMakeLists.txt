@@ -1,8 +1,9 @@
 include(CMakePackageConfigHelpers)
 
+# install the binary and static library
 install(
   TARGETS 
-    tuvx tuv-x
+    tuv-x tuvx
   EXPORT 
     tuvx_Exports
   LIBRARY DESTINATION ${INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
@@ -10,6 +11,7 @@ install(
   RUNTIME DESTINATION ${INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}
 )
 
+# install the mod files
 install(
   DIRECTORY 
     ${TUVX_MOD_DIR}/
@@ -18,6 +20,7 @@ install(
   FILES_MATCHING PATTERN "*.mod"
 )
 
+# install the data files
 install(
   DIRECTORY 
     ${PROJECT_SOURCE_DIR}/data/
@@ -25,6 +28,7 @@ install(
     ${INSTALL_PREFIX}/data
 )
 
+# install the example config files
 install(
   DIRECTORY 
     ${PROJECT_SOURCE_DIR}/examples/
@@ -32,6 +36,7 @@ install(
     ${INSTALL_PREFIX}/examples
 )
 
+# install the cmake config files
 set(cmake_config_install_location ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/tuvx-${PROJECT_VERSION})
 
 install(

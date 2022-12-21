@@ -28,7 +28,8 @@ contains
     use musica_string,                 only : string_t
     use tuv_doug,                      only : get_grids, calculate, wc, wl
     use tuvx_cross_section,            only : cross_section_t
-    use tuvx_cross_section_factory,    only : cross_section_type_name,        &
+    use tuvx_cross_section_factory,    only : cross_section_builder,          &
+                                              cross_section_type_name,        &
                                               cross_section_allocate
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
@@ -57,6 +58,7 @@ contains
     real, allocatable :: doug_xsqy(:,:)
     class(profile_t), pointer :: air, temperature
     class(grid_t), pointer :: wavelength
+    real(kind=dk) :: tolerance
     integer :: i
 
     ! Load grids based on Doug's TUV
@@ -80,10 +82,12 @@ contains
       call config_pair%get( "cross section", cs_config, Iam )
       call config_pair%get( "quantum yield", qy_config, Iam )
       call config_pair%get( "label",         label,     Iam )
+      call config_pair%get( "tolerance",     tolerance, Iam,                  &
+                            default = 1.0e-6_dk )
 
       ! Load and test cross section
       if( musica_mpi_rank( comm ) == 0 ) then
-        cross_section => cross_section_t( cs_config, grids, profiles )
+        cross_section => cross_section_builder( cs_config, grids, profiles )
         cs_type_name = cross_section_type_name( cross_section )
         quantum_yield => quantum_yield_t( qy_config, grids, profiles )
         qy_type_name = quantum_yield_type_name( quantum_yield )
@@ -121,23 +125,27 @@ contains
       allocate( tuvx_xsqy, mold = cross_section_data )
       tuvx_xsqy(:,:) = cross_section_data(:,:) * quantum_yield_data(:,:)
 
-      call calculate( label%val_, real( temperature%mid_val_ ),               &
+      call calculate( label%val_,                                             &
+                      real( temperature%edge_val_(:temperature%ncells_+1) ),  &
                       real( air%mid_val_ ), doug_xsqy )
 
       wavelength => grids%get_grid( "wavelength", "nm" )
       write(*,*) label%val_
       do i = 1, size( tuvx_xsqy, dim=2 )
-        write(*,*) wavelength%edge_(i), cross_section_data(62,i),             &
+        write(*,*) i, wavelength%edge_(i), wavelength%mid_(i),                &
+                   cross_section_data(62,i),             &
                    quantum_yield_data(62,i), tuvx_xsqy(62,i), wl(i),          &
                    real( doug_xsqy(62,i), kind=dk )
       end do
+      write(*,*) size( tuvx_xsqy, dim=2 ) + 1,                                &
+                 wavelength%edge_(wavelength%ncells_+1)
       deallocate( wavelength )
 
       ! Skip first two bins because Lyman-Alpha bins are different in
       ! Doug's version of TUV-x. Data sets were adapted to have Lyman-Alpha
       ! specific data go into the TUV-x Lyman-Alpha bin 121.4-121.9 nm
       call check_values( 377150482, tuvx_xsqy(:,3:),                          &
-                         real( doug_xsqy(:,3:), kind=dk ), 1.0e-6_dk )
+                         real( doug_xsqy(:,3:), kind=dk ), tolerance )
 
       deallocate( cross_section      )
       deallocate( quantum_yield      )

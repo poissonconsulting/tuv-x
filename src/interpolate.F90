@@ -70,10 +70,10 @@ interface
 
     import interpolator_t
 
-    class(interpolator_t), intent(inout) :: this        ! Interpolator
-    real(dk),              intent(in)    :: x_target(:) ! Target axis
-    real(dk),              intent(in)    :: x_source(:) ! Source axis
-    real(dk),              intent(in)    :: y_source(:) ! Source data
+    class(interpolator_t), intent(in) :: this        ! Interpolator
+    real(dk),              intent(in) :: x_target(:) ! Target axis
+    real(dk),              intent(in) :: x_source(:) ! Source axis
+    real(dk),              intent(in) :: y_source(:) ! Source data
 
     real(dk), allocatable :: y_target(:) ! Target data
 
@@ -151,10 +151,10 @@ contains
     !  If the input data does not encompass the target grid, use ADDPNT to
     !  expand the input array.
 
-    class(interpolator_linear_t), intent(inout) :: this        ! Interpolator
-    real(dk),                     intent(in)    :: x_target(:) ! Target axis
-    real(dk),                     intent(in)    :: x_source(:) ! Source axis
-    real(dk),                     intent(in)    :: y_source(:) ! Source data
+    class(interpolator_linear_t), intent(in) :: this        ! Interpolator
+    real(dk),                     intent(in) :: x_target(:) ! Target axis
+    real(dk),                     intent(in) :: x_source(:) ! Source axis
+    real(dk),                     intent(in) :: y_source(:) ! Source data
 
     real(dk), allocatable :: y_target(:)
 
@@ -216,10 +216,10 @@ contains
 
     use musica_assert, only : die_msg
 
-    class(interpolator_conserving_t), intent(inout) :: this        ! Interpolator
-    real(dk),                         intent(in)    :: x_target(:) ! Target axis
-    real(dk),                         intent(in)    :: x_source(:) ! Source axis
-    real(dk),                         intent(in)    :: y_source(:) ! Source data
+    class(interpolator_conserving_t), intent(in) :: this        ! Interpolator
+    real(dk),                         intent(in) :: x_target(:) ! Target axis
+    real(dk),                         intent(in) :: x_source(:) ! Source axis
+    real(dk),                         intent(in) :: y_source(:) ! Source data
 
     real(dk), allocatable   :: y_target(:)
 
@@ -340,10 +340,10 @@ contains
 
     use musica_assert, only : die_msg
 
-    class(interpolator_fractional_source_t), intent(inout) :: this        ! Interpolator
-    real(dk),                                intent(in)    :: x_target(:) ! Target axis
-    real(dk),                                intent(in)    :: x_source(:) ! Source axis
-    real(dk),                                intent(in)    :: y_source(:) ! Source data
+    class(interpolator_fractional_source_t), intent(in) :: this        ! Interpolator
+    real(dk),                                intent(in) :: x_target(:) ! Target axis
+    real(dk),                                intent(in) :: x_source(:) ! Source axis
+    real(dk),                                intent(in) :: y_source(:) ! Source data
 
     real(dk), allocatable   :: y_target(:)
 
@@ -441,10 +441,10 @@ contains
 
     use musica_assert, only : die_msg
 
-    class(interpolator_fractional_target_t), intent(inout) :: this        ! Interpolator
-    real(dk),                                intent(in)    :: x_target(:) ! Target axis
-    real(dk),                                intent(in)    :: x_source(:) ! Source axis
-    real(dk),                                intent(in)    :: y_source(:) ! Source data
+    class(interpolator_fractional_target_t), intent(in) :: this        ! Interpolator
+    real(dk),                                intent(in) :: x_target(:) ! Target axis
+    real(dk),                                intent(in) :: x_source(:) ! Source axis
+    real(dk),                                intent(in) :: y_source(:) ! Source data
 
     real(dk), allocatable :: y_target(:)
 

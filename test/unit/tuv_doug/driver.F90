@@ -63,7 +63,7 @@ contains
     character(len=80) :: pathname
     class(grid_t), pointer :: grid
     type(grid_updater_t) :: updater
-    real, allocatable :: wl_edges(:)
+    real, allocatable :: wl_edges(:), wl_mids(:)
 
     ! used in set gridz
     integer :: izout
@@ -88,9 +88,12 @@ contains
     allocate( wl_edges(nw+1) )
     wl_edges(:nw) = wl(:nw)
     wl_edges(nw+1) = wl(nw) + ( wl(nw) - wl(nw-1) )
+    allocate( wl_mids(nw) )
+    wl_mids(:nw-1) = wc(:nw-1)
+    wl_mids(nw) = wl_edges(nw) + ( wl_edges(nw+1) - wl_edges(nw) ) * 0.5_dk
     updater = grids%get_updater( grid )
     call updater%update( edges = real( wl_edges(:nw+1), kind=dk ),            &
-                         mid_points = real( wc(:nw), kind=dk ) )
+                         mid_points = real( wl_mids(:nw), kind=dk ) )
     deallocate( grid )
 
   end function get_grids
@@ -129,6 +132,15 @@ contains
       case( "H2O + hv -> 2H + O(3P)" )
         call XSQY_H2O(nw,wl,wc,nz,temperature,air_density,j,l_xsqy,all_labels,pn)
         xsqy(:,:) = l_xsqy(3,:nz,:nw)
+      case( "N2O5 + hv -> NO3 + NO2" )
+        call XSQY_N2O5(nw,wl,wc,nz,temperature,air_density,j,l_xsqy,all_labels,pn)
+        xsqy(:,:) = l_xsqy(1,:nz,:nw)
+      case( "N2O5 + hv -> NO3 + NO + O" )
+        call XSQY_N2O5(nw,wl,wc,nz,temperature,air_density,j,l_xsqy,all_labels,pn)
+        xsqy(:,:) = l_xsqy(2,:nz,:nw)
+      case( "CH2Br2 + hv -> 2Br" )
+        call XSQY_CH2BR2(nw,wl,wc,nz,temperature,air_density,j,l_xsqy,all_labels,pn)
+        xsqy(:,:) = l_xsqy(1,:nz,:nw)
       case default
         call die( 946669022 )
     end select

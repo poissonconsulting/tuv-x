@@ -8,6 +8,27 @@
       ]
     },
     {
+      "name": "override bands",
+      "type": "base",
+      "netcdf files": [
+        { "file path": "test/data/cross_sections/cross_section.base.nc" }
+      ],
+      "override bands": [
+        {
+          "band": "schumann-runge",
+          "value": 12.2
+        },
+        {
+          "band": "lyman-alpha",
+          "value": 42.3
+        },
+        {
+          "band": "schumann-runge continuum",
+          "value": 93.2
+        }
+      ]
+    },
+    {
       "name": "fix-zero",
       "type": "base",
       "netcdf files": [

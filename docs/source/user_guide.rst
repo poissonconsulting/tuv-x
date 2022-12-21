@@ -912,6 +912,12 @@ follows:
          "zero below": 215.4,
          "zero above": 768.4
        }
+     ],
+     "override bands": [
+       {
+         "band": "lyman-alpha",
+         "value": 0.32
+       }
      ]
    }
 
@@ -950,6 +956,16 @@ used for all points beyond the last point.
 The ``zero above`` and ``zero below`` keys are used to
 zero all points from the file above or below the
 specified wavelength values AFTER INTERPOLATION.
+
+An ``override bands`` array can be included to specify
+fixed values over specific bands. These values will be
+applied immediately before returning the cross section
+and thus override any calculated or interpolated values.
+Valid ``band`` values are ``lyman-alpha``,
+``schumann-runge``, and ``schumann-runge continuum``.
+The wavelength grid must cover the Lyman-alpha and
+Schumann-Runge bands if an override is specified,
+otherwise a configuration error is returned.
 
 A number of custom cross section types have been developed
 when more complex algorithms are needed to calculate
@@ -1007,6 +1023,34 @@ The ``quantum_yield_parameters`` array should hold the value
 of the quantum yield at each wavelength.
 TUV-x will perform interpolation of the quantum yield data
 to the native wavelength grid.
+
+For either type of quantum yield, an ``override bands``
+array can be included:
+
+
+.. code-block:: JSON
+
+   {
+     "type": "base",
+     "constant value": 1.0,
+     "override bands": [
+       {
+         "band": "lyman-alpha",
+         "value": 0.32
+       }
+     ]
+   }
+
+
+An ``override bands`` array instructs TUV-x to apply
+fixed values over specific bands. These values will be
+applied immediately before returning the quantum yield
+and thus override any calculated or interpolated values.
+Valid ``band`` values are ``lyman-alpha``,
+``schumann-runge``, and ``schumann-runge continuum``.
+The wavelength grid must cover the Lyman-alpha and
+Schumann-Runge bands if an override is specified,
+otherwise a configuration error is returned.
 
 A number of custom quantum yield types have been developed
 when more complex algorithms are needed to calculate

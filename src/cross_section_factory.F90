@@ -32,6 +32,8 @@ module tuvx_cross_section_factory
   use tuvx_cross_section_oclo,         only : cross_section_oclo_t
   use tuvx_cross_section_rayliegh,     only : cross_section_rayliegh_t
   use tuvx_cross_section_rono2,        only : cross_section_rono2_t
+  use tuvx_cross_section_temperature_based,                                  &
+    only : cross_section_temperature_based_t
   use tuvx_cross_section_t_butyl_nitrate,                                    &
     only : cross_section_t_butyl_nitrate_t
   use tuvx_cross_section_tint,         only : cross_section_tint_t
@@ -140,6 +142,9 @@ contains
       case( 'SO2' )
         new_cross_section => cross_section_t( config, grid_warehouse,         &
                                                            profile_warehouse )
+      case( 'temperature based' )
+        new_cross_section => cross_section_temperature_based_t(               &
+                                   config, grid_warehouse, profile_warehouse )
       case( 't_butyl_nitrate+hv->Products' )
         new_cross_section => cross_section_t_butyl_nitrate_t ( config,        &
                                            grid_warehouse, profile_warehouse )
@@ -211,6 +216,8 @@ contains
         name = "cross_section_oclo_t"
       type is( cross_section_rono2_t )
         name = "cross_section_rono2_t"
+      type is( cross_section_temperature_based_t )
+        name = "cross_section_temperature_based_t"
       type is( cross_section_t_butyl_nitrate_t )
         name = "cross_section_t_butyl_nitrate_t"
       type is( cross_section_tint_t )
@@ -279,6 +286,8 @@ contains
         allocate( cross_section_oclo_t :: cross_section )
       case( 'cross_section_rono2_t' )
         allocate( cross_section_rono2_t :: cross_section )
+      case( 'cross_section_temperature_based_t' )
+        allocate( cross_section_temperature_based_t :: cross_section )
       case( 'cross_section_t_butyl_nitrate_t' )
         allocate( cross_section_t_butyl_nitrate_t :: cross_section )
       case( 'cross_section_tint_t' )

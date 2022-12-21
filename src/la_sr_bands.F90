@@ -11,7 +11,7 @@ module tuvx_la_sr_bands
   implicit none
 
   private
-  public :: la_sr_bands_t
+  public :: la_sr_bands_t, get_band_min_index, get_band_max_index
 
   integer,  parameter :: nPoly = 20      ! order of the Chebyshev polynomials
   integer,  parameter :: kla = 2         ! dimension of the Lymann-Alpha wavelength grid
@@ -930,6 +930,82 @@ contains
     ! nothing to do for now
 
   end subroutine finalize
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function get_band_min_index( band_name, wavelengths ) result( idx )
+    ! Returns the minimum wavelength bin index that includes the specified
+    ! band
+
+    use musica_assert,                 only : die_msg, almost_equal
+    use musica_string,                 only : string_t
+    use tuvx_grid,                     only : grid_t
+
+    type(string_t), intent(in) :: band_name
+    class(grid_t),  intent(in) :: wavelengths
+
+    integer :: i_wl
+    real(kind=dk) :: search_val
+
+    select case( band_name%to_char( ) )
+    case( "lyman-alpha" )
+      search_val = wlla(1)
+    case( "schumann-runge" )
+      search_val = wlsrb(1)
+    case( "schumann-runge continuum" )
+      search_val = wlla(kla)
+    case default
+      call die_msg( 943741887, "Unknown wavelength band '"//band_name//"'" )
+    end select
+    idx = 0
+    do i_wl = 1, wavelengths%size( ) + 1
+      if( almost_equal( wavelengths%edge_( i_wl ), search_val ) ) then
+        idx = i_wl
+        return
+      end if
+    end do
+    call die_msg( 651190319, "Wavelength grid does not map to band '"//       &
+                             band_name//"'" )
+
+  end function get_band_min_index
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function get_band_max_index( band_name, wavelengths ) result( idx )
+    ! Returns the maximum wavelength bin index that includes the specified
+    ! band
+
+    use musica_assert,                 only : die_msg, almost_equal
+    use musica_string,                 only : string_t
+    use tuvx_grid,                     only : grid_t
+
+    type(string_t), intent(in) :: band_name
+    class(grid_t),  intent(in) :: wavelengths
+
+    integer :: i_wl
+    real(kind=dk) :: search_val
+
+    select case( band_name%to_char( ) )
+    case( "lyman-alpha" )
+      search_val = wlla(kla)
+    case( "schumann-runge" )
+      search_val = wlsrb(ksrb)
+    case( "schumann-runge continuum" )
+      search_val = wlsrb(1)
+    case default
+      call die_msg( 943741887, "Unknown wavelength band '"//band_name//"'" )
+    end select
+    idx = 0
+    do i_wl = 1, wavelengths%size( ) + 1
+      if( almost_equal( wavelengths%edge_( i_wl ), search_val ) ) then
+        idx = i_wl - 1
+        return
+      end if
+    end do
+    call die_msg( 316052437, "Wavelength grid does not map to band '"//       &
+                             band_name//"'" )
+
+  end function get_band_max_index
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

@@ -45,13 +45,14 @@ contains
       (/ 5.0_dk, 10.0_dk, 40.0_dk, 50.0_dk /)
     real(kind=dk) :: input_grid_base(4) =                                     &
       (/ 101.0_dk, 102.0_dk, 103.0_dk, 104.0_dk /)
+    integer :: i_height
     character, allocatable :: buffer(:)
     type(string_t) :: type_name
     integer :: pos, pack_size
     integer, parameter :: comm = MPI_COMM_WORLD
 
     ! load test grids
-    call config%from_file( "test/data/grid.simple.config.json" )
+    call config%from_file( "test/data/grid.la_sr.config.json" )
     grids => grid_warehouse_t( config )
 
     ! load test profiles
@@ -94,7 +95,51 @@ contains
     input = input_base
     input_grid = input_grid_base
     call add_points( input, input_grid, 0.0_dk, 0.0_dk )
-    call check_values( results, input, input_grid, 6 )
+    call check_values( results(:,1:4), input, input_grid, 6 )
+    deallocate( input )
+    deallocate( input_grid )
+    deallocate( cross_section )
+
+    ! load and test cross section w/ band overrides
+    call assert( 717225260, iter%next( ) )
+    call cs_set%get( iter, cs_config, Iam )
+    if( musica_mpi_rank( comm ) == 0 ) then
+      cross_section => cross_section_t( cs_config, grids, profiles )
+      type_name = cross_section_type_name( cross_section )
+      pack_size = type_name%pack_size( comm ) + cross_section%pack_size( comm )
+      allocate( buffer( pack_size ) )
+      pos = 0
+      call type_name%mpi_pack(     buffer, pos , comm )
+      call cross_section%mpi_pack( buffer, pos , comm )
+      call assert( 776969353, pos <= pack_size )
+    end if
+
+    call musica_mpi_bcast( pack_size , comm )
+    if( musica_mpi_rank( comm ) .ne. 0 ) allocate( buffer( pack_size ) )
+    call musica_mpi_bcast( buffer , comm )
+
+    if( musica_mpi_rank( comm ) .ne. 0 ) then
+      pos = 0
+      call type_name%mpi_unpack( buffer, pos , comm )
+      cross_section => cross_section_allocate( type_name )
+      call cross_section%mpi_unpack( buffer, pos , comm )
+      call assert( 889287698, pos <= pack_size )
+    end if
+    deallocate( buffer )
+
+    results = cross_section%calculate( grids, profiles )
+    input = input_base
+    input_grid = input_grid_base
+    do i_height = 1, 6
+      call assert( 197443244, results( i_height, 6  ) == 42.3_dk )
+      call assert( 141510219, results( i_height, 7  ) == 93.2_dk )
+      call assert( 588878065, results( i_height, 8  ) == 93.2_dk )
+      call assert( 136245912, results( i_height, 9  ) == 12.2_dk )
+      call assert( 583613758, results( i_height, 10 ) == 12.2_dk )
+      call assert( 195990005, results( i_height, 11 ) ==  0.0_dk )
+    end do
+    call add_points( input, input_grid, 0.0_dk, 0.0_dk )
+    call check_values( results(:,1:4), input, input_grid, 6 )
     deallocate( input )
     deallocate( input_grid )
     deallocate( cross_section )
@@ -131,7 +176,7 @@ contains
     input = input_base
     input_grid = input_grid_base
     call add_points( input, input_grid, 12.5_dk, 0.0_dk )
-    call check_values( results, input, input_grid, 5 )
+    call check_values( results(:,1:4), input, input_grid, 5 )
     deallocate( input )
     deallocate( input_grid )
     deallocate( cross_section )
@@ -168,7 +213,7 @@ contains
     input = input_base
     input_grid = input_grid_base
     call add_points( input, input_grid, 5.0_dk, 32.3_dk )
-    call check_values( results, input, input_grid, 6 )
+    call check_values( results(:,1:4), input, input_grid, 6 )
     deallocate( input )
     deallocate( input_grid )
     deallocate( cross_section )

@@ -28,6 +28,25 @@ module tuvx_cross_section
     procedure :: mpi_unpack => parms_mpi_unpack
   end type cross_section_parms_t
 
+  type override_t
+    ! local working type for specifying constant values for specific ranges
+    integer :: min_wavelength_index_
+    integer :: max_wavelength_index_
+    real(kind=dk) :: value_
+  contains
+    procedure :: apply
+    ! Returns the number of bytes needed to pack the override onto a buffer
+    procedure :: pack_size => override_pack_size
+    ! Packs the override onto a character buffer
+    procedure :: mpi_pack => override_mpi_pack
+    ! Unpacks override from a character buffer
+    procedure :: mpi_unpack => override_mpi_unpack
+  end type override_t
+
+  interface override_t
+    module procedure :: override_constructor
+  end interface override_t
+
   type cross_section_t
     ! Calculator for cross_section
     ! The cross section array
@@ -40,6 +59,8 @@ module tuvx_cross_section
     type(grid_warehouse_ptr) :: wavelength_grid_
     ! Temperature profile pointer
     type(profile_warehouse_ptr) :: temperature_profile_
+    ! Override values for specific bands
+    type(override_t), allocatable :: overrides_(:)
   contains
     !> Calculate the cross section
     procedure :: calculate
@@ -87,12 +108,13 @@ contains
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
-    type(string_t) :: required_keys(1), optional_keys(3)
+    type(string_t) :: required_keys(1), optional_keys(4)
 
     required_keys(1) = "type"
     optional_keys(1) = "netcdf files"
     optional_keys(2) = "name"
     optional_keys(3) = "merge data"
+    optional_keys(4) = "override bands"
     call assert_msg( 124969900,                                               &
                      config%validate( required_keys, optional_keys ),         &
                      "Bad configuration data format for "//                   &
@@ -108,10 +130,10 @@ contains
       profile_warehouse )
     ! Initialize cross_section_t objects
 
-    use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
     use musica_string,                 only : string_t
+    use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
@@ -122,11 +144,12 @@ contains
 
     !   local variables
     character(len=*), parameter   :: Iam = 'base cross section initialize'
-    integer :: i_param, i_file
+    integer :: i_param, i_file, i_override
     logical :: found
-    type(config_t) :: netcdf_files, netcdf_file
+    type(config_t) :: netcdf_files, netcdf_file, overrides, override
     class(iterator_t), pointer :: iter
     logical :: merge_data
+    class(grid_t), pointer :: wavelengths
 
     ! Get grid and profile pointers
     this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
@@ -135,23 +158,36 @@ contains
 
     ! get cross section netcdf filespec
     call config%get( 'netcdf files', netcdf_files, Iam, found = found )
-    if( .not. found ) return
-    iter => netcdf_files%get_iterator( )
+    if( found ) then
+      iter => netcdf_files%get_iterator( )
+      call config%get( 'merge data', merge_data, Iam, default = .false. )
+      allocate( this%cross_section_parms( netcdf_files%number_of_children( ) ) )
+      i_file = 0
+      do while( iter%next( ) )
+        call netcdf_files%get( iter, netcdf_file, Iam )
+        i_file = i_file + 1
+        if( merge_data ) i_file = 1
+        call this%process_file( netcdf_file, grid_warehouse,                  &
+                                this%cross_section_parms( i_file ) )
+      enddo
+      deallocate( iter )
+    end if
 
-    call config%get( 'merge data', merge_data, Iam, default = .false. )
-
-    allocate( this%cross_section_parms( netcdf_files%number_of_children( ) ) )
-
-    i_file = 0
-    do while( iter%next( ) )
-      call netcdf_files%get( iter, netcdf_file, Iam )
-      i_file = i_file + 1
-      if( merge_data ) i_file = 1
-      call this%process_file( netcdf_file, grid_warehouse,                    &
-                              this%cross_section_parms( i_file ) )
-    enddo
-
-    deallocate( iter )
+    ! get values to overlay for specific bands
+    call config%get( "override bands", overrides, Iam, found = found )
+    if( found ) then
+      wavelengths => grid_warehouse%get_grid( this%wavelength_grid_ )
+      iter => overrides%get_iterator( )
+      allocate( this%overrides_( overrides%number_of_children( ) ) )
+      i_override = 0
+      do while( iter%next( ) )
+        call overrides%get( iter, override, Iam )
+        i_override = i_override + 1
+        this%overrides_( i_override ) = override_t( override, wavelengths )
+      end do
+      deallocate( iter )
+      deallocate( wavelengths )
+    end if
 
   end subroutine base_constructor
 
@@ -290,7 +326,7 @@ contains
 
     !> Local variables
     integer :: colndx
-    integer :: nzdim
+    integer :: nzdim, i_override
     character(len=*), parameter :: Iam =                                      &
         'radXfer base cross section calculate: '
     class(grid_t), pointer     :: zGrid
@@ -311,6 +347,12 @@ contains
     !> Just copy the lambda interpolated array
     do colndx = 1, nzdim
       wrkCrossSection( :, colndx ) = this%cross_section_parms(1)%array(:,1)
+      if( allocated( this%overrides_ ) ) then
+        do i_override = 1, size( this%overrides_ )
+          call this%overrides_( i_override )%apply(                           &
+                                                wrkCrossSection( :, colndx ) )
+        end do
+      end if
     enddo
 
     cross_section = transpose( wrkCrossSection )
@@ -412,22 +454,31 @@ contains
     integer,                intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
-    integer :: i_param
+    integer :: i_elem
 
     pack_size =                                                               &
         musica_mpi_pack_size( allocated( this%cross_section_parms ), comm )
     if( allocated( this%cross_section_parms ) ) then
       pack_size = pack_size +                                                 &
                 musica_mpi_pack_size( size( this%cross_section_parms ), comm )
-      do i_param = 1, size( this%cross_section_parms )
+      do i_elem = 1, size( this%cross_section_parms )
         pack_size = pack_size +                                               &
-                    this%cross_section_parms( i_param )%pack_size( comm )
+                    this%cross_section_parms( i_elem )%pack_size( comm )
       end do
     end if
     pack_size = pack_size +                                                   &
                 this%height_grid_%pack_size( comm ) +                         &
                 this%wavelength_grid_%pack_size( comm ) +                     &
-                this%temperature_profile_%pack_size( comm )
+                this%temperature_profile_%pack_size( comm ) +                 &
+           musica_mpi_pack_size( allocated( this%overrides_ ), comm )
+    if( allocated( this%overrides_ ) ) then
+      pack_size = pack_size +                                                 &
+                  musica_mpi_pack_size( size( this%overrides_ ), comm )
+      do i_elem = 1, size( this%overrides_ )
+        pack_size = pack_size +                                               &
+                    this%overrides_( i_elem )%pack_size( comm )
+      end do
+    end if
 #else
     pack_size = 0
 #endif
@@ -448,7 +499,7 @@ contains
     integer,                intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
-    integer :: prev_pos, i_param
+    integer :: prev_pos, i_elem
 
     prev_pos = position
     call musica_mpi_pack( buffer, position,                                   &
@@ -456,14 +507,22 @@ contains
     if( allocated( this%cross_section_parms ) ) then
       call musica_mpi_pack( buffer, position,                                 &
                             size( this%cross_section_parms ), comm )
-      do i_param = 1, size( this%cross_section_parms )
-        call this%cross_section_parms( i_param )%mpi_pack( buffer, position,  &
+      do i_elem = 1, size( this%cross_section_parms )
+        call this%cross_section_parms( i_elem )%mpi_pack( buffer, position,   &
                                                            comm )
       end do
     end if
     call this%height_grid_%mpi_pack(         buffer, position, comm )
     call this%wavelength_grid_%mpi_pack(     buffer, position, comm )
     call this%temperature_profile_%mpi_pack( buffer, position, comm )
+    call musica_mpi_pack( buffer, position, allocated( this%overrides_ ),     &
+                          comm )
+    if( allocated( this%overrides_ ) ) then
+      call musica_mpi_pack( buffer, position, size( this%overrides_ ), comm )
+      do i_elem = 1, size( this%overrides_ )
+        call this%overrides_( i_elem )%mpi_pack( buffer, position, comm )
+      end do
+    end if
     call assert( 345613473, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
@@ -483,7 +542,7 @@ contains
     integer,                intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
-    integer :: prev_pos, i_param, n_params
+    integer :: prev_pos, i_elem, n_elem
     logical :: alloced
 
     prev_pos = position
@@ -491,16 +550,25 @@ contains
     if( allocated( this%cross_section_parms ) )                               &
         deallocate( this%cross_section_parms )
     if( alloced ) then
-      call musica_mpi_unpack( buffer, position, n_params, comm )
-      allocate( this%cross_section_parms( n_params ) )
-      do i_param = 1, n_params
-        call this%cross_section_parms( i_param )%mpi_unpack( buffer, position,&
-                                                             comm )
+      call musica_mpi_unpack( buffer, position, n_elem, comm )
+      allocate( this%cross_section_parms( n_elem ) )
+      do i_elem = 1, n_elem
+        call this%cross_section_parms( i_elem )%mpi_unpack( buffer, position,&
+                                                            comm )
       end do
     end if
     call this%height_grid_%mpi_unpack(         buffer, position, comm )
     call this%wavelength_grid_%mpi_unpack(     buffer, position, comm )
     call this%temperature_profile_%mpi_unpack( buffer, position, comm )
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( allocated( this%overrides_ ) ) deallocate( this%overrides_ )
+    if( alloced ) then
+      call musica_mpi_unpack( buffer, position, n_elem, comm )
+      allocate( this%overrides_( n_elem ) )
+      do i_elem = 1, n_elem
+        call this%overrides_( i_elem )%mpi_unpack( buffer, position, comm )
+      end do
+    end if
     call assert( 764657896, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
@@ -575,6 +643,122 @@ contains
 #endif
 
   end subroutine parms_mpi_unpack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function override_constructor( config, wavelengths ) result( this )
+    ! Constructor for override_t objects
+
+    use musica_assert,                 only : assert_msg
+    use musica_config,                 only : config_t
+    use musica_string,                 only : string_t
+    use tuvx_grid,                     only : grid_t
+    use tuvx_la_sr_bands,              only : get_band_min_index,             &
+                                              get_band_max_index
+
+    type(override_t)               :: this
+    type(config_t),  intent(inout) :: config
+    class(grid_t),   intent(in)    :: wavelengths
+
+    character(len=*), parameter :: my_name =                                  &
+        "cross section band override constructor"
+    type(string_t) :: type_name
+    type(string_t) :: required_keys(2), optional_keys(0)
+
+    required_keys(1) = "band"
+    required_keys(2) = "value"
+    call assert_msg( 145671194,                                               &
+                     config%validate( required_keys, optional_keys ),         &
+                     "Bad configuration for cross section band averride" )
+    call config%get( "band", type_name, my_name )
+    this%min_wavelength_index_ = get_band_min_index( type_name, wavelengths )
+    this%max_wavelength_index_ = get_band_max_index( type_name, wavelengths )
+    call config%get( "value", this%value_, my_name )
+
+  end function override_constructor
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine apply( this, cross_section )
+    ! Overwrites cross section values for the specified band
+
+    class(override_t), intent(in)    :: this
+    real(kind=dk),           intent(inout) :: cross_section(:)
+
+    cross_section( this%min_wavelength_index_ : this%max_wavelength_index_ )  &
+        = this%value_
+
+  end subroutine apply
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function override_pack_size( this, comm ) result( pack_size )
+    ! Returns the size of a character buffer required to pack the override
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(override_t), intent(in) :: this ! override to be packed
+    integer,           intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    pack_size = musica_mpi_pack_size( this%min_wavelength_index_, comm ) +    &
+                musica_mpi_pack_size( this%max_wavelength_index_, comm ) +    &
+                musica_mpi_pack_size( this%value_,                comm )
+#else
+    pack_size = 0
+#endif
+
+  end function override_pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine override_mpi_pack( this, buffer, position, comm )
+    ! Packs the override onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(override_t), intent(in)    :: this      ! override to be packed
+    character,         intent(inout) :: buffer(:) ! memory buffer
+    integer,           intent(inout) :: position  ! current buffer position
+    integer,           intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position, this%min_wavelength_index_, comm )
+    call musica_mpi_pack( buffer, position, this%max_wavelength_index_, comm )
+    call musica_mpi_pack( buffer, position, this%value_,                comm )
+    call assert( 408243741, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine override_mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine override_mpi_unpack( this, buffer, position, comm )
+    ! Unpacks override from a character buffer into the object
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(override_t), intent(out)   :: this      ! override to be unpacked
+    character,         intent(inout) :: buffer(:) ! memory buffer
+    integer,           intent(inout) :: position  ! current buffer position
+    integer,           intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, this%min_wavelength_index_,comm )
+    call musica_mpi_unpack( buffer, position, this%max_wavelength_index_,comm )
+    call musica_mpi_unpack( buffer, position, this%value_,               comm )
+    call assert( 687360217, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine override_mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

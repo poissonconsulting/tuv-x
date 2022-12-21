@@ -26,6 +26,25 @@ module tuvx_quantum_yield
     procedure :: mpi_unpack => parms_mpi_unpack
   end type quantum_yield_parms_t
 
+  type override_t
+    ! local working type for specifying constant values for specific ranges
+    integer :: min_wavelength_index_
+    integer :: max_wavelength_index_
+    real(kind=dk) :: value_
+  contains
+    procedure :: apply
+    ! Returns the number of bytes needed to pack the override onto a buffer
+    procedure :: pack_size => override_pack_size
+    ! Packs the override onto a character buffer
+    procedure :: mpi_pack => override_mpi_pack
+    ! Unpacks override from a character buffer
+    procedure :: mpi_unpack => override_mpi_unpack
+  end type override_t
+
+  interface override_t
+    module procedure :: override_constructor
+  end interface override_t
+
   type quantum_yield_t
     ! Calculator for base quantum yield
     type(quantum_yield_parms_t), allocatable :: quantum_yield_parms(:)
@@ -37,6 +56,8 @@ module tuvx_quantum_yield
     type(profile_warehouse_ptr) :: temperature_profile_
     ! Air density profile pointer
     type(profile_warehouse_ptr) :: air_profile_
+    ! Override values for specific bands
+    type(override_t), allocatable :: overrides_(:)
   contains
     procedure :: calculate => run
     procedure :: add_points
@@ -76,7 +97,7 @@ contains
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse
     type(profile_warehouse_t), intent(inout) :: profile_warehouse
 
-    type(string_t) :: required_keys(1), optional_keys(5)
+    type(string_t) :: required_keys(1), optional_keys(6)
 
     required_keys(1) = "type"
     optional_keys(1) = "netcdf files"
@@ -84,6 +105,7 @@ contains
     optional_keys(3) = "upper extrapolation"
     optional_keys(4) = "name"
     optional_keys(5) = "constant value"
+    optional_keys(6) = "override bands"
     call assert_msg( 860224341,                                               &
                      config%validate( required_keys, optional_keys ),         &
                      "Bad configration data format for base quantum yield." )
@@ -113,6 +135,7 @@ contains
 
     use musica_assert,                 only : die_msg
     use musica_config,                 only : config_t
+    use musica_iterator,               only : iterator_t
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
@@ -142,6 +165,9 @@ contains
     type(string_t), allocatable   :: netcdfFiles(:)
     class(grid_t),  pointer       :: lambdaGrid
     type(interpolator_conserving_t) :: interpolator
+    class(iterator_t), pointer    :: iter
+    type(config_t)                :: overrides, override
+    integer                       :: i_override
 
     ! Get grid and profile pointers
     this%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
@@ -206,6 +232,20 @@ file_loop: &
       endif
     endif has_netcdf_file
 
+    ! get values to overlay for specific bands
+    call config%get( "override bands", overrides, Iam, found = found )
+    if( found ) then
+      iter => overrides%get_iterator( )
+      allocate( this%overrides_( overrides%number_of_children( ) ) )
+      i_override = 0
+      do while( iter%next( ) )
+        call overrides%get( iter, override, Iam )
+        i_override = i_override + 1
+        this%overrides_( i_override ) = override_t( override, lambdaGrid )
+      end do
+      deallocate( iter )
+    end if
+
     deallocate( lambdaGrid )
 
   end subroutine base_constructor
@@ -230,7 +270,7 @@ file_loop: &
 
     ! Local variables
     character(len=*), parameter :: Iam = 'base quantum yield calculate'
-    integer                     :: vertNdx
+    integer                     :: vertNdx, i_override
     class(grid_t),  pointer     :: zGrid
     real(dk),       allocatable :: wrkQuantumYield(:,:)
 
@@ -243,6 +283,12 @@ file_loop: &
     do vertNdx = 1, zGrid%ncells_ + 1
       wrkQuantumYield( :, vertNdx ) =                                         &
           this%quantum_yield_parms(1)%array( :, 1 )
+      if( allocated( this%overrides_ ) ) then
+        do i_override = 1, size( this%overrides_ )
+          call this%overrides_( i_override )%apply(                           &
+                                                wrkQuantumYield( :, vertndx ) )
+        end do
+      end if
     enddo
 
     quantum_yield = transpose( wrkQuantumYield )
@@ -343,23 +389,32 @@ file_loop: &
     integer,                intent(in) :: comm ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
-    integer :: i_param
+    integer :: i_elem
 
     pack_size =                                                               &
       musica_mpi_pack_size( allocated( this%quantum_yield_parms ), comm )
     if( allocated( this%quantum_yield_parms ) ) then
       pack_size = pack_size +                                                 &
         musica_mpi_pack_size( size( this%quantum_yield_parms ), comm )
-      do i_param = 1, size( this%quantum_yield_parms )
+      do i_elem = 1, size( this%quantum_yield_parms )
         pack_size = pack_size +                                               &
-          this%quantum_yield_parms( i_param )%pack_size( comm )
+          this%quantum_yield_parms( i_elem )%pack_size( comm )
       end do
     end if
     pack_size = pack_size +                                                   &
                 this%height_grid_%pack_size( comm ) +                         &
                 this%wavelength_grid_%pack_size( comm ) +                     &
                 this%temperature_profile_%pack_size( comm ) +                 &
-                this%air_profile_%pack_size( comm )
+                this%air_profile_%pack_size( comm ) +                         &
+                musica_mpi_pack_size( allocated( this%overrides_ ), comm )
+    if( allocated( this%overrides_ ) ) then
+      pack_size = pack_size +                                                 &
+                  musica_mpi_pack_size( size( this%overrides_ ), comm )
+      do i_elem = 1, size( this%overrides_ )
+        pack_size = pack_size +                                               &
+                    this%overrides_( i_elem )%pack_size( comm )
+      end do
+    end if
 #else
     pack_size = 0
 #endif
@@ -380,7 +435,7 @@ file_loop: &
     integer,                intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
-    integer :: prev_pos, i_param
+    integer :: prev_pos, i_elem
 
     prev_pos = position
     call musica_mpi_pack( buffer, position,                                   &
@@ -388,8 +443,8 @@ file_loop: &
     if( allocated( this%quantum_yield_parms ) ) then
       call musica_mpi_pack( buffer, position,                                 &
                             size( this%quantum_yield_parms ), comm )
-      do i_param = 1, size( this%quantum_yield_parms )
-        call this%quantum_yield_parms( i_param )%mpi_pack( buffer, position,  &
+      do i_elem = 1, size( this%quantum_yield_parms )
+        call this%quantum_yield_parms( i_elem )%mpi_pack( buffer, position,  &
                                                            comm )
       end do
     end if
@@ -397,6 +452,14 @@ file_loop: &
     call this%wavelength_grid_%mpi_pack(     buffer, position, comm )
     call this%temperature_profile_%mpi_pack( buffer, position, comm )
     call this%air_profile_%mpi_pack(         buffer, position, comm )
+    call musica_mpi_pack( buffer, position, allocated( this%overrides_ ),     &
+                          comm )
+    if( allocated( this%overrides_ ) ) then
+      call musica_mpi_pack( buffer, position, size( this%overrides_ ), comm )
+      do i_elem = 1, size( this%overrides_ )
+        call this%overrides_( i_elem )%mpi_pack( buffer, position, comm )
+      end do
+    end if
     call assert( 165656641, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
@@ -416,7 +479,7 @@ file_loop: &
     integer,                intent(in)    :: comm      ! MPI communicator
 
 #ifdef MUSICA_USE_MPI
-    integer :: prev_pos, i_param, n_params
+    integer :: prev_pos, i_elem, n_elem
     logical :: alloced
 
     prev_pos = position
@@ -424,10 +487,10 @@ file_loop: &
     if( allocated( this%quantum_yield_parms ) )                               &
         deallocate( this%quantum_yield_parms )
     if( alloced ) then
-      call musica_mpi_unpack( buffer, position, n_params, comm )
-      allocate( this%quantum_yield_parms( n_params ) )
-      do i_param = 1, n_params
-        call this%quantum_yield_parms( i_param )%mpi_unpack( buffer,          &
+      call musica_mpi_unpack( buffer, position, n_elem, comm )
+      allocate( this%quantum_yield_parms( n_elem ) )
+      do i_elem = 1, n_elem
+        call this%quantum_yield_parms( i_elem )%mpi_unpack( buffer,          &
                                                              position, comm )
       end do
     end if
@@ -435,6 +498,15 @@ file_loop: &
     call this%wavelength_grid_%mpi_unpack(     buffer, position, comm )
     call this%temperature_profile_%mpi_unpack( buffer, position, comm )
     call this%air_profile_%mpi_unpack(         buffer, position, comm )
+    call musica_mpi_unpack( buffer, position, alloced, comm )
+    if( allocated( this%overrides_ ) ) deallocate( this%overrides_ )
+    if( alloced ) then
+      call musica_mpi_unpack( buffer, position, n_elem, comm )
+      allocate( this%overrides_( n_elem ) )
+      do i_elem = 1, n_elem
+        call this%overrides_( i_elem )%mpi_unpack( buffer, position, comm )
+      end do
+    end if
     call assert( 865270779, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
@@ -507,6 +579,122 @@ file_loop: &
 #endif
 
   end subroutine parms_mpi_unpack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function override_constructor( config, wavelengths ) result( this )
+    ! Constructor for override_t objects
+
+    use musica_assert,                 only : assert_msg
+    use musica_config,                 only : config_t
+    use musica_string,                 only : string_t
+    use tuvx_grid,                     only : grid_t
+    use tuvx_la_sr_bands,              only : get_band_min_index,             &
+                                              get_band_max_index
+
+    type(override_t)               :: this
+    type(config_t),  intent(inout) :: config
+    class(grid_t),   intent(in)    :: wavelengths
+
+    character(len=*), parameter :: my_name =                                  &
+        "quantum yield band override constructor"
+    type(string_t) :: type_name
+    type(string_t) :: required_keys(2), optional_keys(0)
+
+    required_keys(1) = "band"
+    required_keys(2) = "value"
+    call assert_msg( 257437273,                                               &
+                     config%validate( required_keys, optional_keys ),         &
+                     "Bad configuration for quantum yield band averride" )
+    call config%get( "band", type_name, my_name )
+    this%min_wavelength_index_ = get_band_min_index( type_name, wavelengths )
+    this%max_wavelength_index_ = get_band_max_index( type_name, wavelengths )
+    call config%get( "value", this%value_, my_name )
+
+  end function override_constructor
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine apply( this, quantum_yield )
+    ! Overwrites quantum yield values for the specified band
+
+    class(override_t), intent(in)    :: this
+    real(kind=dk),     intent(inout) :: quantum_yield(:)
+
+    quantum_yield( this%min_wavelength_index_ : this%max_wavelength_index_ )  &
+        = this%value_
+
+  end subroutine apply
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  integer function override_pack_size( this, comm ) result( pack_size )
+    ! Returns the size of a character buffer required to pack the override
+
+    use musica_mpi,                    only : musica_mpi_pack_size
+
+    class(override_t), intent(in) :: this ! override to be packed
+    integer,           intent(in) :: comm ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    pack_size = musica_mpi_pack_size( this%min_wavelength_index_, comm ) +    &
+                musica_mpi_pack_size( this%max_wavelength_index_, comm ) +    &
+                musica_mpi_pack_size( this%value_,                comm )
+#else
+    pack_size = 0
+#endif
+
+  end function override_pack_size
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine override_mpi_pack( this, buffer, position, comm )
+    ! Packs the override onto a character buffer
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_pack
+
+    class(override_t), intent(in)    :: this      ! override to be packed
+    character,         intent(inout) :: buffer(:) ! memory buffer
+    integer,           intent(inout) :: position  ! current buffer position
+    integer,           intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_pack( buffer, position, this%min_wavelength_index_, comm )
+    call musica_mpi_pack( buffer, position, this%max_wavelength_index_, comm )
+    call musica_mpi_pack( buffer, position, this%value_,                comm )
+    call assert( 980562822, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine override_mpi_pack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine override_mpi_unpack( this, buffer, position, comm )
+    ! Unpacks override from a character buffer into the object
+
+    use musica_assert,                 only : assert
+    use musica_mpi,                    only : musica_mpi_unpack
+
+    class(override_t), intent(out)   :: this      ! override to be unpacked
+    character,         intent(inout) :: buffer(:) ! memory buffer
+    integer,           intent(inout) :: position  ! current buffer position
+    integer,           intent(in)    :: comm      ! MPI communicator
+
+#ifdef MUSICA_USE_MPI
+    integer :: prev_pos
+
+    prev_pos = position
+    call musica_mpi_unpack( buffer, position, this%min_wavelength_index_,comm )
+    call musica_mpi_unpack( buffer, position, this%max_wavelength_index_,comm )
+    call musica_mpi_unpack( buffer, position, this%value_,               comm )
+    call assert( 475356417, position - prev_pos <= this%pack_size( comm ) )
+#endif
+
+  end subroutine override_mpi_unpack
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

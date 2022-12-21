@@ -25,6 +25,7 @@ target_sources(tuvx_object
     oclo.F90
     rono2.F90
     t_butyl_nitrate.F90
+    temperature_based.F90
     tint.F90
     rayliegh.F90
 )

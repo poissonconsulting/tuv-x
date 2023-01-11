@@ -644,17 +644,17 @@ The configuration format for the delta-Eddington solver is:
 
 There are no configuration options for this solver.
 
-Discrete Ordinant
+Discrete Ordinate
 ~~~~~~~~~~~~~~~~~
 
 This is an ``n``-stream solver, where ``n`` is an
 even number between 2 and 32.
-The configuration format for the discrete ordinant solver is:
+The configuration format for the discrete ordinate solver is:
 
 
 .. code-block:: JSON
 
-   "type": "discrete ordinant",
+   "type": "discrete ordinate",
    "number of streams": 4
 
 

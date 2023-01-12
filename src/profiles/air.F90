@@ -78,7 +78,7 @@ contains
     call config%get( &
       'interpolator', Interpolator, Iam, default = 'linear' )
     call config%get( &
-      'scale heigth', this%hscale_, Iam, default = 8.01_dk )
+      'scale height', this%hscale_, Iam, default = 8.01_dk )
 
     inquire( file = Filespec%to_char( ), exist = found )
     if ( .not. found) then

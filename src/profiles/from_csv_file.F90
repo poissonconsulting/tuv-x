@@ -79,7 +79,7 @@ contains
     call config%get( 'name', this%handle_, Iam )
     call config%get( 'units', this%units_, Iam )
     call config%get( 'interpolator', Interpolator, Iam, default = 'linear' )
-    call config%get( 'scale heigth', this%hscale_, Iam, default = 0._dk )
+    call config%get( 'scale height', this%hscale_, Iam, default = 0._dk )
     call config%get( 'grid', grid_config, Iam )
     call grid_config%get( 'name', grid_name, Iam )
     call grid_config%get( 'units', grid_units, Iam )

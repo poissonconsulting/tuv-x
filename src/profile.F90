@@ -16,7 +16,7 @@ module tuvx_profile
     type(string_t) :: handle_ ! grid handle
     type(string_t) :: units_ ! units
     integer(musica_ik)           :: ncells_ ! number of grid cells
-    real(musica_dk)              :: hscale_ ! scale heigth
+    real(musica_dk)              :: hscale_ ! scale height
     real(musica_dk), allocatable :: mid_val_(:) ! cell centers
     real(musica_dk), allocatable :: edge_val_(:) ! cell edges
     real(musica_dk), allocatable :: delta_val_(:) ! cell deltas

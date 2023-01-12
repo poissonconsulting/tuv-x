@@ -79,7 +79,7 @@ contains
     call config%get( 'name', this%handle_, Iam )
     call config%get( 'units', this%units_, Iam )
     call config%get( 'interpolator', Interpolator, Iam, default = 'linear' )
-    call config%get( 'scale heigth', this%hscale_, Iam, default = 4.5_dk )
+    call config%get( 'scale height', this%hscale_, Iam, default = 4.5_dk )
     call config%get( 'reference column', Scale2DU, Iam, default = 300._dk )
 
     ! Does input grid file exist?

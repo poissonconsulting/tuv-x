@@ -3,14 +3,6 @@ image:
 
 tasks:
   - init: |
-      mkdir build && cd build
-      cmake -D CMAKE_BUILD_TYPE=release -D ENABLE_MEMCHECK=OFF .. 
-      make -j 4 
-      sudo make install
-      gp sync-done install # other tasks could sync with this: https://github.com/gitpod-io/gitpod/issues/2015#issuecomment-710978460
-
-  - name: Open Tutorial Readme
-    command: |
       mkdir .vscode
       echo '{"workbench.editorAssociations": {"01-Hello.md": "vscode.markdown.preview.editor"}}' > .vscode/settings.json
       gp open tutorial/01-Hello.md

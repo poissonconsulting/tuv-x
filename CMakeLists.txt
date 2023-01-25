@@ -62,37 +62,7 @@ include(cmake/dependencies.cmake)
 ################################################################################
 # TUV-x targets
 
-# object library
-add_library(tuvx_object)
-set_target_properties(tuvx_object PROPERTIES
-  Fortran_MODULE_DIRECTORY ${TUVX_MOD_DIR}
-)
-
-target_link_libraries(tuvx_object 
-  PUBLIC
-    musica::musicacore
-    PkgConfig::netcdff
-    ${JSON_LIB}
-)
-
 add_subdirectory(src)
-
-# tuvx library
-add_library(tuvx $<TARGET_OBJECTS:tuvx_object>)
-add_library(musica::tuvx ALIAS tuvx)
-
-set_target_properties(tuvx PROPERTIES 
-  ARCHIVE_OUTPUT_DIRECTORY ${TUVX_LIB_DIR}
-  VERSION ${PROJECT_VERSION}
-  SOVERSION ${PROJECT_VERSION_MAJOR}
-)
-
-target_include_directories(tuvx
-  PUBLIC  
-    $<BUILD_INTERFACE:${TUVX_MOD_DIR}>
-    $<INSTALL_INTERFACE:${INSTALL_MOD_DIR}>
-)
-
 
 # add tuv-x standalone executable
 configure_file(src/version.F90.in version.F90 @ONLY)

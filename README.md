@@ -12,6 +12,13 @@ Tropospheric ultraviolet-extended (TUV-x): A photolysis rate calculator
 
 Copyright (C) 2020 National Center for Atmospheric Research
 
+# Try it out!
+
+Poke this button and you'll be taken to a cloud workspace that walks you through 
+a tutorial on how to use TUV-x.
+
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/NCAR/tuv-x)
+
 # Building and installing
 To build and install TUV-x locally, you must have the following libraries installed:
 

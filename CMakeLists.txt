@@ -30,10 +30,7 @@ option(ENABLE_NC_CONFIG "Use nc-config to determine NetCDF libraries" OFF)
 set(TUVX_MOD_DIR "${PROJECT_BINARY_DIR}/include")
 set(TUVX_LIB_DIR "${PROJECT_BINARY_DIR}/lib")
 include(GNUInstallDirs)
-set(
-  INSTALL_PREFIX 
-  "${CMAKE_INSTALL_PREFIX}/ncar/tuvx-${PROJECT_VERSION}"
-)
+set(INSTALL_PREFIX "tuvx-${PROJECT_VERSION}" )
 set(INSTALL_MOD_DIR "${INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}")
 
 # Compiler specific flags

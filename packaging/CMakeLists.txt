@@ -37,7 +37,7 @@ install(
 )
 
 # install the cmake config files
-set(cmake_config_install_location ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/tuvx-${PROJECT_VERSION})
+set(cmake_config_install_location ${INSTALL_PREFIX}/cmake/tuvx-${PROJECT_VERSION})
 
 install(
   EXPORT 
@@ -65,7 +65,7 @@ install(
     ${PROJECT_BINARY_DIR}/tuvxConfig.cmake
     ${PROJECT_BINARY_DIR}/tuvxConfigVersion.cmake
   DESTINATION
-    ${CMAKE_INSTALL_LIBDIR}/cmake/tuvx-${PROJECT_VERSION}
+    ${INSTALL_PREFIX}/cmake/tuvx-${PROJECT_VERSION}
 )
 
 ######################################################################

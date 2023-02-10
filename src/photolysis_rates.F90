@@ -22,8 +22,12 @@ module tuvx_photolysis_rates
     ! Photolysis rate constant calculator
     type(cross_section_ptr), allocatable :: cross_sections_(:) ! Absorption cross-sections
     type(quantum_yield_ptr), allocatable :: quantum_yields_(:) ! Quantum yields
-    real(dk),                    allocatable :: scaling_factors_(:) ! Scaling factor for final rate constant
-    type(string_t), allocatable              :: handles_(:) ! User-provided label for the photolysis rate constant
+    real(dk),                allocatable :: scaling_factors_(:) ! Scaling factor for final rate constant
+    type(string_t),          allocatable :: handles_(:) ! User-provided label for the photolysis rate constant
+    integer,                 allocatable :: o2_rate_indices_(:) ! Indices in the photo rate arrays where O2
+                                                                ! corrections to the cross-section in the
+                                                                ! Lyman-Alpha and Schumann-Runge bands should
+                                                                ! be applied
     logical :: enable_diagnostics_ ! Enable writing diagnostic output, defaults to false
     ! Height grid
     type(grid_warehouse_ptr) :: height_grid_
@@ -34,6 +38,8 @@ module tuvx_photolysis_rates
     ! Air density profile
     type(profile_warehouse_ptr) :: air_profile_
   contains
+    ! Adds a photolysis rate to the collection
+    procedure :: add
     ! Returns the photolysis rate constants for a given set of conditions
     procedure :: get
     ! Returns the names of each photolysis reaction
@@ -84,15 +90,12 @@ contains
     !> Local variables
     character(len=*), parameter :: Iam = "photolysis_rates_t constructor"
 
-    real(dk)       :: rate_aliasing_factor
     type(config_t) :: reaction_set, reaction_config
-    type(config_t) :: cross_section_config, quantum_yield_config
     class(iterator_t), pointer :: iter
-    type(cross_section_ptr) :: a_cross_section_ptr
-    type(quantum_yield_ptr) :: a_quantum_yield_ptr
     character(len=64)           :: keychar
-    type(string_t)              :: reaction_key
     type(string_t)              :: required_keys(1), optional_keys(1)
+    integer                     :: i_photo
+    logical                     :: found, do_apply_bands
 
     required_keys(1) = "reactions"
     optional_keys(1) = "enable diagnostics"
@@ -109,6 +112,7 @@ contains
     allocate( rates%cross_sections_(0) )
     allocate( rates%quantum_yields_(0) )
     allocate( rates%scaling_factors_(0) )
+    allocate( rates%o2_rate_indices_(0) )
 
     call photolysis_config%get( "enable diagnostics",                         &
                 photolysis_rates%enable_diagnostics_, Iam, default = .false. )
@@ -123,28 +127,11 @@ contains
     call photolysis_config%get( "reactions", reaction_set, Iam )
 
     iter => reaction_set%get_iterator( )
+    i_photo = 0
     do while( iter%next( ) )
+      i_photo = i_photo + 1
       call reaction_set%get( iter, reaction_config, Iam )
-
-      call reaction_config%get( "name", reaction_key, Iam )
-      rates%handles_ = [ rates%handles_, reaction_key ]
-
-      ! get cross section first
-      call reaction_config%get( "cross section", cross_section_config, Iam )
-      a_cross_section_ptr%val_ => cross_section_builder( cross_section_config,  &
-                                            grid_warehouse, profile_warehouse )
-      rates%cross_sections_ = [ rates%cross_sections_, a_cross_section_ptr ]
-
-      ! now get quantum yield
-      call reaction_config%get( "quantum yield", quantum_yield_config, Iam )
-      a_quantum_yield_ptr%val_ => quantum_yield_builder( quantum_yield_config,  &
-                                            grid_warehouse, profile_warehouse )
-      rates%quantum_yields_ = [ rates%quantum_yields_, a_quantum_yield_ptr ]
-
-      ! finally get scaling factor factor
-      call reaction_config%get( "scaling factor",                             &
-                                 rate_aliasing_factor, Iam, default = 1.0_dk )
-      rates%scaling_factors_ = [ rates%scaling_factors_, rate_aliasing_factor ]
+      call rates%add( reaction_config, grid_warehouse, profile_warehouse )
     end do
     deallocate( iter )
 
@@ -155,6 +142,69 @@ contains
     end associate
 
   end function constructor
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !> Adds a photolysis rate to the collection
+  subroutine add( this, config, grid_warehouse, profile_warehouse )
+
+    use musica_assert,                 only : assert_msg
+    use musica_config,                 only : config_t
+    use tuvx_cross_section_factory,    only : cross_section_builder
+    use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_quantum_yield_factory,    only : quantum_yield_builder
+    use tuvx_profile_warehouse,        only : profile_warehouse_t
+
+    !> photolysis rate constant calculator
+    class(photolysis_rates_t), intent(inout) :: this
+    !> photolysis reaction data
+    type(config_t),            intent(inout) :: config
+    !> grid warehouse
+    type(grid_warehouse_t),    intent(inout) :: grid_warehouse
+    !> profile warehouse
+    type(profile_warehouse_t), intent(inout) :: profile_warehouse
+
+    character(len=*), parameter :: Iam = "photolysis rate adder"
+    type(config_t)          :: cross_section_config, quantum_yield_config
+    type(cross_section_ptr) :: cross_section
+    type(quantum_yield_ptr) :: quantum_yield
+    real(dk)                :: scale_factor
+    type(string_t)          :: reaction_key
+    logical                 :: do_apply_bands, found
+    type(string_t)          :: required_keys(3), optional_keys(1)
+
+    required_keys(1) = "name"
+    required_keys(2) = "cross section"
+    required_keys(3) = "quantum yield"
+    optional_keys(1) = "scaling factor"
+
+    call assert_msg( 780273355,                                               &
+                     config%validate( required_keys, optional_keys ),         &
+                     "Bad configuration data format for photolysis rate." )
+
+    call config%get( "name", reaction_key, Iam )
+    this%handles_ = [ this%handles_, reaction_key ]
+
+    call config%get( "cross section", cross_section_config, Iam )
+    cross_section%val_ => cross_section_builder( cross_section_config,        &
+                                            grid_warehouse, profile_warehouse )
+    this%cross_sections_ = [ this%cross_sections_, cross_section ]
+    call cross_section_config%get( "apply O2 bands", do_apply_bands, Iam,     &
+                                   found = found )
+    if( do_apply_bands .and. found ) then
+      this%o2_rate_indices_ = [ this%o2_rate_indices_,                        &
+                                size( this%cross_sections_ ) ]
+    end if
+
+    call config%get( "quantum yield", quantum_yield_config, Iam )
+    quantum_yield%val_ => quantum_yield_builder( quantum_yield_config,        &
+                                            grid_warehouse, profile_warehouse )
+    this%quantum_yields_ = [ this%quantum_yields_, quantum_yield ]
+
+    call config%get( "scaling factor", scale_factor, Iam, default = 1.0_dk )
+    this%scaling_factors_ = [ this%scaling_factors_, scale_factor ]
+
+  end subroutine add
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -234,7 +284,7 @@ rate_loop:                                                                    &
       end associate
 
       ! O2 photolysis can have special la & srb band handling
-      if( trim( this%handles_( rateNdx )%to_char( ) ) == 'O2+hv->O+O' ) then
+      if( any( this%o2_rate_indices_ == rateNdx ) ) then
         airProfile => profile_warehouse%get_profile( this%air_profile_ )
         allocate( airVcol( airProfile%ncells_ ),                              &
                   airScol( airProfile%ncells_ + 1 ) )
@@ -363,6 +413,7 @@ rate_loop:                                                                    &
       end do
     end if
     pack_size = pack_size +                                                   &
+                musica_mpi_pack_size( this%o2_rate_indices_, comm ) +         &
                 musica_mpi_pack_size( this%enable_diagnostics_, comm ) +      &
                 this%height_grid_%pack_size( comm ) +                         &
                 this%wavelength_grid_%pack_size( comm ) +                     &
@@ -428,6 +479,7 @@ rate_loop:                                                                    &
         call this%handles_( i_elem )%mpi_pack( buffer, position, comm )
       end do
     end if
+    call musica_mpi_pack( buffer, position, this%o2_rate_indices_,    comm )
     call musica_mpi_pack( buffer, position, this%enable_diagnostics_, comm )
     call this%height_grid_%mpi_pack(     buffer, position, comm )
     call this%wavelength_grid_%mpi_pack( buffer, position, comm )
@@ -492,6 +544,7 @@ rate_loop:                                                                    &
         call this%handles_( i_elem )%mpi_unpack( buffer, position, comm )
       end do
     end if
+    call musica_mpi_unpack( buffer, position, this%o2_rate_indices_,    comm )
     call musica_mpi_unpack( buffer, position, this%enable_diagnostics_, comm )
     call this%height_grid_%mpi_unpack(     buffer, position, comm )
     call this%wavelength_grid_%mpi_unpack( buffer, position, comm )

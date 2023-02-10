@@ -5,6 +5,7 @@
          {
             "name": "O2+hv->O+O",
             "cross section": {
+               "apply O2 bands": true,
                "netcdf files": [
                  {
                    "file path": "data/cross_sections/O2_1.nc",

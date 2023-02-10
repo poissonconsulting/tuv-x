@@ -918,7 +918,8 @@ follows:
          "band": "lyman-alpha",
          "value": 0.32
        }
-     ]
+     ],
+     "apply O2 bands": true
    }
 
 
@@ -966,6 +967,12 @@ Valid ``band`` values are ``lyman-alpha``,
 The wavelength grid must cover the Lyman-alpha and
 Schumann-Runge bands if an override is specified,
 otherwise a configuration error is returned.
+
+The ``apply O2 bands`` flag can be added to photolysis
+rates that dissociate ``O2``. If this flag is set to
+``true``, cross section values in the Lyman-alpha and
+Schumann-Runge wavelength bands will be overwritten with
+TUV-x's custom cross section values for O2 in these bands.
 
 A number of custom cross section types have been developed
 when more complex algorithms are needed to calculate

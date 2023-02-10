@@ -108,13 +108,14 @@ contains
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse ! A :f:type:`~tuvx_grid_warehouse/grid_warehouse_t`
     type(profile_warehouse_t), intent(inout) :: profile_warehouse ! A :f:type:`~tuvx_profile_warehouse/profile_warehouse_t`
 
-    type(string_t) :: required_keys(1), optional_keys(4)
+    type(string_t) :: required_keys(1), optional_keys(5)
 
     required_keys(1) = "type"
     optional_keys(1) = "netcdf files"
     optional_keys(2) = "name"
     optional_keys(3) = "merge data"
     optional_keys(4) = "override bands"
+    optional_keys(5) = "apply O2 bands"
     call assert_msg( 124969900,                                               &
                      config%validate( required_keys, optional_keys ),         &
                      "Bad configuration data format for "//                   &

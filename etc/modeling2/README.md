@@ -1,5 +1,18 @@
 # Building TUV-x on modeling2
 
+## Set up your library paths
+
+- Add the following lines to your .bash_profile
+
+...
+PATH=$PATH:$HOME/.local/bin:$HOME/bin
+PATH="/opt/local/bin:$PATH"
+export PATH
+
+export PKG_CONFIG_PATH="/opt/local/lib/pkgconfig:$PKG_CONFIG_PATH"
+export LD_LIBRARY_PATH="/opt/local/lib64:/opt/local/lib:$LD_LIBRARY_PATH"
+...
+
 ## Get the source code
 
 - Copy the build script (`build_tuvx_modeling2_gnu.sh`) to modeling2

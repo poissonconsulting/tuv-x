@@ -8,8 +8,12 @@ module tuvx_discrete_ordinate_util
   implicit none
 
   private
-  public :: PSNDO
+  public :: PSNDO, solver_constants_t
 
+  integer, parameter :: NMUG = 10
+  integer, parameter :: MAXSTR = 100
+  integer, parameter :: MAXTRM = 100
+  integer, parameter :: MAXSQT = 1000
   integer, parameter :: MXCLY = 151
   integer, parameter :: MXULV = 151
   integer, parameter :: MXCMU = 32
@@ -38,9 +42,65 @@ module tuvx_discrete_ordinate_util
   logical, parameter :: ONLYFL = .TRUE.
   logical, parameter :: PRNT(7) = .FALSE.
 
-  real(dk) :: DITHER
+  ! This could probably be removed if something like this happens:
+  ! https://github.com/j3-fortran/fortran_proposals/issues/214
+  type :: solver_constants_t
+    real(dk) :: DITHER
+    real(dk) :: SQT(MAXSQT) ! Square roots of integers
+    real(dk) :: GMU(NMUG)   ! Angle cosine quadrature points on (0,1)
+    real(dk) :: GWT(NMUG)   ! Angle cosine quadrature weights on (0,1)
+    real(dk) :: YLMG(0:MAXSTR,NMUG) ! Normalized associated Legendre polynomials
+                                    !   and the NMUG quadrature angles
+    real(dk) :: C(MAXTRM)   ! Integral from 0 to 1 of MU * P-sub-L(MU)
+                            !   ( vanishes for L = 3, 5, 7, ... )
+  end type solver_constants_t
+
+  interface solver_constants_t
+    module procedure :: constructor
+  end interface solver_constants_t
 
 contains
+
+!=============================================================================*
+
+  ! Constructs constant collection for Discrete Ordinate solver
+  function constructor( ) result( this )
+
+    type(solver_constants_t) :: this
+
+    integer :: NS, K, JG, L
+    real(dk) :: SGN, CL
+
+    this%DITHER = rTEN*EPSILON( this%DITHER )
+!                            ** Must dither more on Cray (14-digit prec)
+    IF( this%DITHER < 1.E-10_dk ) this%DITHER = rTEN*this%DITHER
+
+    DO NS = 1, MAXSQT
+      this%SQT( NS ) = SQRT( REAL(NS,dk) )
+    ENDDO
+
+    CALL QGAUSN( NMUG, this%GMU, this%GWT )
+    CALL LEPOLY( NMUG, 0, MAXSTR, this%GMU, this%YLMG, this )
+
+!                       ** Convert Legendre polys. to negative GMU
+    SGN  = -rONE
+
+    DO K = 0, MAXSTR
+      SGN  = - SGN
+      DO JG = 1, NMUG
+        this%YLMG(K,JG) = SGN*this%YLMG(K,JG)
+      ENDDO
+    ENDDO
+
+    CL     = 0.125_dk
+    this%C(2)   = rTEN*CL
+
+    DO L = 4, MAXTRM, 2
+      CL   = - CL*real((L - 3),dk) / real(L + 2,dk)
+      this%C(L) = rTWO*real(2*L + 1,dk)*CL
+    ENDDO
+
+  end function constructor
 
 !=============================================================================*
 
@@ -48,7 +108,8 @@ contains
                         NLYR, DTAUC, SSALB, PMOM,  &
                         ALBEDO, NSTR, UMU0,        &
                         RFLDIR, RFLDN, FLUP,       &
-                        uavgso, uavgup, uavgdn )
+                        uavgso, uavgup, uavgdn,    &
+                        solver_constants )
 
       use musica_constants, only : PI => kpi
 
@@ -65,6 +126,7 @@ contains
       real(dk), intent(out)   :: uavgso(:)
       real(dk), intent(out)   :: uavgup(:)
       real(dk), intent(out)   :: uavgdn(:)
+      type(solver_constants_t), intent(in) :: solver_constants
 
       real(dk), parameter     :: RPD  = PI / 180.0_dk
 !     spherical geometry
@@ -121,16 +183,6 @@ contains
 
       real(dk)    :: PLKAVG
 
-      SAVE      PASS1
-      DATA      PASS1 / .TRUE. /
-
-      IF( PASS1 ) THEN
-         DITHER = rTEN*EPSILON( DITHER )
-!                            ** Must dither more on Cray (14-digit prec)
-         IF( DITHER < 1.E-10_dk ) DITHER = rTEN*DITHER
-         PASS1 = .FALSE.
-      END IF
- 
 !     ** Calculate cumulative optical depth
 !     and dither single-scatter albedo
 !     to improve numerical behavior of
@@ -140,7 +192,7 @@ contains
 
       DO LC = 1, NLYR
          IF( SSALB(LC) == rONE ) THEN
-           SSALB(LC) = rONE - DITHER
+           SSALB(LC) = rONE - solver_constants%DITHER
          ENDIF
          TAUC(LC) = TAUC(LC - 1) + DTAUC(LC)
       ENDDO
@@ -149,7 +201,7 @@ contains
       CALL CHEKIN( NLYR, DTAUC, SSALB, PMOM,          &
                    NTAU, UTAU, NSTR, NUMU, UMU, NPHI, &
                    PHI, UMU0, FISOT, ALBEDO,          &
-                   HL, TAUC )
+                   HL, TAUC, solver_constants )
 
 !                                 ** Zero internal and output arrays
 
@@ -220,15 +272,15 @@ contains
          IF( FBEAM > rZERO ) THEN
             NCOS   = 1
             ANGCOS = -UMU0
-            CALL LEPOLY( NCOS, MAZIM, NSTR - 1, ANGCOS, YLM0 )
+            CALL LEPOLY( NCOS, MAZIM, NSTR - 1, ANGCOS, YLM0, solver_constants )
          END IF
 
 
          IF( .NOT. ONLYFL .AND. USRANG ) THEN
-            CALL LEPOLY( NUMU, MAZIM, NSTR-1, UMU, YLMU )
+            CALL LEPOLY( NUMU, MAZIM, NSTR-1, UMU, YLMU, solver_constants )
          ENDIF
 
-         CALL LEPOLY( NN, MAZIM, NSTR-1, CMU, YLMC )
+         CALL LEPOLY( NN, MAZIM, NSTR-1, CMU, YLMC, solver_constants )
 
 !                       ** Get normalized associated Legendre polys.
 !                          with negative arguments from those with
@@ -247,7 +299,8 @@ contains
            CALL  SURFAC(                           &
                ALBEDO, DELM0, FBEAM, HLPR, LAMBER, &
                MAZIM, NN, NUMU, NSTR, ONLYFL,      &
-               UMU, USRANG, YLM0(:,1), YLMC, YLMU, BDR, EMU, BEM, RMU )
+               UMU, USRANG, YLM0(:,1), YLMC, YLMU, &
+               BDR, EMU, BEM, RMU, solver_constants )
          ENDIF
 
 
@@ -259,7 +312,7 @@ contains
                  EVECC, EVAL, KK(:,LC ), GC(:,:,LC), AAD, EVECCD, &
                  EVALD, WK, WKD, DELM0, FBEAM, IPVT, PI, UMU0,    &
                  ZJ, ZZ(:,LC), OPRIM(LC), LC, mu2(lc),            &
-                 glsave, dgl)
+                 glsave, dgl, solver_constants)
          ENDDO
 
 
@@ -996,7 +1049,8 @@ INNER_BLK: DO
       SUBROUTINE CHEKIN( NLYR, DTAUC, SSALB, PMOM, &
                          NTAU, UTAU, NSTR, NUMU,   &
                          UMU, NPHI, PHI, UMU0,     &
-                         FISOT, ALBEDO, HL, TAUC )
+                         FISOT, ALBEDO, HL, TAUC,  &
+                         solver_constants )
 
 !           Checks the input dimensions and variables
 
@@ -1016,6 +1070,11 @@ INNER_BLK: DO
                 PMOM(0:,:), SSALB(:),     &
                 TAUC(0:), UMU(:)
       real(dk), intent(inout) :: UTAU(:)
+!     ..
+!     .. Type Arguments ..
+
+      type(solver_constants_t), intent(in) :: solver_constants
+
 !     ..
 !     .. Local Scalars ..
 
@@ -1109,7 +1168,7 @@ INNER_BLK: DO
          IF( (.NOT. ONLYFL .AND. USRANG) .OR. .NOT. LAMBER ) THEN
            DO IRMU = 0, 100
              RMU  = REAL(IRMU,dk)*0.01
-             FLXALB = DREF(RMU,HL,NSTR)
+             FLXALB = DREF(RMU,HL,NSTR,solver_constants)
              IF( FLXALB < rZERO .OR. FLXALB > rONE ) INPERR = WRTBAD( 'HL' )
            ENDDO
          ENDIF
@@ -1411,7 +1470,7 @@ INNER_BLK: DO
 
       END SUBROUTINE FLUXES
 
-      SUBROUTINE LEPOLY( NMU, M, TWONM1, MU, YLM )
+      SUBROUTINE LEPOLY( NMU, M, TWONM1, MU, YLM, solver_constants )
 
 !       Computes the normalized associated Legendre polynomial,
 !       defined in terms of the associated Legendre polynomial
@@ -1456,10 +1515,6 @@ INNER_BLK: DO
 !   Calls- ERRMSG
 ! +-------------------------------------------------------------------+
 
-!     .. Parameters ..
-
-      integer, parameter ::  MAXSQT = 1000
-!     ..
 !     .. Scalar Arguments ..
 
       integer, intent(in) :: M, NMU, TWONM1
@@ -1469,28 +1524,15 @@ INNER_BLK: DO
       real(dk), intent(in)  :: MU(:)
       real(dk), intent(out) :: YLM(0:,:)
 !     ..
+!     .. Type Arguments ..
+      type(solver_constants_t), intent(in) :: solver_constants
+!     ..
 !     .. Local Scalars ..
 
-      logical   :: PASS1
       integer   :: I, L, NS
       real(dk)      :: TMP1, TMP2
 !     ..
-!     .. Local Arrays ..
 
-      real(dk) ::  SQT( MAXSQT )
-!     ..
-!     .. External Subroutines ..
-
-      SAVE      SQT, PASS1
-      DATA      PASS1 / .TRUE. /
-
-
-      IF( PASS1 ) THEN
-         PASS1  = .FALSE.
-         DO NS = 1, MAXSQT
-            SQT( NS ) = SQRT( REAL(NS,dk) )
-         ENDDO
-      END IF
 
       IF( 2*TWONM1 > MAXSQT ) &
         CALL ERRMSG('LEPOLY--need to increase param MAXSQT',.True.)
@@ -1514,16 +1556,17 @@ INNER_BLK: DO
          DO I = 1, NMU
 !                               ** Y-sub-m-super-m; derived from
 !                               ** D/A Eqs. (11,12)
-            YLM(M,I) = -SQT(2*M - 1) / SQT(2*M )*SQRT(rONE - MU(I)**2)*YLM(M - 1,I)
+            YLM(M,I) = -solver_constants%SQT(2*M - 1) / &
+              solver_constants%SQT(2*M )*SQRT(rONE - MU(I)**2)*YLM(M - 1,I)
 
 !                              ** Y-sub-(m+1)-super-m; derived from
 !                              ** D/A Eqs.(13,14) using Eqs.(11,12)
-            YLM(M + 1,I) = SQT(2*M + 1)*MU(I)*YLM(M,I)
+            YLM(M + 1,I) = solver_constants%SQT(2*M + 1)*MU(I)*YLM(M,I)
          ENDDO
 !                                   ** Upward recurrence; D/A EQ.(10)
          DO L = M + 2, TWONM1
-            TMP1 = SQT(L - M )*SQT(L + M)
-            TMP2 = SQT(L - M - 1)*SQT(L + M - 1)
+            TMP1 = solver_constants%SQT(L - M )*solver_constants%SQT(L + M)
+            TMP2 = solver_constants%SQT(L - M - 1)*solver_constants%SQT(L + M - 1)
             DO I = 1, NMU
                YLM(L,I) = ((2*L - 1 )*MU(I)*YLM(L-1,I) - TMP2*YLM(L-2,I)) / TMP1
             ENDDO
@@ -1859,16 +1902,9 @@ INNER_BLK: DO
       real(dk) ::  EN, NNP1, P, P2PRI, PM1, PM2, PPR, PROD
       real(dk) ::  TMP, TOL, X, XI
 
-      SAVE      PI, TOL
 
-      DATA      PI / rZERO / 
-
-
-      IF( PI == rZERO ) THEN
-         PI   = rTWO*ASIN( rONE )
-         TOL  = rTEN*EPSILON( TOL )
-      END IF
-
+      PI   = rTWO*ASIN( rONE )
+      TOL  = rTEN*EPSILON( TOL )
 
       IF( M < 1 ) CALL ERRMSG( 'QGAUSN--Bad value of M',.True.)
 
@@ -2783,7 +2819,8 @@ LAYER_LOOP: &
 
       SUBROUTINE SURFAC( ALBEDO, DELM0, FBEAM, HLPR, LAMBER, MAZIM,  &
                          NN, NUMU, NSTR, ONLYFL, UMU,                &
-                         USRANG, YLM0, YLMC, YLMU, BDR, EMU, BEM, RMU )
+                         USRANG, YLM0, YLMC, YLMU, BDR, EMU, BEM, RMU, &
+                         solver_constants )
 
 !       Specifies user's surface bidirectional properties, STWJ(21)
 
@@ -2828,10 +2865,6 @@ LAYER_LOOP: &
 !   Calls- QGAUSN, LEPOLY, ERRMSG
 ! +-------------------------------------------------------------------+
 
-!     .. Parameters ..
-
-      integer, parameter ::   NMUG = 10, MAXSTR = 100
-!     ..
 !     .. Scalar Arguments ..
 
       logical, intent(in) :: LAMBER, ONLYFL, USRANG
@@ -2844,37 +2877,14 @@ LAYER_LOOP: &
       real(dk), intent(in)  ::  YLM0(0:), YLMC(0:,:), YLMU(0:,:)
       real(dk), intent(out) ::  BDR(:,0:), BEM(:), EMU(:), RMU(:,0:)
 !     ..
+!     .. Type Arguments ..
+      type(solver_constants_t), intent(in) :: solver_constants
+!     ..
 !     .. Local Scalars ..
 
-      logical  :: PASS1
       integer  :: IQ, IU, JG, JQ, K
       real(dk) :: DREF, SGN, SUM
 !     ..
-!     .. Local Arrays ..
-
-      real(dk)    :: GMU(NMUG), GWT(NMUG), YLMG(0:MAXSTR,NMUG)
-
-      SAVE      PASS1, GMU, GWT, YLMG
-      DATA      PASS1 / .TRUE. /
-
-
-      IF( PASS1 ) THEN
-         PASS1  = .FALSE.
-
-         CALL QGAUSN( NMUG, GMU, GWT )
-         CALL LEPOLY( NMUG, 0, MAXSTR, GMU, YLMG )
-
-!                       ** Convert Legendre polys. to negative GMU
-         SGN  = -rONE
-
-         DO K = 0, MAXSTR
-            SGN  = - SGN
-            DO JG = 1, NMUG
-               YLMG(K,JG) = SGN*YLMG(K,JG)
-            ENDDO
-         ENDDO
-      END IF
-
 
       BDR = rZERO
       BEM = rZERO
@@ -2914,7 +2924,7 @@ LAYER_LOOP: &
               CALL ERRMSG('SURFAC--parameter MAXSTR too small',.True.)
 !                              ** Integrate bidirectional reflectivity
 !                                 at reflection polar angles CMU and
-!                                 incident angles GMU to get
+!                                 incident angles solver_constants%GMU to get
 !                                 directional emissivity at
 !                                 computational angles CMU.
             DO IQ = 1, NN
@@ -2922,9 +2932,9 @@ LAYER_LOOP: &
                DO JG = 1, NMUG
                   SUM  = rZERO
                   DO K = 0, NSTR - 1
-                     SUM  = SUM + HLPR(K)*YLMC(K,IQ)*YLMG(K,JG)
+                     SUM  = SUM + HLPR(K)*YLMC(K,IQ)*solver_constants%YLMG(K,JG)
                   ENDDO
-                  DREF  = DREF + rTWO*GWT(JG)*GMU(JG)*SUM
+                  DREF  = DREF + rTWO*solver_constants%GWT(JG)*solver_constants%GMU(JG)*SUM
                ENDDO
                BEM(IQ) = rONE - DREF
             ENDDO
@@ -2964,16 +2974,16 @@ LAYER_LOOP: &
                   IF( MAZIM == 0 ) THEN
 !                               ** Integrate bidirectional reflectivity
 !                                  at reflection angles UMU and
-!                                  incident angles GMU to get
+!                                  incident angles solver_constants%GMU to get
 !                                  directional emissivity at
 !                                  user angles UMU.
                      DREF  = rZERO
                      DO JG = 1, NMUG
                         SUM  = rZERO
                         DO K = 0, NSTR - 1
-                           SUM = SUM + HLPR(K)*YLMU(K,IU)*YLMG(K,JG)
+                           SUM = SUM + HLPR(K)*YLMU(K,IU)*solver_constants%YLMG(K,JG)
                         ENDDO
-                        DREF  = DREF + rTWO*GWT( JG )*GMU( JG )*SUM
+                        DREF  = DREF + rTWO*solver_constants%GWT( JG )*solver_constants%GMU( JG )*SUM
                      ENDDO
                      EMU( IU ) = rONE - DREF
                   END IF
@@ -2988,7 +2998,7 @@ LAYER_LOOP: &
            MAZIM, NN, NSTR, YLM0, YLMC, CC,               &
            EVECC, EVAL, KK, GC, AAD, EVECCD, EVALD,       &
            WK, WKD, DELM0, FBEAM, IPVT, PI, UMU0, ZJ, ZZ, &
-           OPRIM, LC, mu2, glsave, dgl)
+           OPRIM, LC, mu2, glsave, dgl, solver_constants)
 
 !bm  SOLVEC calls SOLEIG and UPBEAM; if UPBEAM reports a potenially 
 !bm  unstable solution, the calculation is repeated with a slightly 
@@ -3026,6 +3036,11 @@ LAYER_LOOP: &
       integer  :: K
       REAL(dk) :: AAD(:,:), EVALD(:), EVECCD(:,:), WKD(:)
 
+!     .. Type Arguments ..
+
+      type(solver_constants_t), intent(in) :: solver_constants
+
+!     ..
 !bm   Variables for instability fix
       
       integer  :: UAGAIN, DAGAIN
@@ -3085,14 +3100,14 @@ CONV_LOOP: &
 !bm   if the single scattering albedo is now smaller than 0
 !bm   the downward iteration is stopped and upward iteration 
 !bm   is forced instead
-            IF( SSA < DITHER) THEN
+            IF( SSA < solver_constants%DITHER) THEN
                NODN = .TRUE.
                DAGAIN = -1
                small_ssa = .true.
 !bm   if the single scattering albedo is now larger than its maximum 
-!bm   allowed value (1.0 - DITHER), the upward iteration is 
+!bm   allowed value (1.0 - solver_constants%DITHER), the upward iteration is 
 !bm   stopped and downward iteration is forced instead
-            ELSEIF( SSA > (rONE - DITHER)) THEN
+            ELSEIF( SSA > (rONE - solver_constants%DITHER)) THEN
                NOUP = .TRUE.
                UAGAIN = -1
                large_ssa = .true.
@@ -3461,7 +3476,7 @@ CONV_LOOP: &
 
       END SUBROUTINE ZEROAL
 
-      real(dk) FUNCTION DREF( MU, HL, NSTR )
+      real(dk) FUNCTION DREF( MU, HL, NSTR, solver_constants )
 
 !        Exact flux albedo for given angle of incidence, given
 !        a bidirectional reflectivity characterized by its
@@ -3487,10 +3502,6 @@ CONV_LOOP: &
 !   Calls- ERRMSG
 ! +-------------------------------------------------------------------+
 
-!     .. Parameters ..
-
-      integer, parameter ::  MAXTRM = 100
-!     ..
 !     .. Scalar Arguments ..
 
       integer, intent(in)  :: NSTR
@@ -3500,32 +3511,16 @@ CONV_LOOP: &
 
       real(dk), intent(in)   :: HL(0:NSTR)
 !     ..
+!     .. Type Arguments ..
+      type(solver_constants_t), intent(in) :: solver_constants
+
+!     ..
 !     .. Local Scalars ..
 
       logical   :: PASS1
       integer   :: L
-      real(dk)      :: CL, PL, PLM1, PLM2
+      real(dk)  :: PL, PLM1, PLM2
 !     ..
-!     .. Local Arrays ..
-
-      real(dk)      :: C( MAXTRM )
-!     ..
-
-      SAVE      PASS1, C
-      DATA      PASS1 / .TRUE. /
-!     ..
-
-
-      IF( PASS1 ) THEN
-         PASS1  = .FALSE.
-         CL     = 0.125_dk
-         C(2)   = rTEN*CL
-
-         DO L = 4, MAXTRM, 2
-            CL   = - CL*real((L - 3),dk) / real(L + 2,dk)
-            C(L) = rTWO*real(2*L + 1,dk)*CL
-         ENDDO
-      END IF
 
 
       IF( NSTR < 2 .OR. ABS(MU) > rONE ) CALL ERRMSG( 'DREF--input argument error(s)',.True. )
@@ -3540,7 +3535,7 @@ CONV_LOOP: &
       DO L = 2, NSTR - 1
 !     ** Legendre polynomial recurrence
          PL = (real(2*L - 1,dk)*(-MU)*PLM1 - real(L-1,dk)*PLM2) / real(L,dk)
-         IF( MOD( L,2 ) == 0 ) DREF = DREF + C(L)*HL(L)*PL
+         IF( MOD( L,2 ) == 0 ) DREF = DREF + solver_constants%C(L)*HL(L)*PL
          PLM2  = PLM1
          PLM1  = PL
       ENDDO
@@ -3573,19 +3568,12 @@ CONV_LOOP: &
 
       INTRINSIC ABS, LOG10, SIGN
 !     ..
-      SAVE      PASS1, SMALL, LARGE, POWMAX, POWMIN
-      DATA      PASS1 / .TRUE. /
-!     ..
 
 
-      IF( PASS1 ) THEN
-         SMALL   = TINY( 1._dk )
-         LARGE   = HUGE( 1._dk )
-         POWMAX = LOG10( LARGE )
-         POWMIN = LOG10( SMALL )
-         PASS1  = .FALSE.
-      END IF
-
+      SMALL   = TINY( 1._dk )
+      LARGE   = HUGE( 1._dk )
+      POWMAX = LOG10( LARGE )
+      POWMIN = LOG10( SMALL )
 
       IF( A == rZERO ) THEN
          IF( B == rZERO ) THEN

@@ -3,11 +3,12 @@
 !
 module tuvx_solver_discrete_ordinate
 
-  use tuvx_solver,                    only : solver_t, radiation_field_t
   use musica_constants,               only : dk => musica_dk
   use tuvx_constants,                 only : kPi => pi
+  use tuvx_discrete_ordinate_util,    only : solver_constants_t
   use tuvx_grid_warehouse,            only : grid_warehouse_ptr
   use tuvx_profile_warehouse,         only : profile_warehouse_ptr
+  use tuvx_solver,                    only : solver_t, radiation_field_t
 
   implicit none
 
@@ -20,6 +21,7 @@ module tuvx_solver_discrete_ordinate
      type(grid_warehouse_ptr) :: height_grid_
      type(grid_warehouse_ptr) :: wavelength_grid_
      type(profile_warehouse_ptr) :: surface_albedo_profile_
+     type(solver_constants_t) :: solver_constants_
    contains
     procedure :: update_radiation_field
     procedure :: pack_size
@@ -81,6 +83,7 @@ contains
     solver%wavelength_grid_ = grid_warehouse%get_ptr( "wavelength", "nm" )
     solver%surface_albedo_profile_ =                                          &
         profile_warehouse%get_ptr( "surface albedo", "none" )
+    solver%solver_constants_ = solver_constants_t( )
 
   end function constructor
 
@@ -175,11 +178,11 @@ contains
                    edr => radiation_field%edr_(: , lambdaNdx ),        &
                    eup => radiation_field%eup_(: , lambdaNdx ),        &
                    edn => radiation_field%edn_(: , lambdaNdx ) )
-          call psndo( dsdh, nid, n_layers,         &
-                      dtauc, ssalb, pmom,          &
-                      albedo, this%n_streams_, umu0,     &
-                      edr, edn, eup,               &
-                      fdr, fup, fdn )
+          call psndo( dsdh, nid, n_layers,                                    &
+                      dtauc, ssalb, pmom,                                     &
+                      albedo, this%n_streams_, umu0,                          &
+                      edr, edn, eup,                                          &
+                      fdr, fup, fdn, this%solver_constants_ )
           fdr = fdr(n_layers+1:1:-1) * kFOURPi
           fup = fup(n_layers+1:1:-1) * kFOURPi
           fdn = fdn(n_layers+1:1:-1) * kFOURPi
@@ -268,6 +271,7 @@ contains
     call this%wavelength_grid_%mpi_unpack(        buffer, position, comm )
     call this%surface_albedo_profile_%mpi_unpack( buffer, position, comm )
     call assert( 120962799, position - prev_pos <= this%pack_size( comm ) )
+    this%solver_constants_ = solver_constants_t( )
 #endif
 
   end subroutine mpi_unpack

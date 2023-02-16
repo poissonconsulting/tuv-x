@@ -23,8 +23,10 @@ project = 'TUV-x'
 copyright = f"2022-{datetime.datetime.now().year}, NCAR/UCAR"
 author = 'NCAR/UCAR'
 
+suffix = os.getenv("SWITCHER_SUFFIX", "")
+
 # The full version, including alpha/beta/rc tags
-release = 'v0.3'
+release = f'v0.3{suffix}'
 
 
 # -- General configuration ---------------------------------------------------
@@ -33,8 +35,6 @@ release = 'v0.3'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinxfortran.fortran_domain',
-    'sphinxfortran.fortran_autodoc',
     'sphinx_design',
     'sphinx.ext.todo',
 ]
@@ -87,17 +87,3 @@ html_css_files = [
 html_favicon = '_static/favicon.ico'
 
 html_logo = '_static/logo.svg'
-
-# -- Options for sphinx-fortran
-fortran_src = [
-    '../src/*.F90',
-    '../src/cross_sections/*.F90',
-    '../src/grids/*.F90',
-    '../src/linear_algebras/*.F90',
-    '../src/quantum_yields/*.F90',
-    '../src/profiles/*.F90',
-    '../src/radiative_transfer/*.F90',
-    '../src/radiative_transfer/solvers/*.F90',
-    '../src/radiative_transfer/radiators/*.F90',
-    '../src/spectral_weights/*.F90',
-]

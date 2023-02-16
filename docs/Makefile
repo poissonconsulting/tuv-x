@@ -19,6 +19,11 @@ help:
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
+local:
+	@make html
+	doxygen 
+
 github:
 	@make html
+	doxygen
 	@cp -a _build/html/. ./versions/stable

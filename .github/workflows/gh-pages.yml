@@ -17,29 +17,6 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Install Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-
-      - name: Cache pip
-        uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('docs/requirements.txt') }}
-          restore-keys:
-            ${{ runner.os }}-pip-
-            ${{ runner.os }}-
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r docs/requirements.txt
-          git clone https://github.com/VACUMM/sphinx-fortran.git
-          cd sphinx-fortran
-          pip install .
-          cd ../
-
       - name: Debugging information
         run: |
           echo "github.ref:" ${{github.ref}}
@@ -54,8 +31,6 @@ jobs:
           python -V
           pip list --not-required
           pip list
-
-      - uses: ammaraskar/sphinx-problem-matcher@master
 
       # Clone and set up the old gh-pages branch
       - name: Clone old gh-pages
@@ -75,17 +50,25 @@ jobs:
           contains(github.ref, env.DEFAULT_BRANCH)
         run: |
           set -x
-          cd docs/
-          mkdir -p versions
-          make github
-          version=$(sed -nr "s/^release = 'v(.+)'.*$/\1/p" source/conf.py)
           mkdir -p _build/html/versions
-          mv versions/stable _build/html/versions/${version}
-          sed -ir "s/^release = .*$/release = 'stable'/" source/conf.py
-          make github
-          mv versions/stable _build/html/versions/stable
-          mv switcher.json _build/html
-          cd ..
+
+          # create two copies of the documentaiton
+          # 1. the frozen version, represented as vX.X in the version switcher
+          docker build -t tuvx -f Dockerfile.docs .
+          id=$(docker create tuvx)
+          docker cp $id:/build/docs/sphinx tmpdocs
+          docker rm -v $id
+          version=$(sed -nr "s/^release = 'v(.+)'.*$/\1/p" docs/source/conf.py)
+          mv tmpdocs _build/html/versions/${version}
+
+          # 2. stable, represented as vX.X (stable) in the version switcher
+          # edit conf.py to produce a version string that looks like vX.X (stable)
+          docker build -t tuvx -f Dockerfile.docs --build-arg SUFFIX=" (stable)" .
+          id=$(docker create tuvx)
+          docker cp $id:/build/docs/sphinx tmpdocs
+          docker rm -v $id
+          mv tmpdocs _build/html/versions/stable
+          mv docs/switcher.json _build/html
           # Delete everything under _gh-pages/ that is from the
           # primary branch deployment.  Excludes the other branches
           # _gh-pages/branch-* paths, and not including
@@ -101,14 +84,15 @@ jobs:
           !contains(github.ref, env.DEFAULT_BRANCH)
         run: |
           set -x
-          cd docs/
-          make dirhtml
-          cd ..
+          docker build -t tuvx -f Dockerfile.docs .
+          id=$(docker create tuvx)
+          docker cp $id:/build/docs/sphinx tmpdocs
+          docker rm -v $id
           brname="${{github.ref}}"
           brname="${brname##refs/heads/}"
           brdir=${brname//\//--}   # replace '/' with '--'
           rm -rf   _gh-pages/branch/${brdir}
-          rsync -a docs/_build/dirhtml/ _gh-pages/branch/${brdir}
+          rsync -a tmpdocs/ _gh-pages/branch/${brdir}
 
       # Go through each branch in _gh-pages/branch/, if it's not a
       # ref, then delete it.

@@ -73,3 +73,11 @@ else()
 
   FetchContent_MakeAvailable(musicacore)
 endif()
+
+################################################################################
+# Docs
+
+if(BUILD_DOCS)
+  find_package(Doxygen REQUIRED)
+  find_package(Sphinx REQUIRED)
+endif()

@@ -11,7 +11,7 @@ project(
 )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${PROJECT_SOURCE_DIR}/cmake/cmake-modules")
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${PROJECT_SOURCE_DIR}/cmake")
 
 message ( STATUS "CMake build configuration for tuv-x(${CMAKE_BUILD_TYPE}) ${PROJECT_VERSION}" )
 
@@ -25,6 +25,7 @@ option(ENABLE_TESTS "Build tests" ON)
 option(ENABLE_COVERAGE "Enable code coverage output" OFF)
 option(ENABLE_MEMCHECK "Enable memory checking in tests" ON)
 option(ENABLE_NC_CONFIG "Use nc-config to determine NetCDF libraries" OFF)
+option(BUILD_DOCS "Build the documentation" OFF)
 
 # Set up include and lib directories
 set(TUVX_MOD_DIR "${PROJECT_BINARY_DIR}/include")
@@ -75,6 +76,12 @@ if(ENABLE_OPENMP)
   target_link_libraries(tuv-x PUBLIC OpenMP::OpenMP_Fortran)
 endif()
 
+################################################################################
+# TUV-x docs
+
+if(BUILD_DOCS)
+  add_subdirectory(docs)
+endif()
 
 ################################################################################
 # TUV-x tests

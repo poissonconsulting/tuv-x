@@ -41,4 +41,9 @@ docs/source/logo.png
 *.out
 *.app
 
+# Pyhon things
+
+# Byte-compiled / optimized / DLL files
 __pycache__/
+*.py[cod]
+*$py.class

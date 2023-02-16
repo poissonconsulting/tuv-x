@@ -27,7 +27,7 @@ Cross Sections
 
 The base functionality for cross section calculations is described in
 ``src/cross_section.F90``.
-The base cross section type :f:type:`~tuvx_cross_section/cross_section_t` defined in this
+The base cross section type `~tuvx_cross_section/cross_section_t` defined in this
 module includes a constructor that reads a set of NetCDF files
 specified in the configuration JSON object as an array of file
 paths with the key ``netcdf files``.
@@ -45,7 +45,7 @@ Here is an exmple configuration for a base cross section:
 More description of the cross section configuration can
 be found :ref:`here <configuration-cross-sections>`.
 The reading of NetCDF file data is available to cross section
-subclasses through the :f:func:`tuvx_cross_section/base_constructor` function.
+subclasses through the `tuvx_cross_section/base_constructor` function.
 
 Data from each NetCDF file in the array in the configuration data
 will be loaded into an element of the
@@ -63,7 +63,7 @@ used to populate the ``temperature(:)`` data member of the
 ``cross_section_parms_t`` object.
 
 The calculation of cross sections is done by calling the ``calculate()``
-type-bound procedure on a :f:type:`~tuvx_cross_section/cross_section_t` object.
+type-bound procedure on a `~tuvx_cross_section/cross_section_t` object.
 
 The base-class calculation of cross sections returns the
 wavelength-interpolated first parameter (``array(:,1)``) from the first

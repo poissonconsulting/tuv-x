@@ -18,10 +18,11 @@ along with example code for embedding TUV-x in a 3D model.
 TUV-x Source Reference
 ======================
 
-The TUV-x source code documentation can be found :doc:`here <tuvx_src/index>`.
+.. raw:: html
+
+   The TUV-x source code documentation can be found <a href="./tuvx_src/index.html">here.</a>
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   tuvx_src/index

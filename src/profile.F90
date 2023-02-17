@@ -35,6 +35,8 @@ module tuvx_profile
     procedure :: mpi_pack
     ! unpacks a profile from a character buffer into the object
     procedure :: mpi_unpack
+    ! outputs profile data to a specified IO unit
+    procedure :: output
   end type profile_t
 
   type profile_ptr
@@ -156,6 +158,70 @@ contains
 #endif
 
   end subroutine mpi_unpack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine output( this, grid, io_unit )
+    ! Outputs profile data to a specified IO unit (or stdout by default)
+
+    use musica_assert,                 only : assert_msg
+    use musica_string,                 only : to_char
+    use tuvx_grid,                     only : grid_t
+
+    class(profile_t),        intent(in) :: this
+    class(grid_t), optional, intent(in) :: grid ! grid to plot values against
+    integer,       optional, intent(in) :: io_unit
+
+    integer :: io, i_cell
+    type(string_t) :: axis_label, exo_val, layer_val, burden_val
+    real(kind=musica_dk) :: axis_val
+
+    io = 6
+    if( present( io_unit ) ) io = io_unit
+    layer_val = "---"
+    exo_val = "---"
+    burden_val = "---"
+    write(io,*) "# Profile: "//this%handle_%val_//" ("//this%units_%val_//")"
+    write(io,*) "# number of cells:", this%ncells_
+    if( present( grid ) ) then
+      axis_label%val_ = grid%handle_%val_//" ("//grid%units_%val_//")"
+      call assert_msg( 207788261, grid%ncells_ .eq. this%ncells_,             &
+                       "Grid cell mismatch printing profile. Expected "//     &
+                       trim( to_char( this%ncells_ ) )//" but got "//         &
+                       trim( to_char( this%ncells_ ) ) )
+    else
+      axis_label%val_ = "index"
+    end if
+    write(io,*) "# "//axis_label%val_//", "//                                 &
+          "mid-point, delta, layer density, exo layer density, burden density"
+    do i_cell = 1, this%ncells_
+      axis_val = real( i_cell, kind=musica_dk )
+      if( present( grid ) ) axis_val = grid%mid_( i_cell )
+      if( allocated( this%layer_dens_ ) ) then
+        layer_val%val_ = trim( to_char( this%layer_dens_( i_cell ) ) )
+      end if
+      if( allocated( this%exo_layer_dens_ ) ) then
+        exo_val%val_ = trim( to_char( this%exo_layer_dens_( i_cell ) ) )
+      end if
+      if( allocated( this%burden_dens_ ) ) then
+        burden_val%val_ = trim( to_char( this%burden_dens_( i_cell ) ) )
+      end if
+      write(io,*) axis_val, ",", this%mid_val_( i_cell ), ",",                &
+                  this%delta_val_( i_cell ), ",", layer_val%val_, ",",        &
+                  exo_val%val_, ",", burden_val%val_
+    end do
+    if( allocated( this%exo_layer_dens_ ) ) then
+      write(io,*) "---, ---, ---, ---,",                                      &
+                  this%exo_layer_dens_( this%ncells_ + 1 ), ", ---"
+    end if
+    write(*,*) "# "//axis_label%val_//", edge"
+    do i_cell = 1, this%ncells_ + 1
+      axis_val = real( i_cell, kind=musica_dk )
+      if( present( grid ) ) axis_val = grid%edge_( i_cell )
+      write(io,*) axis_val, ",", this%edge_val_( i_cell )
+    end do
+
+  end subroutine output
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

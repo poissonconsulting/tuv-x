@@ -199,6 +199,9 @@ contains
     do wavNdx = 1, lambdaGrid%ncells_
       sirrad( :, wavNdx ) = sirrad( :, wavNdx ) * etfl%mid_val_( wavNdx )
     enddo
+    where( sirrad < 0.0_dk )
+      sirrad = 0.0_dk
+    end where
 
 rate_loop:                                                                    &
     do rateNdx = 1, nRates

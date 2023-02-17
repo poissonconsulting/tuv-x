@@ -34,16 +34,19 @@ module tuvx_la_sr_bands
 
   type :: la_sr_bands_t
     ! Calculator of properties of the Lyman-Alpha and Shuman-Runge bands
-    integer  :: ila        ! TUV-x photolysis wavelength index where the Lymann-Alpha band starts
-    integer  :: isrb       ! TUV-x photolysis wavelength index where the Schumann-Runge band starts
-    logical  :: has_la     ! .true. if TUV-x photolysis spectrum includes the Lymann-Alpha band
-    logical  :: has_srb    ! .true. if TUV-x photolysis spectrum includes the Schumann-Runge band
-    logical  :: has_la_srb ! .true. if has_la OR has_srb are .true.
+    integer  :: ila           ! TUV-x photolysis wavelength index where the Lymann-Alpha band starts
+    integer  :: isrb          ! TUV-x photolysis wavelength index where the Schumann-Runge band starts
+    logical  :: has_la        ! .true. if TUV-x photolysis spectrum includes the Lymann-Alpha band
+    logical  :: has_srb       ! .true. if TUV-x photolysis spectrum includes the Schumann-Runge band
+    logical  :: has_la_srb    ! .true. if has_la OR has_srb are .true.
+    logical  :: do_scaled_O2_ ! .true. if the O2 profile should be scaled from total air
+    real(dk) :: O2_scale_factor_ = 0.0_dk ! fraction of air that is O2 by volume
     real(dk) :: AC( nPoly, nsrb ) ! Chebyshev polynomial coefficients
     real(dk) :: BC( nPoly, nsrb ) ! Chebyshev polynomial coefficients
     type(grid_warehouse_ptr) :: height_grid_
     type(grid_warehouse_ptr) :: wavelength_grid_
     type(profile_warehouse_ptr) :: temperature_profile_
+    type(profile_warehouse_ptr) :: O2_profile_
   contains
     procedure :: optical_depth => la_srb_OD
     procedure :: cross_section => la_srb_xs
@@ -80,9 +83,9 @@ contains
     ! SRB.
     ! Also computes and saves corresponding grid indices (ILA, ISRB)
 
-    use musica_assert,                 only : die_msg
+    use musica_assert,                 only : assert_msg, die_msg
     use musica_config,                 only : config_t
-    use musica_string,                 only : string_t
+    use musica_string,                 only : string_t, to_char
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
@@ -97,6 +100,7 @@ contains
     integer :: iw, nw
     type(string_t)         :: file_path
     class(grid_t), pointer :: lambdaGrid
+    type(config_t)         :: o2_config
 
     allocate( this )
 
@@ -125,17 +129,18 @@ contains
           endif
         enddo
         ! check Lyman-alpha wavelength grid
-        if( this%ila == 0 ) then
-          write(*,*) 'For wavelengths below 205.8 nm, only the'
-          write(*,*) 'pre-specified wavelength grid is permitted'
-          write(*,*) 'Use nwint=-156, or edit subroutine gridw.f'
-          call die_msg( 489201491,' Lyman alpha grid mis-match - 1' )
-        endif
+        call assert_msg( 592167903, this%ila .ne. 0,                          &
+                         'Lyman alpha grid mis-match. '//                     &
+                         'For wavelengths below 205.8 nm, only the '//        &
+                         'pre-specified wavelength grid is permitted.' )
         do iw = 2, nla + iONE
-          if( abs( lambdaGrid%edge_( this%ila + iw - iONE )                   &
-                   - wlla( iw ) ) > rTEN * precis ) then
-            call die_msg( 20002,' Lyman alpha grid mis-match - 2' )
-          endif
+          call assert_msg( 236653044,                                         &
+                           abs( lambdaGrid%edge_( this%ila + iw - iONE )      &
+                                - wlla( iw ) ) <= rTEN * precis,              &
+                           "Lymann-Alpha grid mismatch. Expected "//          &
+                           trim( to_char( wlla( iw ) ) )//" but got "//       &
+                           trim( to_char( lambdaGrid%edge_( this%ila + iw     &
+                                                            - iONE ) ) ) )
         enddo
       endif
       if( this%has_srb ) then
@@ -149,22 +154,33 @@ contains
           endif
         enddo
         ! check Schumann-Runge wavelength grid
-        if( this%isrb == 0 ) then
-          write(*,*) 'For wavelengths below 205.8 nm, only the'
-          write(*,*) 'pre-specified wavelength grid is permitted'
-          write(*,*) 'Use nwint=-156, or edit subroutine gridw.f'
-          call die_msg( 188479138,' SRB grid mis-match - 1' )
-        endif
+        call assert_msg( 469773239,  this%isrb .ne. 0,                        &
+                         'Schumann-Runge grid mis-match. '//                  &
+                         'For wavelengths below 205.8 nm, only the '//        &
+                         'pre-specified wavelength grid is permitted.' )
         do iw = 2, nsrb + iONE
-          if( abs( lambdaGrid%edge_( this%isrb + iw - iONE )                  &
-                   - wlsrb( iw ) ) > rTEN * precis ) then
-            call die_msg( 467595614,' SRB grid mismatch - w' )
-          endif
+          call assert_msg( 947796740,                                         &
+                           abs( lambdaGrid%edge_( this%isrb + iw - iONE )     &
+                                - wlsrb( iw ) ) <= rTEN * precis,             &
+                           "Shumann-Runge grid mismatch. Expected "//         &
+                           trim( to_char( wlsrb( iw ) ) )//" but got "//      &
+                           trim( to_char( lambdaGrid%edge_( this%isrb + iw    &
+                                                            - iONE ) ) ) )
         enddo
         ! Loads Chebyshev polynomial Coeff.
         call config%get( 'cross section parameters file', file_path, Iam )
         call this%init_srb_xs( file_path )
       endif
+
+      ! Determine how to handle O2 profile
+      call config%get( 'O2 estimate', o2_config, Iam,                         &
+                       found = this%do_scaled_O2_ )
+      if( this%do_scaled_O2_ ) then
+        call o2_config%get( 'scale factor', this%O2_scale_factor_, Iam )
+      else
+        this%O2_profile_ = profile_warehouse%get_ptr( "O2", "molecule cm-3" )
+      end if
+
     endif has_la_srb
 
     deallocate( lambdaGrid )
@@ -174,7 +190,8 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine la_srb_OD( this, grid_warehouse, profile_warehouse,              &
-      air_vertical_column, air_slant_column, o2_optical_depth )
+      air_vertical_column, air_slant_column, o2_optical_depth,                &
+      spherical_geometry )
     ! Computes equivalent optical depths for O2 absorption, and O2 effective
     ! absorption cross sections, parameterized in the Lyman-alpha and SR bands
 
@@ -183,26 +200,28 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
+    use tuvx_spherical_geometry,       only : spherical_geometry_t
 
     class(la_sr_bands_t),      intent(inout) :: this
     type(profile_warehouse_t), intent(inout) :: profile_warehouse
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse
+    type(spherical_geometry_t),intent(inout) :: spherical_geometry
 
     real(dk), intent(in)    :: air_vertical_column(:), air_slant_column(:)
     real(dk), intent(inout) :: o2_optical_depth(:,:)
 
     ! Local variables
-    real(dk), parameter         :: o2Vmr = .2095_dk
     character(len=*), parameter :: Iam = 'la_srb OD: '
 
     integer :: nz ! number of specified altitude levels in the working grid
     integer :: nzm1
     integer :: iw
     real(dk)    :: secchi(size(air_slant_column))
+    real(dk)    :: o2vcol(size(air_vertical_column))
     real(dk)    :: o2scol(size(air_slant_column))
     class(grid_t),    pointer :: zGrid ! specified altitude working grid [km]
     class(grid_t),    pointer :: lambdaGrid
-    class(profile_t), pointer :: temperature
+    class(profile_t), pointer :: temperature, O2_profile
 
     ! Lyman-alpha variables
     ! O2 optical depth and equivalent cross section in the Lyman-alpha region
@@ -229,7 +248,14 @@ contains
                      'number of cells in the vertical grid')
 
       ! O2 slant column
-      o2scol(:) = o2Vmr * air_slant_column(:)
+      if( this%do_scaled_O2_ ) then
+        o2scol(:) = this%O2_scale_factor_ * air_slant_column(:)
+      else
+        O2_profile => profile_warehouse%get_profile( this%O2_profile_ )
+        call spherical_geometry%air_mass( O2_profile%exo_layer_dens_, o2vcol, &
+                                          o2scol )
+        deallocate( O2_profile )
+      end if
 
       ! Effective secant of solar zenith angle.
       ! Use 2.0 if no direct sun (value for isotropic radiation)
@@ -274,7 +300,8 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine la_srb_xs( this, grid_warehouse, profile_warehouse,              &
-      air_vertical_column, air_slant_column, o2_cross_section )
+      air_vertical_column, air_slant_column, o2_cross_section,                &
+      spherical_geometry )
     ! Computes equivalent optical depths for O2 absorption, and O2 effective
     ! absorption cross sections, parameterized in the Lyman-alpha and SR bands
 
@@ -282,24 +309,26 @@ contains
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile,                  only : profile_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
+    use tuvx_spherical_geometry,       only : spherical_geometry_t
 
     class(la_sr_bands_t),      intent(inout) :: this
     type(profile_warehouse_t), intent(inout) :: profile_warehouse
     type(grid_warehouse_t),    intent(inout) :: grid_warehouse
+    type(spherical_geometry_t),intent(inout) :: spherical_geometry
 
     real(dk), intent(in)    :: air_vertical_column(:), air_slant_column(:)
     real(dk), intent(inout) :: o2_cross_section(:,:)
 
     ! Local variables
     character(len=*), parameter :: Iam = 'la_srb xs: '
-    real(dk), parameter :: o2Vmr = .2095_dk
 
     integer :: nz, nzm1, iw
     real(dk)    :: secchi(size(air_slant_column))
+    real(dk)    :: o2vcol(size(air_vertical_column))
     real(dk)    :: o2scol(size(air_slant_column))
     class(grid_t), pointer :: zGrid
     class(grid_t), pointer :: lambdaGrid
-    class(profile_t), pointer :: temperature
+    class(profile_t), pointer :: temperature, O2_profile
 
     ! Lyman-alpha variables
     ! O2 optical depth and equivalent cross section in the Lyman-alpha
@@ -321,8 +350,15 @@ contains
       nzm1 = zGrid%ncells_
       nz   = nzm1 +  iONE
 
-      ! Slant O2 column
-      o2scol(:) = o2Vmr * air_slant_column(:)
+      ! O2 slant column
+      if( this%do_scaled_O2_ ) then
+        o2scol(:) = this%O2_scale_factor_ * air_slant_column(:)
+      else
+        O2_profile => profile_warehouse%get_profile( this%O2_profile_ )
+        call spherical_geometry%air_mass( O2_profile%exo_layer_dens_, o2vcol, &
+                                          o2scol )
+        deallocate( O2_profile )
+      end if
 
       ! Effective secant of solar zenith angle.
       ! Use 2.0 if no direct sun (value for isotropic radiation)
@@ -380,16 +416,19 @@ contains
 
     ac = this%AC
     bc = this%BC
-    pack_size = musica_mpi_pack_size( this%ila,        comm ) +               &
-                musica_mpi_pack_size( this%isrb,       comm ) +               &
-                musica_mpi_pack_size( this%has_la,     comm ) +               &
-                musica_mpi_pack_size( this%has_srb,    comm ) +               &
-                musica_mpi_pack_size( this%has_la_srb, comm ) +               &
-                musica_mpi_pack_size( ac,              comm ) +               &
-                musica_mpi_pack_size( bc,              comm ) +               &
-                this%height_grid_%pack_size(           comm ) +               &
-                this%wavelength_grid_%pack_size(       comm ) +               &
-                this%temperature_profile_%pack_size(   comm )
+    pack_size = musica_mpi_pack_size( this%ila,              comm ) +         &
+                musica_mpi_pack_size( this%isrb,             comm ) +         &
+                musica_mpi_pack_size( this%has_la,           comm ) +         &
+                musica_mpi_pack_size( this%has_srb,          comm ) +         &
+                musica_mpi_pack_size( this%has_la_srb,       comm ) +         &
+                musica_mpi_pack_size( this%do_scaled_O2_,    comm ) +         &
+                musica_mpi_pack_size( this%O2_scale_factor_, comm ) +         &
+                musica_mpi_pack_size( ac,                    comm ) +         &
+                musica_mpi_pack_size( bc,                    comm ) +         &
+                this%height_grid_%pack_size(                 comm ) +         &
+                this%wavelength_grid_%pack_size(             comm ) +         &
+                this%temperature_profile_%pack_size(         comm ) +         &
+                this%O2_profile_%pack_size(                  comm )
 #else
     pack_size = 0
 #endif
@@ -416,16 +455,19 @@ contains
     prev_pos = position
     ac = this%AC
     bc = this%BC
-    call musica_mpi_pack( buffer, position, this%ila,        comm )
-    call musica_mpi_pack( buffer, position, this%isrb,       comm )
-    call musica_mpi_pack( buffer, position, this%has_la,     comm )
-    call musica_mpi_pack( buffer, position, this%has_srb,    comm )
-    call musica_mpi_pack( buffer, position, this%has_la_srb, comm )
-    call musica_mpi_pack( buffer, position, ac,              comm )
-    call musica_mpi_pack( buffer, position, bc,              comm )
+    call musica_mpi_pack( buffer, position, this%ila,              comm )
+    call musica_mpi_pack( buffer, position, this%isrb,             comm )
+    call musica_mpi_pack( buffer, position, this%has_la,           comm )
+    call musica_mpi_pack( buffer, position, this%has_srb,          comm )
+    call musica_mpi_pack( buffer, position, this%has_la_srb,       comm )
+    call musica_mpi_pack( buffer, position, this%do_scaled_O2_,    comm )
+    call musica_mpi_pack( buffer, position, this%O2_scale_factor_, comm )
+    call musica_mpi_pack( buffer, position, ac,                    comm )
+    call musica_mpi_pack( buffer, position, bc,                    comm )
     call this%height_grid_%mpi_pack(         buffer, position, comm )
     call this%wavelength_grid_%mpi_pack(     buffer, position, comm )
     call this%temperature_profile_%mpi_pack( buffer, position, comm )
+    call this%O2_profile_%mpi_pack(          buffer, position, comm )
     call assert( 708555791, position - prev_pos <= this%pack_size( comm ) )
 #endif
 
@@ -449,16 +491,19 @@ contains
     real(dk), allocatable :: ac(:,:), bc(:,:)
 
     prev_pos = position
-    call musica_mpi_unpack( buffer, position, this%ila,        comm )
-    call musica_mpi_unpack( buffer, position, this%isrb,       comm )
-    call musica_mpi_unpack( buffer, position, this%has_la,     comm )
-    call musica_mpi_unpack( buffer, position, this%has_srb,    comm )
-    call musica_mpi_unpack( buffer, position, this%has_la_srb, comm )
-    call musica_mpi_unpack( buffer, position, ac,              comm )
-    call musica_mpi_unpack( buffer, position, bc,              comm )
+    call musica_mpi_unpack( buffer, position, this%ila,              comm )
+    call musica_mpi_unpack( buffer, position, this%isrb,             comm )
+    call musica_mpi_unpack( buffer, position, this%has_la,           comm )
+    call musica_mpi_unpack( buffer, position, this%has_srb,          comm )
+    call musica_mpi_unpack( buffer, position, this%has_la_srb,       comm )
+    call musica_mpi_unpack( buffer, position, this%do_scaled_O2_,    comm )
+    call musica_mpi_unpack( buffer, position, this%O2_scale_factor_, comm )
+    call musica_mpi_unpack( buffer, position, ac,                    comm )
+    call musica_mpi_unpack( buffer, position, bc,                    comm )
     call this%height_grid_%mpi_unpack(         buffer, position, comm )
     call this%wavelength_grid_%mpi_unpack(     buffer, position, comm )
     call this%temperature_profile_%mpi_unpack( buffer, position, comm )
+    call this%O2_profile_%mpi_unpack(          buffer, position, comm )
     this%ac = ac
     this%bc = bc
     call assert( 683591141, position - prev_pos <= this%pack_size( comm ) )

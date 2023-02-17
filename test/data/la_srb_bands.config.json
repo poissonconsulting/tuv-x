@@ -27,5 +27,8 @@
           "units": "km"
         }
     }
-  ]
+  ],
+  "O2 estimate" :{
+    "scale factor": 0.2095
+  }
 }

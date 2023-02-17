@@ -28,6 +28,7 @@ module tuvx_cross_section_factory
   use tuvx_cross_section_nitroxy_ethanol,                                    &
     only : cross_section_nitroxy_ethanol_t
   use tuvx_cross_section_no2_tint,     only : cross_section_no2_tint_t
+  use tuvx_cross_section_o3_jpl06,     only : cross_section_o3_jpl06_t
   use tuvx_cross_section_o3_tint,      only : cross_section_o3_tint_t
   use tuvx_cross_section_oclo,         only : cross_section_oclo_t
   use tuvx_cross_section_rayliegh,     only : cross_section_rayliegh_t
@@ -130,6 +131,9 @@ contains
       case( 'NO2 tint' )
         new_cross_section => cross_section_no2_tint_t( config, grid_warehouse,&
                                                            profile_warehouse )
+      case( 'O3 JPL06' )
+        new_cross_section => cross_section_o3_jpl06_t( config, grid_warehouse,&
+                                                           profile_warehouse )
       case( 'O3' )
         new_cross_section => cross_section_o3_tint_t( config, grid_warehouse, &
                                                            profile_warehouse )
@@ -210,6 +214,8 @@ contains
         name = "cross_section_n2o5_no2_no3_t"
       type is( cross_section_no2_tint_t )
         name = "cross_section_no2_tint_t"
+      type is( cross_section_o3_jpl06_t )
+        name = "cross_section_o3_jpl06_t"
       type is( cross_section_o3_tint_t )
         name = "cross_section_o3_tint_t"
       type is( cross_section_oclo_t )
@@ -280,6 +286,8 @@ contains
         allocate( cross_section_n2o5_no2_no3_t :: cross_section )
       case( 'cross_section_no2_tint_t' )
         allocate( cross_section_no2_tint_t :: cross_section )
+      case( 'cross_section_o3_jpl06_t' )
+        allocate( cross_section_o3_jpl06_t :: cross_section )
       case( 'cross_section_o3_tint_t' )
         allocate( cross_section_o3_tint_t :: cross_section )
       case( 'cross_section_oclo_t' )

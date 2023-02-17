@@ -57,6 +57,8 @@ contains
         almost_equal( deltas(i), aGrid%delta_(i), 0.1d-5 ) )
     end do
 
+    call aGrid%output( 6 )
+
   end subroutine test_grid_t
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -268,6 +268,9 @@ contains
     do vertNdx = 1, zGrid%ncells_ + 1
       actinicFlux( :, vertNdx ) = actinicFlux( :, vertNdx ) * etfl%mid_val_
     enddo
+    where( actinicFlux < 0.0_dk )
+      actinicFlux = 0.0_dk
+    end where
 
     if( this%enable_diagnostics_ ) then
       allocate( annotatedjlabel( nRates ) )
@@ -291,7 +294,7 @@ rate_loop:                                                                    &
         call spherical_geometry%air_mass( airProfile%exo_layer_dens_, airVcol,&
                                           airScol )
         call la_srb%cross_section( grid_warehouse, profile_warehouse, airVcol,&
-                                  airScol, cross_section )
+                                  airScol, cross_section, spherical_geometry )
         deallocate( airVcol, airScol )
         deallocate( airProfile )
       endif

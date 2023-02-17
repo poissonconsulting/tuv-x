@@ -21,6 +21,7 @@ target_sources(tuvx_object
     nitroxy_acetone.F90
     nitroxy_ethanol.F90
     no2_tint.F90
+    o3_jpl06.F90
     o3_tint.F90
     oclo.F90
     rono2.F90

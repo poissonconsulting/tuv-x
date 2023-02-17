@@ -49,8 +49,9 @@ contains
     type(config_t) :: grid_config
     type(string_t) :: grid_name, grid_units
 
-    integer  :: istat
+    integer  :: istat, k
     real(dk) :: zd, Value, unit_conv
+    real(dk) :: exo_layer_dens, accum
     logical  :: found
     character(len=132) :: InputLine
     type(string_t)     :: Filespec, Interpolator
@@ -161,8 +162,23 @@ contains
 
     this%layer_dens_ = this%mid_val_ * grid%delta_ * unit_conv
 
+    this%layer_dens_( this%ncells_ ) = this%layer_dens_( this%ncells_ )
+
+    exo_layer_dens = this%edge_val_( this%ncells_ + 1 ) * this%hscale_ *      &
+                     unit_conv
+
+    this%exo_layer_dens_ = [ this%layer_dens_, exo_layer_dens ]
+
     this%layer_dens_( this%ncells_ ) = this%layer_dens_( this%ncells_ ) +     &
-      this%edge_val_( this%ncells_ + 1 ) * this%hscale_ * unit_conv
+      exo_layer_dens
+
+    allocate( this%burden_dens_( grid%ncells_ ) )
+    accum = this%layer_dens_( grid%ncells_ )
+    this%burden_dens_( grid%ncells_ ) = this%layer_dens_( this%ncells_ )
+    do k = grid%ncells_ - 1, 1, -1
+      accum = accum + this%layer_dens_( k )
+      this%burden_dens_( k ) = accum
+    enddo
 
     deallocate( grid )
     deallocate( theInterpolator )

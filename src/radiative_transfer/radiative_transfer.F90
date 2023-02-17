@@ -194,7 +194,8 @@ contains
       call spherical_geometry%air_mass( airprofile%exo_layer_dens_, airVcol,  &
                                         airScol )
       call la_srb%optical_depth( grid_warehouse, profile_warehouse, airVcol,  &
-                                 airScol, aRadiator%state_%layer_OD_ )
+                                 airScol, aRadiator%state_%layer_OD_,         &
+                                 spherical_geometry )
       deallocate( airVcol, airScol )
       deallocate( airprofile )
     endif

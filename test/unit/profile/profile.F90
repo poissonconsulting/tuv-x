@@ -146,6 +146,9 @@ contains
     !> Get copy of ozone profile
     aProfile => theProfileWarehouse%get_profile( "O3", "molecule cm-3" )
 
+    ! print the ozone profile
+    call aProfile%output( zGrid, 6 )
+
     deallocate( aProfile )
 
     deallocate( zGrid )

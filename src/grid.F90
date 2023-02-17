@@ -30,6 +30,8 @@ module tuvx_grid
     procedure :: mpi_pack
     ! Unpacks a grid from a character buffer into the object
     procedure :: mpi_unpack
+    ! Output the grid state
+    procedure :: output
   end type grid_t
 
   !> Pointer type for building sets of spectral wght objects
@@ -139,6 +141,30 @@ contains
 #endif
 
   end subroutine mpi_unpack
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine output( this, io_unit )
+    ! Prints the grid state to the specified unit (stdout by default)
+
+    class(grid_t),     intent(in) :: this
+    integer, optional, intent(in) :: io_unit
+
+    integer :: i_cell, io
+
+    io = 6
+    if( present( io_unit ) ) io = io_unit
+    write(io,*) "# Grid: "//this%handle_%val_//" ("//this%units_%val_//")"
+    write(io,*) "# Number of cells", this%ncells_
+    write(io,*) "# index, mid-point, edge, width"
+    do i_cell = 1, this%ncells_
+      write(io,*) i_cell, ",", this%mid_( i_cell ), ",",                      &
+                  this%edge_( i_cell ), ",", this%delta_( i_cell )
+    end do
+    write(io,*) this%ncells_ + 1, ", ---,", this%edge_( this%ncells_ + 1 ),   &
+                ", ---"
+
+  end subroutine output
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

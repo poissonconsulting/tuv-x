@@ -68,10 +68,12 @@ contains
 
   subroutine test_optical_depth( )
     use tuvx_grid, only : grid_t
+    use tuvx_spherical_geometry, only : spherical_geometry_t
 
     real(dk), allocatable :: air_vertical_column(:), air_slant_column(:)
     real(dk), allocatable :: o2_optical_depth(:,:)
     class(grid_t), pointer :: height_grid => null( ) ! specified altitude working grid [km]
+    type(spherical_geometry_t) :: spherical_geometry
 
     height_grid => grid_warehouse%get_grid( "height", "km" )
     allocate( air_vertical_column( height_grid%ncells_ ),                      &
@@ -87,7 +89,8 @@ contains
     ! 18 columns of output if you are in the Schumann-Runge wavelegth
     ! running is good enough
     call la_sr_bands_%optical_depth( grid_warehouse, profile_warehouse,       &
-      air_vertical_column, air_slant_column, o2_optical_depth )
+      air_vertical_column, air_slant_column, o2_optical_depth,                &
+      spherical_geometry )
 
     deallocate( height_grid )
     deallocate( o2_optical_depth )

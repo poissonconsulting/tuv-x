@@ -3014,8 +3014,6 @@ LAYER_LOOP: &
 
 !     .. Scalar Arguments ..
 
-      integer, parameter :: dk = 8
-
       integer, intent(in)  :: MAZIM, NN, NSTR, LC
       REAL(dk), intent(in) :: DELM0, FBEAM, PI, UMU0, OPRIM
       REAL(dk), intent(in) :: mu2
@@ -3063,7 +3061,7 @@ LAYER_LOOP: &
 !bm   instability parameter; the solution is considered 
 !bm   unstable, if the RCOND reported by SGECO is smaller 
 !bm   than MINRCOND
-      MINRCOND = 5000._dk * EPSILON(MINRCOND)
+      MINRCOND = 1.0e-7_dk
 
 !bm   if an instability is detected, the single scattering albedo
 !bm   is iterated downwards in steps of DADD and upwards in steps 

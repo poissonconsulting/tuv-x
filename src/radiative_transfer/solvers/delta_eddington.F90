@@ -103,7 +103,7 @@ contains
     type(radiator_warehouse_t), intent(inout) :: radiator_warehouse
     type(spherical_geometry_t), intent(inout) :: spherical_geometry
 
-    class(radiation_field_t),   pointer       :: radiation_field
+    type(radiation_field_t),   pointer       :: radiation_field
 
     ! Local variables
     character(len=*), parameter :: Iam = 'Update radiation field: '

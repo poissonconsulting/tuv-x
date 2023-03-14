@@ -2,8 +2,11 @@
 ! SPDX-License-Identifier: Apache-2.0
 
 module tuvx_quantum_yield_ch3coch3_ch3co_ch3
-  ! This calculates the quantum_yield for acetone   
+  ! This calculates the quantum_yield for acetone
 
+  ! Including musica_config at the module level to avoid an ICE
+  ! with Intel 2022.1 compiler
+  use musica_config,                   only : config_t
   use tuvx_quantum_yield,              only : quantum_yield_t, base_constructor
 
   implicit none
@@ -30,7 +33,6 @@ contains
       result( this )
     ! Build the quantum yield
 
-    use musica_config,                 only : config_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 

@@ -5,8 +5,11 @@ module tuvx_cross_section_o3_tint
 ! Calculates the cross section for ozone with temperature
 ! interpolation
 
+  ! Including musica_config at the module level to avoid an ICE
+  ! with Intel 2022.1 compiler
+  use musica_config,                   only : config_t
   use musica_constants,                only : dk => musica_dk
-  use tuvx_cross_section_tint,         only : cross_section_tint_t
+  use tuvx_cross_section,              only : cross_section_t
 
   implicit none
 
@@ -14,7 +17,7 @@ module tuvx_cross_section_o3_tint
   public :: cross_section_o3_tint_t
 
   !> Calculator for o3_tint_cross_section
-  type, extends(cross_section_tint_t) :: cross_section_o3_tint_t
+  type, extends(cross_section_t) :: cross_section_o3_tint_t
     real(dk) :: v185(1), v195(1), v345(1)
   contains
     !> Calculate the cross section
@@ -44,7 +47,6 @@ contains
     ! Initialize cross_section_o3_tint_t object
 
     use musica_assert,                 only : assert_msg, die_msg
-    use musica_config,                 only : config_t
     use musica_iterator,               only : iterator_t
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t

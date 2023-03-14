@@ -163,7 +163,7 @@ contains
     type(spherical_geometry_t),        intent(inout) :: spherical_geometry ! A :f:type:`~tuvx_spherical_geometry/spherical_geometry_t`
     type(la_sr_bands_t),               intent(inout) :: la_srb             ! A :f:type:`~tuvx_la_sr_bands/la_sr_bands_t`
 
-    class(radiation_field_t), pointer, intent(out)   :: radiation_field
+    type(radiation_field_t), pointer, intent(out)   :: radiation_field
 
     ! Local variables
     character(len=*), parameter          :: Iam = 'radXfer component calculate: '

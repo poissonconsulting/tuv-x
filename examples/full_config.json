@@ -210,7 +210,8 @@
                  { "file path": "data/cross_sections/O3_3.nc" },
                  { "file path": "data/cross_sections/O3_4.nc" }
                ],
-               "type": "O3"
+               "type": "O3",
+               "__output": true
             },
             "quantum yield": {
                "type": "O3+hv->O2+O(1D)"
@@ -225,10 +226,12 @@
                  { "file path": "data/cross_sections/O3_3.nc" },
                  { "file path": "data/cross_sections/O3_4.nc" }
                ],
-               "type": "O3"
+               "type": "O3",
+               "__output": true
             },
             "quantum yield": {
-               "type": "O3+hv->O2+O(3P)"
+               "type": "O3+hv->O2+O(3P)",
+               "__output": true
             }
          },
          {
@@ -253,7 +256,8 @@
             },
             "quantum yield": {
                "type": "base",
-               "constant value": 1.1e-3
+               "constant value": 1.1e-3,
+               "__output": true
             }
          },
          {

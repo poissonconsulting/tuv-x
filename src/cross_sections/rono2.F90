@@ -4,6 +4,9 @@
 module tuvx_cross_section_rono2
 ! Calculates the cross section for a nitrate ester
 
+  ! Including musica_config at the module level to avoid an ICE
+  ! with Intel 2022.1 compiler
+  use musica_config,                   only : config_t
   use tuvx_cross_section,              only : cross_section_t
 
   implicit none
@@ -32,7 +35,6 @@ contains
     ! Initialize cross_section_t object
 
     use musica_assert,                 only : assert_msg, die_msg
-    use musica_config,                 only : config_t
     use musica_constants,              only : dk => musica_dk
     use musica_iterator,               only : iterator_t
     use musica_string,                 only : string_t

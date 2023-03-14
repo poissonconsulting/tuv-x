@@ -3,7 +3,10 @@
 module tuvx_quantum_yield_ch2chcho
   ! The ch2chcho+hv->prodcuts quantum yield type and related functions
 
-  use tuvx_quantum_yield,    only : quantum_yield_t, base_constructor
+  ! Including musica_config at the module level to avoid an ICE
+  ! with Intel 2022.1 compiler
+  use musica_config,                   only : config_t
+  use tuvx_quantum_yield,              only : quantum_yield_t, base_constructor
 
   implicit none
 
@@ -28,7 +31,6 @@ contains
       result( this )
     ! Constructor
 
-    use musica_config,                 only : config_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 

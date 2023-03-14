@@ -26,6 +26,7 @@ echo "Building TUV-x"
 # get the source code
 cd ${TUVX_HOME}
 curl -LO https://github.com/jacobwilliams/json-fortran/archive/8.2.1.tar.gz
+git clone https://github.com/NCAR/musica-core.git
 git clone --recurse-submodules https://github.com/NCAR/tuv-x.git
 
 # extract
@@ -50,18 +51,31 @@ make install
 mkdir -p $JSON_FORTRAN_HOME/lib/shared
 mv $JSON_FORTRAN_HOME/lib/*.so* $JSON_FORTRAN_HOME/lib/shared
 
+# musica-core
+MUSICA_CORE_ROOT=${TUVX_HOME}/musica-core
+export MUSICA_CORE_HOME=${INSTALL_ROOT}/musica-core-0.1.0
+export MUSICA_CORE_PACKAGE=${INSTALL_ROOT}/musicacore-0.1.0/cmake/musicacore-0.1.0
+cd ${MUSICA_CORE_ROOT}
+mkdir -p build
+cd build
+cmake -D CMAKE_Fortran_COMPILER=gfortran \
+      -D CMAKE_BUILD_TYPE=release \
+      -D CMAKE_INSTALL_PREFIX=${INSTALL_ROOT} \
+      ..
+make install
+
 # TUV-x
 TUVX_ROOT=$TUVX_HOME/tuv-x
+export TUVX_HOME=${INSTALL_ROOT}/tuv-x
 cd $TUVX_ROOT
-git checkout release
+git checkout develop-output-cs-qy
 git submodule update
 mkdir -p build
 cd build
 cmake -D CMAKE_Fortran_COMPILER=gfortran \
       -D CMAKE_BUILD_TYPE=release \
-      -D NETCDF_INCLUDE_DIR=$NCAR_INC_NETCDF \
-      -D NETCDF_C_LIB=$NCAR_LDFLAGS_NETCDF/libnetcdf.so \
-      -D NETCDF_FORTRAN_LIB=$NCAR_LDFLAGS_NETCDF/libnetcdff.so \
+      -D musicacore_DIR=${MUSICA_CORE_PACKAGE} \
       -D ENABLE_COVERAGE=OFF \
+      -D CMAKE_INSTALL_PREFIX=${TUVX_HOME} \
       ..
-make
+make install

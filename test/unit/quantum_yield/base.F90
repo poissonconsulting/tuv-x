@@ -31,7 +31,7 @@ contains
     use musica_string,                 only : string_t
     use tuvx_quantum_yield_factory,    only : quantum_yield_type_name,        &
                                               quantum_yield_allocate
-    use tuvx_test_utils,               only : check_values
+    use tuvx_test_utils
 
     class(quantum_yield_t), pointer :: quantum_yield
     character, allocatable :: buffer(:)
@@ -84,14 +84,14 @@ contains
     associate( params => quantum_yield%quantum_yield_parms( 1 ) )
       call assert( 784078798, allocated( params%temperature ) )
       call assert( 891132836, allocated( params%array ) )
-      call check_values( params%temperature, temperature1, 1.0e-6_dk )
-      call check_values( params%array,       array1,       1.0e-6_dk )
+      call check_values_1D_no_code( params%temperature, temperature1, 1.0e-6_dk )
+      call check_values_2D_no_code( params%array,       array1,       1.0e-6_dk )
     end associate
     associate( params => quantum_yield%quantum_yield_parms( 2 ) )
       call assert( 784078798, allocated( params%temperature ) )
       call assert( 891132836, allocated( params%array ) )
-      call check_values( params%temperature, temperature2, 1.0e-6_dk )
-      call check_values( params%array,       array2,       1.0e-6_dk )
+      call check_values_1D_no_code( params%temperature, temperature2, 1.0e-6_dk )
+      call check_values_2D_no_code( params%array,       array2,       1.0e-6_dk )
     end associate
 
     deallocate( quantum_yield )

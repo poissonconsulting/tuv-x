@@ -7,13 +7,14 @@ module tuvx_core
   use musica_config,                   only : config_t
   use musica_string,                   only : string_t
   use musica_constants,                only : dk => musica_dk
-  use tuvx_grid_warehouse,             only : grid_warehouse_t
-  use tuvx_profile_warehouse,          only : profile_warehouse_t
-  use tuvx_spherical_geometry,         only : spherical_geometry_t
-  use tuvx_la_sr_bands,                only : la_sr_bands_t
-  use tuvx_radiative_transfer,         only : radiative_transfer_t
-  use tuvx_photolysis_rates,           only : photolysis_rates_t
   use tuvx_dose_rates,                 only : dose_rates_t
+  use tuvx_grid_warehouse,             only : grid_warehouse_t
+  use tuvx_la_sr_bands,                only : la_sr_bands_t
+  use tuvx_photolysis_rates,           only : photolysis_rates_t
+  use tuvx_profile_warehouse,          only : profile_warehouse_t
+  use tuvx_radiative_transfer,         only : radiative_transfer_t
+  use tuvx_solver,                     only : radiation_field_t
+  use tuvx_spherical_geometry,         only : spherical_geometry_t
 
   implicit none
 
@@ -31,6 +32,7 @@ module tuvx_core
     type(radiative_transfer_t),  pointer :: radiative_transfer_ => null()
     type(photolysis_rates_t),    pointer :: photolysis_rates_ => null()
     type(dose_rates_t),          pointer :: dose_rates_ => null()
+    type(radiation_field_t),     pointer :: radiation_field_ => null()
     logical                              :: enable_diagnostics_ ! determines if diagnostic output is written or not
   contains
     ! Calculate photolysis rate constants and dose rates
@@ -52,6 +54,12 @@ module tuvx_core
     procedure :: photolysis_reaction_labels
     ! Returns the set of dose rate labels
     procedure :: dose_rate_labels
+    ! Returns the photolysis reaction cross section for the current conditions
+    procedure :: get_photolysis_cross_section
+    ! Returns the photolysis reaction quantum yield for the current conditions
+    procedure :: get_photolysis_quantum_yield
+    ! Returns the radiation field for the current conditions
+    procedure :: get_radiation_field
     ! Returns the number of bytes required to pack the core onto a buffer
     procedure :: pack_size
     ! Packs the core onto a character buffer
@@ -189,7 +197,6 @@ contains
 
     use tuvx_profile,                    only : profile_t
     use tuvx_radiator,                   only : radiator_t
-    use tuvx_solver,                     only : radiation_field_t
     use tuvx_diagnostic_util,            only : diagout
     use tuvx_radiator_warehouse,         only : warehouse_iterator_t
 
@@ -204,7 +211,6 @@ contains
     character(len=*), parameter         :: Iam = 'Photolysis core run: '
     character(len=2)                    :: number
     class(radiator_t),          pointer :: radiator
-    class(radiation_field_t),   pointer :: radiation_field
     type(warehouse_iterator_t), pointer :: warehouse_iter
     character(len=:), allocatable       :: diag_label
 
@@ -215,38 +221,39 @@ contains
     end if
 
     ! calculate the radiation field
+    if( associated( this%radiation_field_ ) )                                 &
+        deallocate( this%radiation_field_ )
     call this%spherical_geometry_%set_parameters( solar_zenith_angle,         &
                                                   this%grid_warehouse_ )
     call this%radiative_transfer_%calculate( this%la_sr_bands_,               &
                                              this%spherical_geometry_,        &
                                              this%grid_warehouse_,            &
                                              this%profile_warehouse_,         &
-                                             radiation_field )
+                                             this%radiation_field_ )
     if( this%enable_diagnostics_ ) then
       call diagout( 'radField.' // diag_label // '.new',                      &
-                    radiation_field%fdr_ + radiation_field%fup_ +             &
-                    radiation_field%fdn_, this%enable_diagnostics_  )
+                    this%radiation_field_%fdr_ + this%radiation_field_%fup_ + &
+                    this%radiation_field_%fdn_, this%enable_diagnostics_  )
     end if
     ! scale the radiation field by the Earth-Sun distance
-    call radiation_field%apply_scale_factor( earth_sun_distance )
+    call this%radiation_field_%apply_scale_factor( earth_sun_distance )
     if( associated( this%photolysis_rates_ ) .and.                            &
         present( photolysis_rate_constants ) ) then
       call this%photolysis_rates_%get( this%la_sr_bands_,                     &
                                        this%spherical_geometry_,              &
                                        this%grid_warehouse_,                  &
                                        this%profile_warehouse_,               &
-                                       radiation_field,                       &
+                                       this%radiation_field_,                 &
                                        photolysis_rate_constants,             &
                                        diag_label )
     end if
     if( associated( this%dose_rates_ ) .and. present( dose_rates ) ) then
       call this%dose_rates_%get( this%grid_warehouse_,                        &
                                  this%profile_warehouse_,                     &
-                                 radiation_field,                             &
+                                 this%radiation_field_,                       &
                                  dose_rates,                                  &
                                  diag_label )
     endif
-    deallocate( radiation_field )
 
     ! diagnostic output
     if( this%enable_diagnostics_ ) then
@@ -434,6 +441,74 @@ contains
     end if
 
   end function dose_rate_labels
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_photolysis_cross_section( this, reaction_label, found )        &
+      result( cross_section )
+
+    use musica_assert,                 only : assert_msg
+    use tuvx_cross_section,            only : cross_section_t
+
+    class(core_t),          intent(in)  :: this
+    type(string_t),         intent(in)  :: reaction_label      ! Reaction to find
+    logical,      optional, intent(out) :: found               ! Flag indicating if reaction exists
+    real(kind=dk), allocatable          :: cross_section(:,:)  ! cross section (height,wavelength)
+
+    logical :: l_found
+    class(cross_section_t), pointer :: cs
+
+    cs => this%photolysis_rates_%get_cross_section( reaction_label, l_found )
+    if( present( found ) ) found = l_found
+    call assert_msg( 135956210, present( found ) .or. l_found,                &
+                     "Photolysis cross section not found for '"//             &
+                     reaction_label//"'" )
+    if( l_found ) then
+      cross_section = cs%calculate( this%grid_warehouse_,                     &
+                                    this%profile_warehouse_ )
+      deallocate( cs )
+    end if
+
+  end function get_photolysis_cross_section
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function get_photolysis_quantum_yield( this, reaction_label, found )        &
+      result( quantum_yield )
+
+    use musica_assert,                 only : assert_msg
+    use tuvx_quantum_yield,            only : quantum_yield_t
+
+    class(core_t),          intent(in)  :: this
+    type(string_t),         intent(in)  :: reaction_label      ! Reaction to find
+    logical,      optional, intent(out) :: found               ! Flag indicating if reaction exists
+    real(kind=dk), allocatable          :: quantum_yield(:,:)  ! quantum yield (height,wavelength)
+
+    logical :: l_found
+    class(quantum_yield_t), pointer :: qy
+
+    qy => this%photolysis_rates_%get_quantum_yield( reaction_label, l_found )
+    if( present( found ) ) found = l_found
+    call assert_msg( 454211846, present( found ) .or. l_found,                &
+                     "Photolysis quantum yield not found for '"//             &
+                     reaction_label//"'" )
+    if( l_found ) then
+      quantum_yield = qy%calculate( this%grid_warehouse_,                     &
+                                    this%profile_warehouse_ )
+      deallocate( qy )
+    end if
+
+  end function get_photolysis_quantum_yield
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  type(radiation_field_t) function get_radiation_field( this ) result( field )
+
+    class(core_t), intent(in) :: this
+
+    field = this%radiation_field_
+
+  end function get_radiation_field
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -634,6 +709,9 @@ contains
     end if
     if( associated( this%dose_rates_ ) ) then
       deallocate( this%dose_rates_ )
+    end if
+    if( associated( this%radiation_field_ ) ) then
+      deallocate( this%radiation_field_ )
     end if
 
   end subroutine finalize

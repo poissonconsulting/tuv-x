@@ -4,6 +4,9 @@
 module tuvx_quantum_yield_clono2_cl_no3
   ! The clono2+hv->cl+no3 quantum yield type and related functions
 
+  ! Including musica_config at the module level to avoid an ICE
+  ! with Intel 2022.1 compiler
+  use musica_config,                   only : config_t
   use tuvx_quantum_yield,              only : quantum_yield_t, base_constructor
 
   implicit none
@@ -29,7 +32,6 @@ contains
       result( this )
     ! Constructor
 
-    use musica_config,                 only : config_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 

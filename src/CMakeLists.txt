@@ -46,6 +46,7 @@ target_sources(tuvx_object
     la_sr_bands.F90
     linear_algebra.F90
     netcdf.F90
+    output.F90
     photolysis_rates.F90
     profile.F90
     profile_factory.F90

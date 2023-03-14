@@ -4,6 +4,9 @@
 module tuvx_cross_section_temperature_based
 ! Calculate a cross section using a temperature-based parameterization
 
+  ! Including musica_config at the module level to avoid an ICE
+  ! with Intel 2022.1 compiler
+  use musica_config,                   only : config_t
   use musica_constants,                only : dk => musica_dk
   use tuvx_cross_section,              only : cross_section_t
   use tuvx_interpolate,                only : interpolator_conserving_t
@@ -120,7 +123,6 @@ contains
     ! Constructs cross_section_temperature_based_t objects
 
     use musica_assert,                 only : assert, assert_msg
-    use musica_config,                 only : config_t
     use musica_string,                 only : string_t
     use tuvx_cross_section,            only : base_constructor
     use tuvx_grid,                     only : grid_t

@@ -70,7 +70,7 @@ interface
      type(radiator_warehouse_t), intent(inout) :: radiator_warehouse ! Set of radiators
      type(spherical_geometry_t), intent(inout) :: spherical_geometry ! Spherical geometry calculator
 
-     class(radiation_field_t), pointer         :: radiation_field
+     type(radiation_field_t), pointer         :: radiation_field
 
   end function update_radiation_field
 
@@ -133,7 +133,7 @@ contains
       result( field )
     ! Constructor of radiation field objects
 
-    class(radiation_field_t), pointer :: field
+    type(radiation_field_t), pointer :: field
     integer, intent(in) :: n_vertical_interfaces
     integer, intent(in) :: n_wavelength_bins
 

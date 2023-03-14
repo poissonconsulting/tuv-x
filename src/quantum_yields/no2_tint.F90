@@ -4,6 +4,9 @@
 module tuvx_quantum_yield_no2_tint
   !> The no2 tint quantum yield type and related functions
 
+  ! Including musica_config at the module level to avoid an ICE
+  ! with Intel 2022.1 compiler
+  use musica_config,                   only : config_t
   use musica_constants,                only : dk => musica_dk
   use tuvx_quantum_yield,              only : quantum_yield_t
 
@@ -51,7 +54,6 @@ contains
     ! Constructor
 
     use musica_assert,                 only : assert_msg
-    use musica_config,                 only : config_t
     use musica_string,                 only : string_t
     use tuvx_grid,                     only : grid_t
     use tuvx_grid_warehouse,           only : grid_warehouse_t

@@ -19,6 +19,7 @@ module tuvx_photolysis_rates
   public :: photolysis_rates_t
 
   type :: photolysis_rates_t
+    private
     ! Photolysis rate constant calculator
     type(cross_section_ptr), allocatable :: cross_sections_(:) ! Absorption cross-sections
     type(quantum_yield_ptr), allocatable :: quantum_yields_(:) ! Quantum yields
@@ -42,6 +43,10 @@ module tuvx_photolysis_rates
     procedure :: add
     ! Returns the photolysis rate constants for a given set of conditions
     procedure :: get
+    ! Returns a copy of a photolysis reaction cross section
+    procedure :: get_cross_section
+    ! Returns a copy of a photolysis reaction quantum yield
+    procedure :: get_quantum_yield
     ! Returns the names of each photolysis reaction
     procedure :: labels
     ! Returns the number of photolysis reactions
@@ -150,8 +155,10 @@ contains
 
     use musica_assert,                 only : assert_msg
     use musica_config,                 only : config_t
+    use tuvx_cross_section,            only : cross_section_t
     use tuvx_cross_section_factory,    only : cross_section_builder
     use tuvx_grid_warehouse,           only : grid_warehouse_t
+    use tuvx_quantum_yield,            only : quantum_yield_t
     use tuvx_quantum_yield_factory,    only : quantum_yield_builder
     use tuvx_profile_warehouse,        only : profile_warehouse_t
 
@@ -166,12 +173,18 @@ contains
 
     character(len=*), parameter :: Iam = "photolysis rate adder"
     type(config_t)          :: cross_section_config, quantum_yield_config
-    type(cross_section_ptr) :: cross_section
-    type(quantum_yield_ptr) :: quantum_yield
+    class(cross_section_t), pointer :: cross_section
+    class(quantum_yield_t), pointer :: quantum_yield
     real(dk)                :: scale_factor
     type(string_t)          :: reaction_key
     logical                 :: do_apply_bands, found
     type(string_t)          :: required_keys(3), optional_keys(1)
+    type(cross_section_ptr), allocatable :: temp_cs(:)
+    type(quantum_yield_ptr), allocatable :: temp_qy(:)
+    type(string_t),          allocatable :: temp_handle(:)
+    integer,                 allocatable :: temp_indices(:)
+    real(dk),                allocatable :: temp_scale(:)
+    integer :: i_elem
 
     required_keys(1) = "name"
     required_keys(2) = "cross section"
@@ -183,26 +196,67 @@ contains
                      "Bad configuration data format for photolysis rate." )
 
     call config%get( "name", reaction_key, Iam )
-    this%handles_ = [ this%handles_, reaction_key ]
+    temp_handle = this%handles_
+    deallocate( this%handles_ )
+    allocate( this%handles_( size( temp_handle ) + 1 ) )
+    this%handles_( 1:size( temp_handle ) ) = temp_handle(:)
+    this%handles_( size( this%handles_ ) ) = reaction_key
+    deallocate( temp_handle )
 
     call config%get( "cross section", cross_section_config, Iam )
-    cross_section%val_ => cross_section_builder( cross_section_config,        &
+    cross_section => cross_section_builder( cross_section_config,             &
                                             grid_warehouse, profile_warehouse )
-    this%cross_sections_ = [ this%cross_sections_, cross_section ]
+    allocate( temp_cs( size( this%cross_sections_ ) ) )
+    do i_elem = 1, size( temp_cs )
+      temp_cs( i_elem )%val_ => this%cross_sections_( i_elem )%val_
+      nullify( this%cross_sections_( i_elem )%val_ )
+    end do
+    deallocate( this%cross_sections_ )
+    allocate( this%cross_sections_( size( temp_cs ) + 1 ) )
+    do i_elem = 1, size( temp_cs )
+      this%cross_sections_( i_elem )%val_ => temp_cs( i_elem )%val_
+      nullify( temp_cs( i_elem )%val_ )
+    end do
+    this%cross_sections_( size( this%cross_sections_ ) )%val_ => cross_section
+    nullify( cross_section )
+    deallocate( temp_cs )
     call cross_section_config%get( "apply O2 bands", do_apply_bands, Iam,     &
                                    found = found )
     if( do_apply_bands .and. found ) then
-      this%o2_rate_indices_ = [ this%o2_rate_indices_,                        &
-                                size( this%cross_sections_ ) ]
+      temp_indices = this%o2_rate_indices_
+      deallocate( this%o2_rate_indices_ )
+      allocate( this%o2_rate_indices_( size( temp_indices ) + 1 ) )
+      this%o2_rate_indices_( 1:size( temp_indices ) ) = temp_indices(:)
+      this%o2_rate_indices_( size( this%o2_rate_indices_ ) ) =                &
+          size( this%cross_sections_ )
+      deallocate( temp_indices )
     end if
 
     call config%get( "quantum yield", quantum_yield_config, Iam )
-    quantum_yield%val_ => quantum_yield_builder( quantum_yield_config,        &
+    quantum_yield => quantum_yield_builder( quantum_yield_config,             &
                                             grid_warehouse, profile_warehouse )
-    this%quantum_yields_ = [ this%quantum_yields_, quantum_yield ]
+    allocate( temp_qy( size( this%quantum_yields_ ) ) )
+    do i_elem = 1, size( temp_qy )
+      temp_qy( i_elem )%val_ => this%quantum_yields_( i_elem )%val_
+      nullify( this%quantum_yields_( i_elem )%val_ )
+    end do
+    deallocate( this%quantum_yields_ )
+    allocate( this%quantum_yields_( size( temp_qy ) + 1 ) )
+    do i_elem = 1, size( temp_qy )
+      this%quantum_yields_( i_elem )%val_ => temp_qy( i_elem )%val_
+      nullify( temp_qy( i_elem )%val_ )
+    end do
+    this%quantum_yields_( size( this%quantum_yields_ ) )%val_ => quantum_yield
+    nullify( quantum_yield )
+    deallocate( temp_qy )
 
     call config%get( "scaling factor", scale_factor, Iam, default = 1.0_dk )
-    this%scaling_factors_ = [ this%scaling_factors_, scale_factor ]
+    temp_scale = this%scaling_factors_
+    deallocate( this%scaling_factors_ )
+    allocate( this%scaling_factors_( size( temp_scale ) + 1 ) )
+    this%scaling_factors_( 1:size( temp_scale ) ) = temp_scale(:)
+    this%scaling_factors_( size( this%scaling_factors_ ) ) = scale_factor
+    deallocate( temp_scale )
 
   end subroutine add
 
@@ -331,6 +385,72 @@ rate_loop:                                                                    &
     deallocate( etfl )
 
   end subroutine get
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !> Returns a copy of a photolysis reaction cross section
+  function get_cross_section( this, reaction_label, found )                   &
+      result( cross_section )
+
+    use musica_array,                  only : find_string_in_array
+    use musica_assert,                 only : assert_msg
+    use tuvx_cross_section,            only : cross_section_t
+
+    !> Photolysis reactions
+    class(photolysis_rates_t), intent(in)  :: this
+    !> Reaction label to get cross section for
+    type(string_t),            intent(in)  :: reaction_label
+    !> Flag indicating whether the reaction was found
+    logical, optional,         intent(out) :: found
+    !> Copy of cross section
+    class(cross_section_t), pointer :: cross_section
+
+    logical :: l_found
+    integer :: i_rxn
+
+    nullify( cross_section )
+    l_found = find_string_in_array( this%handles_, reaction_label, i_rxn )
+    call assert_msg( 378741233, l_found .or. present( found ),                &
+                     "Reaction '"//reaction_label//"' not found." )
+    if( present( found ) ) found = l_found
+    if( l_found ) then
+      allocate( cross_section, source = this%cross_sections_( i_rxn )%val_ )
+    end if
+
+  end function get_cross_section
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !> Returns a copy of a photolysis reaction quantum yield
+  function get_quantum_yield( this, reaction_label, found )                   &
+      result( quantum_yield )
+
+    use musica_array,                  only : find_string_in_array
+    use musica_assert,                 only : assert_msg
+    use tuvx_quantum_yield,            only : quantum_yield_t
+
+    !> Photolysis reactions
+    class(photolysis_rates_t), intent(in)  :: this
+    !> Reaction label to get cross section for
+    type(string_t),            intent(in)  :: reaction_label
+    !> Flag indicating whether the reaction was found
+    logical, optional,         intent(out) :: found
+    !> Copy of quantum yield
+    class(quantum_yield_t), pointer :: quantum_yield
+
+    logical :: l_found
+    integer :: i_rxn
+
+    nullify( quantum_yield )
+    l_found = find_string_in_array( this%handles_, reaction_label, i_rxn )
+    call assert_msg( 970849038, l_found .or. present( found ),                &
+                     "Reaction '"//reaction_label//"' not found." )
+    if( present( found ) ) found = l_found
+    if( l_found ) then
+      allocate( quantum_yield, source = this%quantum_yields_( i_rxn )%val_ )
+    end if
+
+  end function get_quantum_yield
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

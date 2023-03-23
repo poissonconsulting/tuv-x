@@ -2,6 +2,7 @@
 #
 # The TUVX_HOME environment variable must be set to the directory to build TUV-x
 # in prior to calling this script
+set -x
 
 if [[ -z "${TUVX_HOME}" ]]; then
   echo "You must set the TUVX_HOME environment variable to the directory where TUV-x should be build."
@@ -21,7 +22,8 @@ export LD_LIBRARY_PATH="/opt/local/lib64:/opt/local/lib:/usr/bin:/usr/lib:usr/li
 # get the source code
 cd ${TUVX_HOME}
 curl -LO https://github.com/jacobwilliams/json-fortran/archive/8.2.1.tar.gz
-git clone --recurse-submodules https://github.com/NCAR/tuv-x.git
+git clone https://github.com/NCAR/tuv-x.git
+git clone https://github.com/NCAR/musica-core.git
 
 # extract
 cd ${TUVX_HOME}
@@ -41,22 +43,33 @@ cmake3 -D CMAKE_Fortran_COMPILER=/opt/local/bin/gfortran \
        -D SKIP_DOC_GEN:BOOL=TRUE \
        -D CMAKE_INSTALL_PREFIX=$INSTALL_ROOT \
        ..
-make install
+make -j4 install
 mkdir -p $JSON_FORTRAN_HOME/lib/shared
 mv $JSON_FORTRAN_HOME/lib/*.so* $JSON_FORTRAN_HOME/lib/shared
+
+# musica-core
+MUSICA_CORE_ROOT=${TUVX_HOME}/musica-core
+export MUSICA_CORE_HOME=${INSTALL_ROOT}/musica-core-0.1.0
+export MUSICA_CORE_PACKAGE=${INSTALL_ROOT}/musicacore-0.1.0/cmake/musicacore-0.1.0
+cd ${MUSICA_CORE_ROOT}
+mkdir -p build
+cd build
+cmake3 -D CMAKE_Fortran_COMPILER=gfortran \
+      -D CMAKE_BUILD_TYPE=release \
+      -D CMAKE_INSTALL_PREFIX=${INSTALL_ROOT} \
+      ..
+make -j4 install
 
 # TUV-x
 TUVX_ROOT=$TUVX_HOME/tuv-x
 cd $TUVX_ROOT
-git checkout release
-git submodule update
 mkdir -p build
 cd build
 cmake3 -D CMAKE_Fortran_COMPILER=/opt/local/bin/gfortran \
        -D CMAKE_BUILD_TYPE=release \
-       -D NETCDF_INCLUDE_DIR=/opt/local/include \
-       -D NETCDF_C_LIB=/opt/local/lib/libnetcdf.so \
-       -D NETCDF_FORTRAN_LIB=/opt/local/lib/libnetcdff.so \
+       -D musicacore_DIR=${MUSICA_CORE_PACKAGE} \
        -D ENABLE_COVERAGE=OFF \
+       -D ENABLE_MEMCHECK=OFF \
+       -D CMAKE_INSTALL_PREFIX=${TUVX_HOME} \
        ..
-make
+make -j4 install

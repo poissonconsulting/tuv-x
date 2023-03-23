@@ -94,6 +94,7 @@
       }
    ],
    "radiative transfer": {
+      "__output": true,
       "solver" : {
          "type" : "delta eddington"
       },

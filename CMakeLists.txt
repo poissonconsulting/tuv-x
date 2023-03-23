@@ -1,7 +1,7 @@
 ################################################################################
 # Preamble
 
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.17)
 set(CMAKE_USER_MAKE_RULES_OVERRIDE "cmake/set_defaults.cmake")
 
 project(
@@ -14,6 +14,14 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${PROJECT_SOURCE_DIR}/cmake")
 
 message ( STATUS "CMake build configuration for tuv-x(${CMAKE_BUILD_TYPE}) ${PROJECT_VERSION}" )
+
+if(${CMAKE_VERSION} VERSION_LESS "3.21") 
+  if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    set(PROJECT_IS_TOP_LEVEL TRUE)
+  else()
+    set(PROJECT_IS_TOP_LEVEL FALSE)
+  endif()
+endif()
 
 ################################################################################
 # Projet wide setup options

@@ -58,7 +58,7 @@ jobs:
           id=$(docker create tuvx)
           docker cp $id:/build/docs/sphinx tmpdocs
           docker rm -v $id
-          version=$(sed -nr "s/^release = 'v(.+)'.*$/\1/p" docs/source/conf.py)
+          version=$(sed -nr "s/^release = f'v(.+)\{suffix\}'.*$/\1/p" docs/source/conf.py)
           mv tmpdocs _build/html/versions/${version}
 
           # 2. stable, represented as vX.X (stable) in the version switcher
@@ -74,7 +74,7 @@ jobs:
           # _gh-pages/branch-* paths, and not including
           # _gh-pages itself.
           find _gh-pages/ -mindepth 1 ! -path '_gh-pages/branch*' ! -path '_gh-pages/versions*' -delete
-          rsync -a docs/_build/html/ _gh-pages/
+          rsync -a _build/html/versions/stable/* _gh-pages/
 
       # If a push and not on default branch, then copy the build to
       # _gh-pages/branch/$brname (transforming '/' into '--')

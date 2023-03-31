@@ -2,7 +2,7 @@
     {
         "name": "v0.4 (stable)",
         "version": "stable",
-        "url": "https://ncar.github.io/tuv-x/versions/stable"
+        "url": "https://ncar.github.io/tuv-x/versions/stable/"
     },
     {
         "name": "dev",
@@ -12,21 +12,21 @@
     {
         "name": "v0.1",
         "version": "0.1",
-        "url": "https://ncar.github.io/tuv-x/versions/0.1"
+        "url": "https://ncar.github.io/tuv-x/versions/0.1/"
     },
     {
         "name": "v0.2",
         "version": "0.2",
-        "url": "https://ncar.github.io/tuv-x/versions/0.2"
+        "url": "https://ncar.github.io/tuv-x/versions/0.2/"
     },
     {
         "name": "v0.3",
         "version": "0.3",
-        "url": "https://ncar.github.io/tuv-x/versions/0.3"
+        "url": "https://ncar.github.io/tuv-x/versions/0.3/"
     },
     {
         "name": "v0.4",
         "version": "0.4",
-        "url": "https://ncar.github.io/tuv-x/versions/0.4"
+        "url": "https://ncar.github.io/tuv-x/versions/0.4/"
     }
 ]

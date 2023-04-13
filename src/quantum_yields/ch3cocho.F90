@@ -1,5 +1,5 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
-! SPDX-License-Identifier: Apache-2.0
+! SPDX-License-Identifier: GPL-2.0-or-later
 
 module tuvx_quantum_yield_ch3cocho_ch3co_hco
   ! The ch3cocho+hv->ch3co+hco quantum yield type and related functions

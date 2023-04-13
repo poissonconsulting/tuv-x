@@ -1,5 +1,5 @@
 ! Copyright (C) 2023 National Center for Atmospheric Research
-! SPDX-License-Identifier: Apache-2.0
+! SPDX-License-Identifier: GPL-2.0-or-later
 !
 module tuvx_output
   ! Writer of TUV-x data

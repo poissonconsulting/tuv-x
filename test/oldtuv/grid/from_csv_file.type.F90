@@ -1,5 +1,5 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
-! SPDX-License-Identifier: Apache-2.0
+! SPDX-License-Identifier: GPL-2.0-or-later
 !
 !one dimension, equally spaced  grid type
 module micm_1d_from_csv_file_grid

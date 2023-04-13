@@ -1,5 +1,5 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
-! SPDX-License-Identifier: Apache-2.0
+! SPDX-License-Identifier: GPL-2.0-or-later
 
 module tuvx_quantum_yield_ch3coch3_ch3co_ch3
   ! This calculates the quantum_yield for acetone

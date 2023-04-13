@@ -1,5 +1,5 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
-! SPDX-License-Identifier: Apache-2.0
+! SPDX-License-Identifier: GPL-2.0-or-later
 !
 !> \file
 !> This uv_a_315_400_nm_spectral_wght module

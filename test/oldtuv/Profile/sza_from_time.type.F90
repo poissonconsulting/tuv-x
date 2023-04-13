@@ -1,5 +1,5 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
-! SPDX-License-Identifier: Apache-2.0
+! SPDX-License-Identifier: GPL-2.0-or-later
 !
 !solar zenith angle from time type
 module micm_sza_from_time

@@ -1,5 +1,5 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
-! SPDX-License-Identifier: Apache-2.0
+! SPDX-License-Identifier: GPL-2.0-or-later
 
 module tuvx_spectral_weight_plant_damage_flint_caldwell_ext
   ! The Flint-Caldwell plant damage extension spectral weight type and

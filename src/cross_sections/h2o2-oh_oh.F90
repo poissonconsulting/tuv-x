@@ -1,5 +1,5 @@
 ! Copyright (C) 2020 National Center for Atmospheric Research
-! SPDX-License-Identifier: Apache-2.0
+! SPDX-License-Identifier: GPL-2.0-or-later
 
 module tuvx_cross_section_h2o2_oh_oh
 ! Calculates the cross section for hydrogen peroxide

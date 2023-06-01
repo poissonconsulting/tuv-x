@@ -40,13 +40,14 @@ contains
 
     ! Local variables
     character(len=*), parameter :: Iam = 'From config profile initialize: '
-    integer                :: ndx
-    real(dk)               :: uniformValue
+    integer                :: ndx, k
+    real(dk)               :: uniformValue, unit_conv, exo_layer_dens, accum
+    real(dk), parameter    :: km2cm = 1.e5_dk
     logical                :: found
     type(config_t)         :: grid_config
     type(string_t)         :: grid_name, grid_units
-    class(grid_t), pointer :: theGrid
-    type(string_t) :: required_keys(4), optional_keys(2)
+    class(grid_t), pointer :: grid
+    type(string_t) :: required_keys(4), optional_keys(3)
 
     required_keys(1) = "type"
     required_keys(2) = "units"
@@ -54,6 +55,7 @@ contains
     required_keys(4) = "name"
     optional_keys(1) = "values"
     optional_keys(2) = "uniform value"
+    optional_keys(3) = "scale height"
 
     call assert_msg( 530095878,                                               &
                      config%validate( required_keys, optional_keys ),         &
@@ -67,12 +69,13 @@ contains
     call config%get( 'units', this%units_, Iam )
 
     call config%get( "grid", grid_config, Iam, found = found )
-    call assert_msg( 376823788, found,                                      &
+    call config%get( 'scale height', this%hscale_, Iam, default = 0._dk )
+    call assert_msg( 376823788, found,                                        &
                       "Grid missing from profile configuration" )
     call grid_config%get( "name", grid_name, Iam )
     call grid_config%get( "units", grid_units, Iam )
 
-    theGrid => grid_warehouse%get_grid( grid_name, grid_units )
+    grid => grid_warehouse%get_grid( grid_name, grid_units )
 
     ! Get values from config file
     call config%get( "values", this%edge_val_, Iam, found = found )
@@ -82,7 +85,7 @@ contains
       call assert_msg( 715232062, found,                                      &
                       "Neither 'values' or 'Uniform value' keyword specified" )
 
-      this%edge_val_ = (/ ( uniformValue, ndx = 1, theGrid%ncells_ + 1 ) /)
+      this%edge_val_ = (/ ( uniformValue, ndx = 1, grid%ncells_ + 1 ) /)
     else
       ! Grid only required if we are using a constant value, but we should
       ! still perform a check if we are reading "values" from the config file
@@ -90,7 +93,7 @@ contains
       ! each profile has to provide values at every element of 
       ! whatever grid they're on (height, wavelength, etc.)
       call assert_msg( 778098283,                                             &
-        size( this%edge_val_, dim = 1 ) == size( theGrid%edge_, dim = 1 ),    &
+        size( this%edge_val_, dim = 1 ) == size( grid%edge_, dim = 1 ),       &
         "The length of `values` must match the length of the specified grid")
     endif
 
@@ -102,8 +105,32 @@ contains
     this%delta_val_ = ( this%edge_val_( 2 : this%ncells_ + 1 ) -              &
                         this%edge_val_( 1 : this%ncells_ ) )
 
+    ! This can be removed as part of issue #139 for adopting SI units
+    if( grid_name == "height" .and. grid_units == "km" ) then
+      unit_conv = km2cm
+    else
+      unit_conv = 1.0_dk
+    end if
 
-      deallocate( theGrid )
+    this%layer_dens_ = this%mid_val_ * grid%delta_ * unit_conv
+
+    exo_layer_dens = this%edge_val_( this%ncells_ + 1 ) * this%hscale_ *      &
+                     unit_conv
+
+    this%exo_layer_dens_ = [ this%layer_dens_, exo_layer_dens ]
+
+    this%layer_dens_( this%ncells_ ) = this%layer_dens_( this%ncells_ ) +     &
+      exo_layer_dens
+
+    allocate( this%burden_dens_( grid%ncells_ ) )
+    accum = this%layer_dens_( grid%ncells_ )
+    this%burden_dens_( grid%ncells_ ) = this%layer_dens_( this%ncells_ )
+    do k = grid%ncells_ - 1, 1, -1
+      accum = accum + this%layer_dens_( k )
+      this%burden_dens_( k ) = accum
+    enddo
+
+    deallocate( grid )
 
   end function constructor
 

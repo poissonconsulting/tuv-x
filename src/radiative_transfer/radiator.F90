@@ -213,6 +213,10 @@ contains
     call assert_msg( 345645215, allocated( this%state_%layer_OD_ ),           &
                      "Radiator state not allocated" )
 
+    ! check that the profile has a set of layer densities avaialble
+    call assert_msg( 108830786, allocated( radiator_profile%layer_dens_ ),    &
+                     "Radiator profiles must provide layer densities" )
+
     ! set radiator state members
     cross_section = radiator_cross_section%calculate( grid_warehouse,         &
                                                       profile_warehouse,      &

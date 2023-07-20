@@ -36,6 +36,6 @@ RUN mkdir /build \
       && cmake -D CMAKE_BUILD_TYPE=release \
                -D ENABLE_MEMCHECK=OFF \
                /tuv-x \
-      && make -j 8
+      && make install -j 8
 
 WORKDIR /build

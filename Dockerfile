@@ -28,6 +28,15 @@ RUN curl -LO https://github.com/jacobwilliams/json-fortran/archive/8.2.0.tar.gz 
     && cmake -D SKIP_DOC_GEN:BOOL=TRUE .. \
     && sudo make install
 
+# add a symlink
+# Create symlinks in the Docker container
+RUN ln -s /usr/local/jsonfortran-gnu-8.2.0/lib/libjsonfortran.a /usr/local/lib64/libjsonfortran.a && \
+    ln -s /usr/local/jsonfortran-gnu-8.2.0/lib/libjsonfortran.so.8.2 /usr/local/lib64/libjsonfortran.so.8.2 && \
+    ln -s /usr/local/jsonfortran-gnu-8.2.0/lib/libjsonfortran.so /usr/local/lib64/libjsonfortran.so && \
+    ln -s /usr/local/jsonfortran-gnu-8.2.0/lib/libjsonfortran.so.8.2.0 /usr/local/lib64/libjsonfortran.so.8.2.0
+
+ENV LD_LIBRARY_PATH=/usr/local/lib64
+
 # build the tuv-x tool
 COPY . /tuv-x/
 RUN mkdir /build \

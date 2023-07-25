@@ -49,6 +49,34 @@ make test
 ./tuv-x examples/full_config.json
 ```
 
+### Sharing data between your computer and the docker container
+
+To easily retrive the output data from tuv-x, or to use your own data in the configuration,
+you will need to use [docker bind mounts](https://docs.docker.com/storage/bind-mounts/).
+
+Start docker with a bind mount volume. **You must use a full system path.** 
+This command will create a link between the folder you provided into and out of the running container.
+
+For example, this command below will start tuv-x and map the directory `/output` in the running container
+to your downloads directory.
+```
+docker run -v /Users/$USER/Downloads:/output -it tuvx
+```
+
+To run the full example config file with the tuv-x tool from this directory, you'll need to copy over the data files.
+The full example uses data files from the `data` directory, which is why you need to do this.
+
+```
+cd /output
+cp -r /build/data .
+tuv-x /build/examples/full_config.json
+```
+
+Now, in your downloads folder, you should have to nc files, `photolysis_rate_constants.nc` and `dose_rates.nc`.
+
+If you have your own data files you'd like to use, you can copy them into the Downloads directory, or whichever directory you mapped in, and use them in the container.
+
+
 ## Build and run (local build version)
 
 ```
